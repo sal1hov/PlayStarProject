@@ -3,12 +3,12 @@
 {% block title %}Вход{% endblock %}
 
 {% block content %}
-<div class="max-w-md w-full bg-white p-8 rounded-lg shadow-2xl transform transition-all hover:scale-105">
-    <h2 class="text-3xl font-bold text-center text-gray-800 mb-8">Вход в систему</h2>
+<div class="max-w-md w-full bg-white p-6 rounded-lg shadow-2xl transform transition-all hover:scale-105 mx-auto">
+    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Вход в систему</h2>
     <form method="post">
         {% csrf_token %}
         <!-- Поле для имени пользователя -->
-        <div class="mb-6">
+        <div class="mb-4">
             <label class="block text-gray-700 text-sm font-bold mb-2">Имя пользователя</label>
             <div class="relative">
                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
@@ -22,7 +22,7 @@
         </div>
 
         <!-- Поле для пароля -->
-        <div class="mb-6">
+        <div class="mb-4">
             <label class="block text-gray-700 text-sm font-bold mb-2">Пароль</label>
             <div class="relative">
                 <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
@@ -48,7 +48,7 @@
     </form>
 
     <!-- Ссылка на регистрацию -->
-    <p class="mt-6 text-center text-gray-600">
+    <p class="mt-4 text-center text-gray-600">
         Нет аккаунта?
         <a href="{% url 'register' %}" class="text-blue-600 hover:text-blue-700 font-semibold hover:underline">Зарегистрируйтесь</a>.
     </p>
