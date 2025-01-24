@@ -12,17 +12,56 @@
             <h2 class="text-2xl font-bold mb-6 text-center">Регистрация</h2>
             <form method="post">
                 {% csrf_token %}
+                <!-- Поля формы -->
                 <div class="mb-4">
                     <label class="block text-gray-700">Имя пользователя</label>
                     {{ form.username }}
                 </div>
                 <div class="mb-4">
-                    <label class="block text-gray-700">Пароль</label>
-                    {{ form.password1 }}
+                    <label class="block text-gray-700">Имя</label>
+                    {{ form.first_name }}
                 </div>
                 <div class="mb-4">
+                    <label class="block text-gray-700">Фамилия</label>
+                    {{ form.last_name }}
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700">Имя ребёнка</label>
+                    {{ form.child_name }}
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700">Пол</label>
+                    {{ form.gender }}
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700">Номер телефона</label>
+                    {{ form.phone_number }}
+                </div>
+                <div class="mb-4 relative">
+                    <label class="block text-gray-700">Пароль</label>
+                    {{ form.password1 }}
+                    <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5 mt-5 cursor-pointer" onclick="togglePasswordVisibility('id_password1')">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+                        </svg>
+                    </span>
+                </div>
+                <div class="mb-4 relative">
                     <label class="block text-gray-700">Подтверждение пароля</label>
                     {{ form.password2 }}
+                    <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5 mt-5 cursor-pointer" onclick="togglePasswordVisibility('id_password2')">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+                        </svg>
+                    </span>
+                </div>
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        {{ form.privacy_policy }}
+                        <span class="ml-2 text-gray-700">Я согласен на обработку персональных данных</span>
+                    </label>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
                     Зарегистрироваться
@@ -33,5 +72,15 @@
             </p>
         </div>
     </div>
+    <script>
+        function togglePasswordVisibility(fieldId) {
+            const passwordField = document.getElementById(fieldId);
+            if (passwordField.type === "password") {
+                passwordField.type = "text";
+            } else {
+                passwordField.type = "password";
+            }
+        }
+    </script>
 </body>
 </html>
