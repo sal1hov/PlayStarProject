@@ -10,22 +10,27 @@
 </head>
 <body class="bg-gradient-to-r from-blue-500 to-purple-600 min-h-screen flex flex-col">
     <!-- Шапка -->
-    <header class="bg-white shadow-lg">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <h1 class="text-3xl font-bold text-gray-800">PlayStar</h1>
-            <nav>
-                <ul class="flex space-x-6">
-                    <li><a href="{% url 'index' %}" class="text-gray-800 hover:text-blue-600 transition duration-300">Главная</a></li>
-                    {% if user.is_authenticated %}
-                        <li><a href="{% url 'logout' %}" class="text-gray-800 hover:text-blue-600 transition duration-300">Выйти</a></li>
-                    {% else %}
-                        <li><a href="{% url 'login' %}" class="text-gray-800 hover:text-blue-600 transition duration-300">Войти</a></li>
-                        <li><a href="{% url 'register' %}" class="text-gray-800 hover:text-blue-600 transition duration-300">Регистрация</a></li>
-                    {% endif %}
-                </ul>
-            </nav>
-        </div>
-    </header>
+<header class="bg-white shadow-lg">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-800">PlayStar</h1>
+        <nav>
+            <ul class="flex space-x-6">
+                <li><a href="{% url 'index' %}" class="text-gray-800 hover:text-blue-600 transition duration-300">Главная</a></li>
+                {% if user.is_authenticated %}
+                    <li>
+                        <form action="{% url 'logout' %}" method="post" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-gray-800 hover:text-blue-600 transition duration-300">Выйти</button>
+                        </form>
+                    </li>
+                {% else %}
+                    <li><a href="{% url 'login' %}" class="text-gray-800 hover:text-blue-600 transition duration-300">Войти</a></li>
+                    <li><a href="{% url 'register' %}" class="text-gray-800 hover:text-blue-600 transition duration-300">Регистрация</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</header>
 
     <!-- Основной контент -->
     <main class="container mx-auto px-6 py-12 flex-grow">

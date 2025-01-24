@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
+from .models import CustomUser  # Импортируйте кастомную модель
 from django.core.validators import RegexValidator
 
 class RegisterForm(UserCreationForm):
@@ -44,5 +44,5 @@ class RegisterForm(UserCreationForm):
     privacy_policy = forms.BooleanField(required=True, label="Я согласен на обработку персональных данных")
 
     class Meta:
-        model = User
+        model = CustomUser  # Используйте кастомную модель
         fields = ['username', 'first_name', 'last_name', 'child_name', 'phone_number', 'password1', 'password2', 'privacy_policy']
