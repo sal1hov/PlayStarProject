@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'main',
+    'accounts',
 ]
 
 MIDDLEWARE = [
@@ -55,8 +56,8 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
+        'DIRS': [],  # Оставьте пустым, если не используете корневую папку templates
+        'APP_DIRS': True,  # Разрешаем поиск шаблонов в папках templates приложений
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',

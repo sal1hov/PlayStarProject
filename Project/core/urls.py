@@ -7,4 +7,5 @@ urlpatterns = [
     path('', index, name='index'),
     path('accounts/', include('django.contrib.auth.urls')),  # Маршруты для входа/выхода
     path('accounts/register/', register, name='register'),  # Регистрация
+    path('accounts/', include('accounts.urls')),
 ]
