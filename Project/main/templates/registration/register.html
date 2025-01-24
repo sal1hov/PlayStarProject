@@ -19,15 +19,15 @@
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700">Имя</label>
-                    <input type="text" name="first_name" id="id_first_name" class="w-full px-4 py-2 border rounded-lg" pattern="[a-zA-Zа-яА-ЯёЁ\s]+" title="Используйте только буквы и пробелы." required>
+                    <input type="text" name="first_name" id="id_first_name" class="w-full px-4 py-2 border rounded-lg" required>
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700">Фамилия</label>
-                    <input type="text" name="last_name" id="id_last_name" class="w-full px-4 py-2 border rounded-lg" pattern="[a-zA-Zа-яА-ЯёЁ\s]+" title="Используйте только буквы и пробелы." required>
+                    <input type="text" name="last_name" id="id_last_name" class="w-full px-4 py-2 border rounded-lg" required>
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700">Имя ребёнка</label>
-                    <input type="text" name="child_name" id="id_child_name" class="w-full px-4 py-2 border rounded-lg" pattern="[a-zA-Zа-яА-ЯёЁ\s]+" title="Используйте только буквы и пробелы." required>
+                    <input type="text" name="child_name" id="id_child_name" class="w-full px-4 py-2 border rounded-lg" required>
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700">Пол</label>
@@ -35,7 +35,7 @@
                 </div>
                 <div class="mb-4">
                     <label class="block text-gray-700">Номер телефона</label>
-                    <input type="tel" name="phone_number" id="id_phone_number" class="w-full px-4 py-2 border rounded-lg" inputmode="numeric" pattern="\+7\d{10}" title="Номер телефона должен быть в формате +7XXXXXXXXXX." required>
+                    <input type="tel" name="phone_number" id="id_phone_number" class="w-full px-4 py-2 border rounded-lg" required>
                 </div>
                 <div class="mb-4 relative">
                     <label class="block text-gray-700">Пароль</label>
@@ -82,10 +82,31 @@
             }
         }
 
-        // Валидация номера телефона (запрет ввода букв)
-        document.getElementById('id_phone_number').addEventListener('input', function(event) {
-            event.target.value = event.target.value.replace(/[^0-9+]/, '');
-        });
+        // Функция для блокировки ввода символов и цифр в имени, фамилии и имени ребёнка
+        function restrictInput(event) {
+            const allowedChars = /[a-zA-Zа-яА-ЯёЁ\s]/; // Разрешены только буквы и пробелы
+            if (!allowedChars.test(event.key)) {
+                event.preventDefault(); // Блокируем ввод
+                alert("Можно вводить только буквы и пробелы!"); // Показываем предупреждение
+            }
+        }
+
+        // Функция для блокировки ввода букв в номере телефона
+        function restrictPhoneInput(event) {
+            const allowedChars = /[0-9+]/; // Разрешены только цифры и знак +
+            if (!allowedChars.test(event.key)) {
+                event.preventDefault(); // Блокируем ввод
+                alert("Можно вводить только цифры и знак '+'!"); // Показываем предупреждение
+            }
+        }
+
+        // Применяем функцию к полям имени, фамилии и имени ребёнка
+        document.getElementById('id_first_name').addEventListener('keypress', restrictInput);
+        document.getElementById('id_last_name').addEventListener('keypress', restrictInput);
+        document.getElementById('id_child_name').addEventListener('keypress', restrictInput);
+
+        // Применяем функцию к полю номера телефона
+        document.getElementById('id_phone_number').addEventListener('keypress', restrictPhoneInput);
     </script>
 </body>
 </html>
