@@ -56,7 +56,7 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],  # Оставьте пустым, если не используете корневую папку templates
+        'DIRS': [BASE_DIR / 'templates'],  # Указываем путь к корневой папке templates
         'APP_DIRS': True,  # Разрешаем поиск шаблонов в папках templates приложений
         'OPTIONS': {
             'context_processors': [
