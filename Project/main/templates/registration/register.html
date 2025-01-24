@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto mt-10">
+        <div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold mb-6 text-center">Регистрация</h2>
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-gray-700">Имя пользователя</label>
+                    {{ form.username }}
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700">Пароль</label>
+                    {{ form.password1 }}
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700">Подтверждение пароля</label>
+                    {{ form.password2 }}
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                    Зарегистрироваться
+                </button>
+            </form>
+            <p class="mt-4 text-center">
+                Уже есть аккаунт? <a href="{% url 'login' %}" class="text-blue-600 hover:underline">Войдите</a>.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

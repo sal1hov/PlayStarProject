@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto mt-10">
+        <div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg">
+            <h2 class="text-2xl font-bold mb-6 text-center">Вход в систему</h2>
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-gray-700">Имя пользователя</label>
+                    {{ form.username }}
+                </div>
+<div class="mb-4 relative">
+    <label class="block text-gray-700">Пароль</label>
+    <input type="password" name="password" id="password" class="w-full px-4 py-2 border rounded-lg">
+    <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-sm leading-5 mt-5 cursor-pointer" onclick="togglePasswordVisibility('password')">
+        <!-- Иконка глаза (Heroicons) -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" />
+        </svg>
+    </span>
+</div>
+
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700">
+                    Войти
+                </button>
+            </form>
+            <p class="mt-4 text-center">
+                Нет аккаунта? <a href="{% url 'register' %}" class="text-blue-600 hover:underline">Зарегистрируйтесь</a>.
+            </p>
+        </div>
+    </div>
+<script>
+    function togglePasswordVisibility(fieldId) {
+        const passwordField = document.getElementById(fieldId);
+        if (passwordField.type === "password") {
+            passwordField.type = "text";
+        } else {
+            passwordField.type = "password";
+        }
+    }
+</script>
+</body>
+</html>
