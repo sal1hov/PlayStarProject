@@ -26,19 +26,20 @@
         <form method="post">
             {% csrf_token %}
             <!-- Поле для имени пользователя -->
+<!-- Поле для имени пользователя -->
 <div class="mb-6">
-    <label class="block text-gray-700 text-sm font-bold mb-2">Имя</label>
+    <label class="block text-gray-700 text-sm font-bold mb-2">Имя пользователя</label>
     <div class="relative">
         <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
-            <!-- Иконка имени -->
+            <!-- Иконка пользователя -->
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
             </svg>
         </span>
-        <input type="text" name="first_name" id="id_first_name" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Введите ваше имя" required>
-        {% if form.first_name.errors %}
+        <input type="text" name="username" id="id_username" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Введите имя пользователя" required>
+        {% if form.username.errors %}
             <div class="text-red-500 text-sm mt-1">
-                {{ form.first_name.errors }}
+                {{ form.username.errors }}
             </div>
         {% endif %}
     </div>

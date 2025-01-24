@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
-from .models import CustomUser  # Импортируйте кастомную модель
 from django.core.validators import RegexValidator
+from .models import CustomUser  # Импортируйте кастомную модель
 
 class RegisterForm(UserCreationForm):
     # Валидация имени, фамилии и имени ребёнка (только буквы и пробелы)
