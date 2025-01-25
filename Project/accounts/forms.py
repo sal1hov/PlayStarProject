@@ -7,12 +7,11 @@ User = get_user_model()
 class UserUpdateForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ['username', 'first_name', 'last_name', 'child_name', 'phone_number']
+        fields = ['username', 'first_name', 'last_name', 'phone_number']  # Убрали child_name
         labels = {
             'username': 'Имя пользователя',
             'first_name': 'Имя',
             'last_name': 'Фамилия',
-            'child_name': 'Имя ребенка',
             'phone_number': 'Номер телефона',
         }
 
