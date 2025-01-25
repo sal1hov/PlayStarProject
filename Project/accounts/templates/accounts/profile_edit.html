@@ -3,7 +3,7 @@
 {% block title %}Редактирование профиля{% endblock %}
 
 {% block content %}
-<div class="bg-white p-8 rounded-lg shadow-2xl text-center transform transition-all hover:scale-105">
+<div class="bg-white p-8 rounded-lg shadow-2xl text-center transform transition-all hover:scale-105 max-w-2xl mx-auto">
     <h2 class="text-4xl font-bold text-gray-800 mb-6">Редактирование профиля</h2>
     <form method="post" class="space-y-6">
         {% csrf_token %}
@@ -25,63 +25,72 @@
             {% endfor %}
         </div>
 
-        <!-- Поля формы профиля -->
-        <div class="space-y-6">
-            {% for field in profile_form %}
-                <div class="flex flex-col space-y-2">
-                    <label for="{{ field.id_for_label }}" class="text-gray-700 font-medium">
-                        {{ field.label }}
-                    </label>
-                    {{ field }}
-                    {% if field.errors %}
-                        <div class="text-red-500 text-sm mt-1">
-                            {{ field.errors|join:", " }}
-                        </div>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        </div>
-
         <!-- Кнопка сохранения -->
         <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 transition duration-300">
             Сохранить изменения
         </button>
     </form>
+
+    <!-- Кнопка для открытия модального окна -->
+    <button onclick="openModal()" class="mt-6 bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">
+        Добавить ребенка
+    </button>
 </div>
 
-<!-- Добавляем стили для полей формы -->
+<!-- Модальное окно -->
+<div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4">
+    <div class="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full mx-4 relative">
+        <!-- Кнопка закрытия (крестик) -->
+        <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+
+        <h3 class="text-2xl font-bold text-gray-800 mb-6">Добавить ребенка</h3>
+        <form method="post" class="space-y-4">
+            {% csrf_token %}
+            <div class="space-y-4">
+                {% for field in child_form %}
+                    <div class="flex flex-col space-y-2">
+                        <label for="{{ field.id_for_label }}" class="text-gray-700 font-medium">
+                            {{ field.label }}
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <div class="text-red-500 text-sm mt-1">
+                                {{ field.errors|join:", " }}
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            <button type="submit" name="add_child" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
+                Добавить
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Скрипт для управления модальным окном -->
+<script>
+    function openModal() {
+        document.getElementById('modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+        document.getElementById('modal').classList.add('hidden');
+    }
+</script>
+
+<!-- Стили для полей формы -->
 <style>
-    /* Стили для текстовых полей и текстовых областей */
+    /* Общие стили для полей */
     input[type="text"],
     input[type="email"],
     input[type="tel"],
-    textarea {
-        width: 100%;
-        padding: 12px;
-        border: 2px solid #e2e8f0;
-        border-radius: 8px;
-        font-size: 16px;
-        color: #4a5568;
-        transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    }
-
-    /* Стили для полей при фокусе */
-    input[type="text"]:focus,
-    input[type="email"]:focus,
-    input[type="tel"]:focus,
-    textarea:focus {
-        border-color: #667eea;
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    /* Стили для текстовых областей */
-    textarea {
-        resize: vertical; /* Разрешаем изменение высоты */
-        min-height: 120px;
-    }
-
-    /* Стили для выпадающих списков */
+    input[type="number"],
+    textarea,
     select {
         width: 100%;
         padding: 12px;
@@ -89,15 +98,26 @@
         border-radius: 8px;
         font-size: 16px;
         color: #4a5568;
-        background-color: white;
         transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        background-color: white;
     }
 
-    /* Стили для выпадающих списков при фокусе */
+    /* Стили для полей при фокусе */
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="tel"]:focus,
+    input[type="number"]:focus,
+    textarea:focus,
     select:focus {
         border-color: #667eea;
         outline: none;
         box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* Стили для текстовых областей */
+    textarea {
+        resize: vertical;
+        min-height: 120px;
     }
 </style>
 {% endblock %}
