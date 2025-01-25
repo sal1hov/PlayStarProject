@@ -26,26 +26,12 @@
     <!-- Список детей -->
     <div class="mt-6">
         <h3 class="text-2xl font-bold text-gray-800 mb-4">Дети</h3>
-        {% if user.child_name %}
-            <!-- Ребёнок, добавленный при регистрации -->
-            <ul class="space-y-4">
-                <li class="flex justify-between items-center bg-gray-100 p-4 rounded-lg">
-                    <div>
-                        {% for child in user.profile.children.all %}
-                            <p>{{ child.child_name }} ({{ child.child_age }} лет)</p>
-                        {% endfor %}
-                    </div>
-                </li>
-            </ul>
-        {% endif %}
-
         {% if user.profile.children.all %}
-            <!-- Дети, добавленные через профиль -->
             <ul class="space-y-4">
                 {% for child in user.profile.children.all %}
                     <li class="flex justify-between items-center bg-gray-100 p-4 rounded-lg">
                         <div>
-                            <p class="text-gray-800"><strong>{{ child.child_name }}</strong>, {{ child.child_age }} лет</p>
+                            <p class="text-gray-800"><strong>{{ child.name }}</strong>, {{ child.age }} лет</p>
                         </div>
                         <form action="{% url 'delete_child' child.id %}" method="post" class="inline">
                             {% csrf_token %}
@@ -58,9 +44,7 @@
                     </li>
                 {% endfor %}
             </ul>
-        {% endif %}
-
-        {% if not user.child_name and not user.profile.children.all %}
+        {% else %}
             <p class="text-gray-600">Дети не добавлены.</p>
         {% endif %}
     </div>
