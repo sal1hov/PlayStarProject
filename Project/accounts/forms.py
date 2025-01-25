@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth import get_user_model
-from .models import Profile, Child
+from main.models import Profile, Child  # Импортируем модели из main
 
 User = get_user_model()
 
@@ -23,8 +23,8 @@ class ProfileUpdateForm(forms.ModelForm):
 class ChildForm(forms.ModelForm):
     class Meta:
         model = Child
-        fields = ['child_name', 'child_age']
+        fields = ['name', 'age']  # Исправлено на name и age (как в модели Child из main/models.py)
         labels = {
-            'name': 'Имя ребенка',
-            'age': 'Возраст ребенка',
+            'name': 'Имя ребенка',  # Исправлено на name
+            'age': 'Возраст ребенка',  # Исправлено на age
         }
