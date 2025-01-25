@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% load static %}
+{% load widget_tweaks %}
 
 {% block title %}Редактирование профиля{% endblock %}
 
@@ -21,7 +22,7 @@
                     <label for="{{ field.id_for_label }}" class="text-gray-700 font-medium">
                         {{ field.label }}
                     </label>
-                    {{ field }}
+                    {{ field|add_class:"form-input" }}  <!-- Добавьте класс к полю -->
                     {% if field.errors %}
                         <div class="text-red-500 text-sm mt-1">
                             {{ field.errors|join:", " }}
@@ -67,7 +68,7 @@
                         <label for="{{ field.id_for_label }}" class="text-gray-700 font-medium">
                             {{ field.label }}
                         </label>
-                        {{ field }}
+                        {{ field|add_class:"form-input" }}  <!-- Добавьте класс к полю -->
                         {% if field.errors %}
                             <div class="text-red-500 text-sm mt-1">
                                 {{ field.errors|join:", " }}
