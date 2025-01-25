@@ -32,7 +32,7 @@
                 <li class="flex justify-between items-center bg-gray-100 p-4 rounded-lg">
                     <div>
                         {% for child in user.profile.children.all %}
-                            <p>{{ child.name }} ({{ child.age }} лет)</p>
+                            <p>{{ child.child_name }} ({{ child.child_age }} лет)</p>
                         {% endfor %}
                     </div>
                 </li>
@@ -45,7 +45,7 @@
                 {% for child in user.profile.children.all %}
                     <li class="flex justify-between items-center bg-gray-100 p-4 rounded-lg">
                         <div>
-                            <p class="text-gray-800"><strong>{{ child.name }}</strong>, {{ child.age }} лет</p>
+                            <p class="text-gray-800"><strong>{{ child.child_name }}</strong>, {{ child.child_age }} лет</p>
                         </div>
                         <form action="{% url 'delete_child' child.id %}" method="post" class="inline">
                             {% csrf_token %}

@@ -11,8 +11,8 @@ class Profile(models.Model):
 
 class Child(models.Model):
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='children')
-    name = models.CharField(max_length=100, verbose_name="Имя ребенка")
-    age = models.PositiveIntegerField(verbose_name="Возраст ребенка")
+    child_name = models.CharField(max_length=100, verbose_name="Имя ребенка")
+    child_age = models.PositiveIntegerField(verbose_name="Возраст ребенка")
 
     def __str__(self):
         return f"{self.name} ({self.age} лет)"

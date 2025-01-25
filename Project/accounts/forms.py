@@ -23,7 +23,7 @@ class ProfileUpdateForm(forms.ModelForm):
 class ChildForm(forms.ModelForm):
     class Meta:
         model = Child
-        fields = ['name', 'age']
+        fields = ['child_name', 'child_age']
         labels = {
             'name': 'Имя ребенка',
             'age': 'Возраст ребенка',
