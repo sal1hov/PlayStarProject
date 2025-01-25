@@ -11,6 +11,8 @@
         <p><strong>Фамилия:</strong> {{ user.last_name }}</p>
         <p><strong>Имя ребёнка:</strong> {{ user.child_name }}</p>
         <p><strong>Номер телефона:</strong> {{ user.phone_number }}</p>
+        <p><strong>Био:</strong> {{ user.profile.bio }}</p>
     </div>
+    <a href="{% url 'profile_edit' %}" class="mt-6 inline-block bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition duration-300">Редактировать профиль</a>
 </div>
 {% endblock %}
