@@ -31,7 +31,9 @@
             <ul class="space-y-4">
                 <li class="flex justify-between items-center bg-gray-100 p-4 rounded-lg">
                     <div>
-                        <p class="text-gray-800"><strong>{{ user.child_name }}</strong>, {{ user.child_age }} лет</p>
+                        {% for child in user.profile.children.all %}
+                            <p>{{ child.name }} ({{ child.age }} лет)</p>
+                        {% endfor %}
                     </div>
                 </li>
             </ul>

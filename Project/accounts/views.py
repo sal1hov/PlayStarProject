@@ -20,27 +20,32 @@ def profile_edit(request):
     if request.method == 'POST':
         user_form = UserUpdateForm(request.POST, instance=user)
         profile_form = ProfileUpdateForm(request.POST, instance=user.profile)
+        child_form = ChildForm(request.POST)
 
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
             messages.success(request, 'Ваш профиль успешно обновлен!')
             return redirect('profile')
+
+        if child_form.is_valid():
+            child = child_form.save(commit=False)
+            child.profile = user.profile
+            child.save()
+            messages.success(request, 'Ребенок успешно добавлен!')
+            return redirect('profile_edit')
     else:
         user_form = UserUpdateForm(instance=user)
         profile_form = ProfileUpdateForm(instance=user.profile)
-
-    # Добавляем форму ChildForm в контекст
-    child_form = ChildForm()
+        child_form = ChildForm()
 
     context = {
         'user_form': user_form,
         'profile_form': profile_form,
-        'child_form': child_form,  # Теперь форма всегда доступна в шаблоне
+        'child_form': child_form,
     }
 
     return render(request, 'accounts/profile_edit.html', context)
-
 @login_required
 def add_child(request):
     if request.method == 'POST':
