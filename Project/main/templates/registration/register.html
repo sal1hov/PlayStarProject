@@ -94,6 +94,24 @@
                 {% endif %}
             </div>
         </div>
+        <!-- Добавьте это после поля для имени ребёнка -->
+<div class="mb-4">
+    <label class="block text-gray-700 text-sm font-bold mb-2">Возраст ребёнка</label>
+    <div class="relative">
+        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500">
+            <!-- Иконка возраста -->
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+        </span>
+        <input type="number" name="child_age" id="id_child_age" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Введите возраст ребёнка" required>
+        {% if form.child_age.errors %}
+            <div class="text-red-500 text-sm mt-1">
+                {{ form.child_age.errors }}
+            </div>
+        {% endif %}
+    </div>
+</div>
 
         <!-- Поле для номера телефона -->
         <div class="mb-4">

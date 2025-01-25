@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.core.validators import RegexValidator
-from .models import CustomUser  # Импортируем кастомную модель
+from .models import CustomUser
 
 class RegisterForm(UserCreationForm):
     # Валидация имени, фамилии и имени ребёнка (только буквы и пробелы)
@@ -28,6 +28,12 @@ class RegisterForm(UserCreationForm):
         label="Имя ребёнка",
         validators=[name_validator]
     )
+    child_age = forms.IntegerField(
+        required=True,
+        label="Возраст ребёнка",
+        min_value=0,
+        max_value=18
+    )
 
     # Валидация номера телефона (только цифры)
     phone_validator = RegexValidator(
@@ -44,5 +50,5 @@ class RegisterForm(UserCreationForm):
     privacy_policy = forms.BooleanField(required=True, label="Я согласен на обработку персональных данных")
 
     class Meta:
-        model = CustomUser  # Используем кастомную модель
-        fields = ['username', 'first_name', 'last_name', 'child_name', 'phone_number', 'password1', 'password2', 'privacy_policy']
+        model = CustomUser
+        fields = ['username', 'first_name', 'last_name', 'child_name', 'child_age', 'phone_number', 'password1', 'password2', 'privacy_policy']
