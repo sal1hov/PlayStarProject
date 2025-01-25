@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import UserUpdateForm, ProfileUpdateForm, ChildForm
@@ -50,3 +50,10 @@ def profile_edit(request):
     }
 
     return render(request, 'accounts/profile_edit.html', context)
+
+@login_required
+def delete_child(request, child_id):
+    child = get_object_or_404(Child, id=child_id, profile=request.user.profile)
+    child.delete()
+    messages.success(request, 'Ребенок успешно удален!')
+    return redirect('profile')
