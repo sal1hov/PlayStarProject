@@ -4,6 +4,17 @@
 
 {% block content %}
 <div class="bg-white p-8 rounded-lg shadow-2xl text-center transform transition-all hover:scale-105 max-w-2xl mx-auto">
+    <!-- Уведомления -->
+    {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+                <div class="p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
     <h2 class="text-4xl font-bold text-gray-800 mb-6">Личный кабинет</h2>
     <div class="space-y-4 text-left">
         <p><strong>Имя пользователя:</strong> {{ user.username }}</p>

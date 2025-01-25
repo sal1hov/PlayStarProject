@@ -25,7 +25,11 @@
             {% endfor %}
         </div>
 
-
+        <!-- Кнопка сохранения -->
+        <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 transition duration-300">
+            Сохранить изменения
+        </button>
+    </form>
 
     <!-- Кнопка для открытия модального окна -->
     <button onclick="openModal()" class="mt-6 bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">
@@ -36,12 +40,6 @@
     <a href="{% url 'profile' %}" class="mt-4 inline-block bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
         Вернуться к профилю
     </a>
-
-                <!-- Кнопка сохранения -->
-        <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 transition duration-300">
-            Сохранить изменения
-        </button>
-    </form>
 </div>
 
 <!-- Модальное окно -->
@@ -55,7 +53,7 @@
         </button>
 
         <h3 class="text-2xl font-bold text-gray-800 mb-6">Добавить ребенка</h3>
-        <form method="post" class="space-y-4">
+        <form method="post" action="{% url 'add_child' %}" class="space-y-4">
             {% csrf_token %}
             <div class="space-y-4">
                 {% for field in child_form %}
@@ -72,7 +70,7 @@
                     </div>
                 {% endfor %}
             </div>
-            <button type="submit" name="add_child" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
+            <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
                 Добавить
             </button>
         </form>

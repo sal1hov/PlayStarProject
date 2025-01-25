@@ -21,18 +21,6 @@ def profile_edit(request):
         user_form = UserUpdateForm(request.POST, instance=user)
         profile_form = ProfileUpdateForm(request.POST, instance=user.profile)
 
-        # Обработка формы добавления ребенка
-        if 'add_child' in request.POST:
-            child_form = ChildForm(request.POST)
-            if child_form.is_valid():
-                child = child_form.save(commit=False)
-                child.profile = user.profile
-                child.save()
-                messages.success(request, 'Ребенок успешно добавлен!')
-                return redirect('profile_edit')
-        else:
-            child_form = ChildForm()
-
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
@@ -41,15 +29,37 @@ def profile_edit(request):
     else:
         user_form = UserUpdateForm(instance=user)
         profile_form = ProfileUpdateForm(instance=user.profile)
-        child_form = ChildForm()
+
+    # Добавляем форму ChildForm в контекст
+    child_form = ChildForm()
 
     context = {
         'user_form': user_form,
         'profile_form': profile_form,
-        'child_form': child_form,
+        'child_form': child_form,  # Теперь форма всегда доступна в шаблоне
     }
 
     return render(request, 'accounts/profile_edit.html', context)
+
+@login_required
+def add_child(request):
+    if request.method == 'POST':
+        child_form = ChildForm(request.POST)
+        if child_form.is_valid():
+            child = child_form.save(commit=False)
+            child.profile = request.user.profile
+            child.save()
+            messages.success(request, 'Ребенок успешно добавлен!')
+            return redirect('profile')  # Перенаправляем на профиль, а не на редактирование
+    else:
+        child_form = ChildForm()
+
+    # Если форма не валидна, возвращаем шаблон с ошибками
+    return render(request, 'accounts/profile_edit.html', {
+        'user_form': UserUpdateForm(instance=request.user),
+        'profile_form': ProfileUpdateForm(instance=request.user.profile),
+        'child_form': child_form,  # Передаем форму с ошибками
+    })
 
 @login_required
 def delete_child(request, child_id):
