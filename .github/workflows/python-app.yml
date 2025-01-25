@@ -45,12 +45,12 @@ jobs:
 
     - name: Run migrations
       run: |
-        cd project  # Переход в подкаталог, где находится manage.py
+        cd PlayStarProject/Project  # Переход в подкаталог, где находится manage.py
         python manage.py migrate
 
     - name: Run tests
       run: |
-        cd project  # Переход в подкаталог, где находится manage.py
+        cd PlayStarProject/Project  # Переход в подкаталог, где находится manage.py
         python manage.py test
 
     - name: Lint with flake8
