@@ -1,5 +1,3 @@
-# Play Star - Семейный Развлекательный Центр 
-
 ![Play Star Logo](./assets/img/logo.png)
 
 ## О центре
