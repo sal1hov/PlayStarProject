@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Редактирование профиля{% endblock %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-lg shadow-2xl text-center transform transition-all hover:scale-105">
+    <h2 class="text-4xl font-bold text-gray-800 mb-6">Редактирование профиля</h2>
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Поля формы пользователя -->
+        <div class="space-y-6">
+            {% for field in user_form %}
+                <div class="flex flex-col space-y-2">
+                    <label for="{{ field.id_for_label }}" class="text-gray-700 font-medium">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div class="text-red-500 text-sm mt-1">
+                            {{ field.errors|join:", " }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Поля формы профиля -->
+        <div class="space-y-6">
+            {% for field in profile_form %}
+                <div class="flex flex-col space-y-2">
+                    <label for="{{ field.id_for_label }}" class="text-gray-700 font-medium">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <div class="text-red-500 text-sm mt-1">
+                            {{ field.errors|join:", " }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Кнопка сохранения -->
+        <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 transition duration-300">
+            Сохранить изменения
+        </button>
+    </form>
+</div>
+
+<!-- Добавляем стили для полей формы -->
+<style>
+    /* Стили для текстовых полей и текстовых областей */
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    textarea {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 16px;
+        color: #4a5568;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    /* Стили для полей при фокусе */
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="tel"]:focus,
+    textarea:focus {
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    /* Стили для текстовых областей */
+    textarea {
+        resize: vertical; /* Разрешаем изменение высоты */
+        min-height: 120px;
+    }
+
+    /* Стили для выпадающих списков */
+    select {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 16px;
+        color: #4a5568;
+        background-color: white;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    /* Стили для выпадающих списков при фокусе */
+    select:focus {
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+</style>
+{% endblock %}
