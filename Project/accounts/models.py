@@ -3,16 +3,10 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+# Если у вас есть другие модели, специфичные для accounts, оставьте их здесь
+# Например:
+# class SomeOtherModel(models.Model):
+#     user = models.ForeignKey(User, on_delete=models.CASCADE)
+#     ...
 
-    def __str__(self):
-        return f"Профиль {self.user.username}"
-
-class Child(models.Model):
-    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='children')
-    child_name = models.CharField(max_length=100, verbose_name="Имя ребенка")
-    child_age = models.PositiveIntegerField(verbose_name="Возраст ребенка")
-
-    def __str__(self):
-        return f"{self.name} ({self.age} лет)"
+# Убедитесь, что модель Profile удалена из этого файла
