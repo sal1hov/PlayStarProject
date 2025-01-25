@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from .forms import UserUpdateForm, ProfileUpdateForm, ChildForm
-from .models import Profile, Child
+from main.models import Profile, Child  # Импортируем модели из main
 
 @login_required
 def profile(request):
@@ -46,6 +46,7 @@ def profile_edit(request):
     }
 
     return render(request, 'accounts/profile_edit.html', context)
+
 @login_required
 def add_child(request):
     if request.method == 'POST':
@@ -55,15 +56,14 @@ def add_child(request):
             child.profile = request.user.profile
             child.save()
             messages.success(request, 'Ребенок успешно добавлен!')
-            return redirect('profile')  # Перенаправляем на профиль, а не на редактирование
+            return redirect('profile')
     else:
         child_form = ChildForm()
 
-    # Если форма не валидна, возвращаем шаблон с ошибками
     return render(request, 'accounts/profile_edit.html', {
         'user_form': UserUpdateForm(instance=request.user),
         'profile_form': ProfileUpdateForm(instance=request.user.profile),
-        'child_form': child_form,  # Передаем форму с ошибками
+        'child_form': child_form,
     })
 
 @login_required
