@@ -1,6 +1,12 @@
 {% extends 'base.html' %}
 
+{% load static %}
+
 {% block title %}Редактирование профиля{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% static 'accounts/css/style.css' %}">
+{% endblock %}
 
 {% block content %}
 <div class="bg-white p-8 rounded-lg shadow-2xl text-center transform transition-all hover:scale-105 max-w-2xl mx-auto">
@@ -77,52 +83,5 @@
     </div>
 </div>
 
-<!-- Скрипт для управления модальным окном -->
-<script>
-    function openModal() {
-        document.getElementById('modal').classList.remove('hidden');
-    }
-
-    function closeModal() {
-        document.getElementById('modal').classList.add('hidden');
-    }
-</script>
-
-<!-- Стили для полей формы -->
-<style>
-    /* Общие стили для полей */
-    input[type="text"],
-    input[type="email"],
-    input[type="tel"],
-    input[type="number"],
-    textarea,
-    select {
-        width: 100%;
-        padding: 12px;
-        border: 2px solid #e2e8f0;
-        border-radius: 8px;
-        font-size: 16px;
-        color: #4a5568;
-        transition: border-color 0.3s ease, box-shadow 0.3s ease;
-        background-color: white;
-    }
-
-    /* Стили для полей при фокусе */
-    input[type="text"]:focus,
-    input[type="email"]:focus,
-    input[type="tel"]:focus,
-    input[type="number"]:focus,
-    textarea:focus,
-    select:focus {
-        border-color: #667eea;
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    /* Стили для текстовых областей */
-    textarea {
-        resize: vertical;
-        min-height: 120px;
-    }
-</style>
+<script src="{% static 'accounts/js/scripts.js' %}"></script>
 {% endblock %}
