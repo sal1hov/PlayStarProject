@@ -1,3 +1,5 @@
+{% load static %}
+
 {% extends 'base.html' %}
 
 {% block title %}Регистрация{% endblock %}
@@ -215,14 +217,5 @@
     </form>
 </div>
 
-<script>
-    function togglePasswordVisibility(fieldId) {
-        const passwordField = document.getElementById(fieldId);
-        if (passwordField.type === "password") {
-            passwordField.type = "text";
-        } else {
-            passwordField.type = "password";
-        }
-    }
-</script>
+<script src="{% static 'main/js/scripts.js' %}"></script>
 {% endblock %}
