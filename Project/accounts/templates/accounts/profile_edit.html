@@ -1,13 +1,9 @@
 {% extends 'base.html' %}
 
 {% load static %}
-{% load widget_tweaks %}
 
 {% block title %}Редактирование профиля{% endblock %}
 
-{% block head %}
-<link rel="stylesheet" href="{% static 'accounts/css/style.css' %}">
-{% endblock %}
 
 {% block content %}
 <div class="bg-white p-8 rounded-lg shadow-2xl text-center transform transition-all hover:scale-105 max-w-2xl mx-auto">
@@ -22,7 +18,7 @@
                     <label for="{{ field.id_for_label }}" class="text-gray-700 font-medium">
                         {{ field.label }}
                     </label>
-                    {{ field|add_class:"form-input" }}  <!-- Добавьте класс к полю -->
+                    {{ field }}
                     {% if field.errors %}
                         <div class="text-red-500 text-sm mt-1">
                             {{ field.errors|join:", " }}
@@ -68,7 +64,7 @@
                         <label for="{{ field.id_for_label }}" class="text-gray-700 font-medium">
                             {{ field.label }}
                         </label>
-                        {{ field|add_class:"form-input" }}  <!-- Добавьте класс к полю -->
+                        {{ field }}
                         {% if field.errors %}
                             <div class="text-red-500 text-sm mt-1">
                                 {{ field.errors|join:", " }}
@@ -83,6 +79,25 @@
         </form>
     </div>
 </div>
+
+<style>
+    input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+textarea,
+select,
+.form-control {
+    width: 100% !important;
+    padding: 12px !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    font-size: 16px !important;
+    color: #4a5568 !important;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
+    background-color: white !important;
+}
+</style>
 
 <script src="{% static 'accounts/js/scripts.js' %}"></script>
 {% endblock %}
