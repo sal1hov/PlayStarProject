@@ -5,7 +5,14 @@ User = get_user_model()
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    bio = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"Профиль {self.user.username}"
+
+class Child(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='children')
+    name = models.CharField(max_length=100, verbose_name="Имя ребенка")
+    age = models.PositiveIntegerField(verbose_name="Возраст ребенка")
+
+    def __str__(self):
+        return f"{self.name} ({self.age} лет)"
