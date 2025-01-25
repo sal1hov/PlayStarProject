@@ -1,19 +1,26 @@
 from django.db import models
-from django.core.validators import RegexValidator
 from django.contrib.auth.models import AbstractUser
 
 class CustomUser(AbstractUser):
-    phone_number = models.CharField(
-        max_length=15,
-        unique=True,
-        validators=[
-            RegexValidator(
-                regex=r'^\+7\d{10}$',
-                message="Номер телефона должен быть в формате +7XXXXXXXXXX."
-            )
-        ]
-    )
-    child_name = models.CharField(max_length=100, blank=True, null=True)
+    phone_number = models.CharField(max_length=15, unique=True, verbose_name="Номер телефона")
 
     def __str__(self):
         return self.username
+
+class Profile(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='profile')
+    # Добавьте дополнительные поля профиля, если нужно
+    # Например:
+    # bio = models.TextField(blank=True, verbose_name="О себе")
+    # avatar = models.ImageField(upload_to='avatars/', blank=True, null=True, verbose_name="Аватар")
+
+    def __str__(self):
+        return f"Профиль {self.user.username}"
+
+class Child(models.Model):
+    profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='children')
+    name = models.CharField(max_length=100, verbose_name="Имя ребенка")
+    age = models.PositiveIntegerField(verbose_name="Возраст ребенка")
+
+    def __str__(self):
+        return f"{self.name} ({self.age} лет)"
