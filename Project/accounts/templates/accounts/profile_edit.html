@@ -2,12 +2,25 @@
 
 {% load static %}
 
-{% block title %}Редактирование профиля{% endblock %}
-
+{% block title %}Редактирование профиля и настройки{% endblock %}
 
 {% block content %}
+<!-- Уведомления -->
+{% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+            <div class="p-4 {% if message.tags == 'error' %}bg-red-100 border-red-400 text-red-700{% else %}bg-green-100 border-green-400 text-green-700{% endif %} border rounded-lg">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+
 <div class="bg-white p-8 rounded-lg shadow-2xl text-center transform transition-all hover:scale-105 max-w-2xl mx-auto">
     <h2 class="text-4xl font-bold text-gray-800 mb-6">Редактирование профиля</h2>
+
+    <!-- Форма редактирования профиля -->
     <form method="post" class="space-y-6">
         {% csrf_token %}
 
@@ -34,22 +47,30 @@
         </button>
     </form>
 
-    <!-- Кнопка для открытия модального окна -->
-    <button onclick="openModal()" class="mt-6 bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">
-        Добавить ребенка
-    </button>
+    <!-- Кнопки для дополнительных действий -->
+    <div class="mt-6 space-x-4">
+        <!-- Кнопка для открытия модального окна добавления ребенка -->
+        <button onclick="openModal('addChildModal')" class="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">
+            Добавить ребенка
+        </button>
 
-    <!-- Ссылка на профиль -->
-    <a href="{% url 'profile' %}" class="mt-4 inline-block bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
-        Вернуться к профилю
-    </a>
+        <!-- Кнопка для открытия модального окна смены пароля -->
+        <button onclick="openModal('changePasswordModal')" class="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition duration-300">
+            Сменить пароль
+        </button>
+
+        <!-- Ссылка на профиль -->
+        <a href="{% url 'profile' %}" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
+            Вернуться к профилю
+        </a>
+    </div>
 </div>
 
-<!-- Модальное окно -->
-<div id="modal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4">
+<!-- Модальное окно для добавления ребенка -->
+<div id="addChildModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4">
     <div class="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full mx-4 relative">
         <!-- Кнопка закрытия (крестик) -->
-        <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+        <button onclick="closeModal('addChildModal')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>
@@ -80,23 +101,95 @@
     </div>
 </div>
 
+<!-- Модальное окно для смены пароля -->
+<div id="changePasswordModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4">
+    <div class="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full mx-4 relative">
+        <!-- Кнопка закрытия (крестик) -->
+        <button onclick="closeModal('changePasswordModal')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+
+        <h3 class="text-2xl font-bold text-gray-800 mb-6">Смена пароля</h3>
+        <form id="changePasswordForm" method="post" action="{% url 'change_password' %}" class="space-y-4" data-profile-edit-url="{% url 'profile_edit' %}">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <!-- Поле для старого пароля -->
+                <div class="flex flex-col space-y-2">
+                    <label for="id_old_password" class="text-gray-700 font-medium">
+                        Старый пароль
+                    </label>
+                    <div class="relative">
+                        <input type="password" name="old_password" id="id_old_password" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" required>
+                        <!-- Иконка для просмотра пароля -->
+                        <button type="button" onclick="togglePasswordVisibility('id_old_password')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Поле для нового пароля -->
+                <div class="flex flex-col space-y-2">
+                    <label for="id_new_password1" class="text-gray-700 font-medium">
+                        Новый пароль
+                    </label>
+                    <div class="relative">
+                        <input type="password" name="new_password1" id="id_new_password1" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" required>
+                        <!-- Иконка для просмотра пароля -->
+                        <button type="button" onclick="togglePasswordVisibility('id_new_password1')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Поле для подтверждения нового пароля -->
+                <div class="flex flex-col space-y-2">
+                    <label for="id_new_password2" class="text-gray-700 font-medium">
+                        Подтвердите новый пароль
+                    </label>
+                    <div class="relative">
+                        <input type="password" name="new_password2" id="id_new_password2" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" required>
+                        <!-- Иконка для просмотра пароля -->
+                        <button type="button" onclick="togglePasswordVisibility('id_new_password2')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
+                Сменить пароль
+            </button>
+        </form>
+    </div>
+</div>
+
 <style>
     input[type="text"],
-input[type="email"],
-input[type="tel"],
-input[type="number"],
-textarea,
-select,
-.form-control {
-    width: 100% !important;
-    padding: 12px !important;
-    border: 2px solid #e2e8f0 !important;
-    border-radius: 8px !important;
-    font-size: 16px !important;
-    color: #4a5568 !important;
-    transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
-    background-color: white !important;
-}
+    input[type="email"],
+    input[type="tel"],
+    input[type="number"],
+    textarea,
+    select,
+    .form-control {
+        width: 100% !important;
+        padding: 12px !important;
+        border: 2px solid #e2e8f0 !important;
+        border-radius: 8px !important;
+        font-size: 16px !important;
+        color: #4a5568 !important;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
+        background-color: white !important;
+    }
 </style>
 
 <script src="{% static 'accounts/js/scripts.js' %}"></script>
