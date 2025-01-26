@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -7,31 +8,100 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.11/outline/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // Функция для открытия/закрытия бургер-меню
+        function toggleMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+    </script>
 </head>
 <body class="bg-gradient-to-r from-blue-500 to-purple-600 min-h-screen flex flex-col">
     <!-- Шапка -->
-    <header class="bg-white shadow-lg">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <h1 class="text-3xl font-bold text-gray-800">PlayStar</h1>
-            <nav>
-                <ul class="flex space-x-6">
-                    <li><a href="{% url 'index' %}" class="text-gray-800 hover:text-blue-600 transition duration-300">Главная</a></li>
-                    {% if user.is_authenticated %}
-                        <li>
-                            <a href="{% url 'profile' %}" class="text-gray-800 hover:text-blue-600 transition duration-300">Профиль</a>
-                        </li>
-                        <li>
-                            <form action="{% url 'logout' %}" method="post" class="inline">
-                                {% csrf_token %}
-                                <button type="submit" class="text-gray-800 hover:text-blue-600 transition duration-300">Выйти</button>
-                            </form>
-                        </li>
-                    {% else %}
-                        <li><a href="{% url 'login' %}" class="text-gray-800 hover:text-blue-600 transition duration-300">Войти</a></li>
-                        <li><a href="{% url 'register' %}" class="text-gray-800 hover:text-blue-600 transition duration-300">Регистрация</a></li>
-                    {% endif %}
-                </ul>
+    <header class="bg-white shadow">
+        <!-- Контейнер для шапки с абсолютным позиционированием логотипа -->
+        <div class="relative">
+            <!-- Верхний текст (скрыт на мобильных устройствах) -->
+            <div class="container mx-auto flex justify-between items-center p-4">
+                <div class="hidden md:flex justify-end w-full text-sm text-gray-600">
+                    <p>
+                        г. Альметьевск, ул. Ленина, 100, 3 этаж | Тел: +7-953-499-55-05
+                    </p>
+                </div>
+            </div>
+
+            <!-- Логотип, который будет поверх текста (корректное масштабирование) -->
+            <div class="absolute left-1/2 transform -translate-x-1/2 top-0">
+                <img src="{% static 'main/img/logo.png' %}" alt="logo" class="h-28 w-auto object-contain">
+            </div>
+        </div>
+
+        <!-- Навигация -->
+        <div class="container mx-auto flex justify-between items-center p-4">
+            <!-- Бургер-меню для мобильных устройств -->
+            <div class="md:hidden">
+                <button onclick="toggleMenu()" class="text-gray-700 hover:text-blue-600 focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Основное меню (скрыто на мобильных устройствах) -->
+            <nav class="hidden md:flex items-center space-x-4 ml-auto">
+                <a href="{% url 'index' %}" class="text-gray-700 hover:text-blue-600">На главную</a>
+                <a href="#about" class="text-gray-700 hover:text-blue-600">О нас</a>
+                <a href="#events" class="text-gray-700 hover:text-blue-600">Праздники</a>
+                <a href="#prices" class="text-gray-700 hover:text-blue-600">Цены</a>
+                <a href="#contact" class="text-gray-700 hover:text-blue-600">Контакты</a>
             </nav>
+
+            <!-- Мобильное меню (скрыто по умолчанию) -->
+            <div id="mobile-menu" class="hidden md:hidden absolute top-24 left-0 w-full bg-white shadow-lg z-50">
+                <div class="flex flex-col space-y-4 p-4">
+                    <a href="{% url 'index' %}" class="text-gray-700 hover:text-blue-600">На главную</a>
+                    <a href="#about" class="text-gray-700 hover:text-blue-600">О нас</a>
+                    <a href="#events" class="text-gray-700 hover:text-blue-600">Праздники</a>
+                    <a href="#prices" class="text-gray-700 hover:text-blue-600">Цены</a>
+                    <a href="#contact" class="text-gray-700 hover:text-blue-600">Контакты</a>
+                </div>
+            </div>
+
+            <!-- Социальные сети и кнопки -->
+            <div class="flex items-center space-x-4 ml-4">
+                <!-- Социальные сети (скрыты на мобильных устройствах) -->
+                <div class="hidden md:flex space-x-4">
+                    <a href="https://instagram.com/playstaralmet" target="_blank">
+                        <img src="{% static 'main/img/svg/inst_icon_nav.svg' %}" alt="Instagram" class="h-6 w-6">
+                    </a>
+                    <a href="https://vk.com/almet_playstar" target="_blank">
+                        <img src="{% static 'main/img/svg/vk_icon_nav.svg' %}" alt="ВКонтакте" class="h-6 w-6">
+                    </a>
+                </div>
+
+                <!-- Кнопки для авторизованных пользователей -->
+                {% if user.is_authenticated %}
+                    <a href="{% url 'profile' %}" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-4 rounded-lg shadow-md hover:from-blue-600 hover:to-purple-700 transition duration-300">
+                        Профиль
+                    </a>
+                    <form action="{% url 'logout' %}" method="post" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="bg-gradient-to-r from-red-500 to-pink-600 text-white py-2 px-4 rounded-lg shadow-md hover:from-red-600 hover:to-pink-700 transition duration-300">
+                            Выйти
+                        </button>
+                    </form>
+                {% else %}
+                    <!-- Кнопка "Войти" (текст на десктопе, иконка на мобильных устройствах) -->
+                    <a href="{% url 'login' %}" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-4 rounded-lg shadow-md hover:from-blue-600 hover:to-purple-700 transition duration-300">
+                        <span class="hidden md:inline">Войти</span>
+                        <span class="md:hidden">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                            </svg>
+                        </span>
+                    </a>
+                {% endif %}
+            </div>
         </div>
     </header>
 
