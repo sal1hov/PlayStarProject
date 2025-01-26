@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Семейный развлекательный центр{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Подключение иконок (Heroicons) -->
     <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.11/outline/index.min.js"></script>
-    <!-- Подключение SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="bg-gradient-to-r from-blue-500 to-purple-600 min-h-screen flex flex-col">
     <!-- Шапка -->
@@ -37,12 +35,18 @@
         </div>
     </header>
 
+    <!-- Баннер -->
+    {% block banner %}{% endblock %}  <!-- Новый блок для баннера -->
+
     <!-- Основной контент -->
     <main class="container mx-auto px-6 py-12 flex-grow">
         {% block content %}
         <!-- Сюда будет подставляться контент из дочерних шаблонов -->
         {% endblock %}
     </main>
+
+    <!-- Секции на всю ширину -->
+    {% block full_width %}{% endblock %}
 
     <!-- Подвал -->
     <footer class="bg-white shadow-lg mt-auto">
