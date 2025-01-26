@@ -135,3 +135,4 @@ LOGOUT_REDIRECT_URL = 'index'  # Перенаправление на главн�
 
 AUTH_USER_MODEL = 'main.CustomUser'
 
+
