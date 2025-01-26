@@ -1,8 +1,11 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 from .forms import UserUpdateForm, ProfileUpdateForm, ChildForm
 from main.models import Profile, Child  # Импортируем модели из main
+from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib import messages
+from django.http import JsonResponse
 
 @login_required
 def profile(request):
@@ -39,10 +42,14 @@ def profile_edit(request):
         profile_form = ProfileUpdateForm(instance=user.profile)
         child_form = ChildForm()
 
+    # Добавляем форму смены пароля в контекст
+    password_form = PasswordChangeForm(user=request.user)
+
     context = {
         'user_form': user_form,
         'profile_form': profile_form,
         'child_form': child_form,
+        'password_form': password_form,  # Добавлено
     }
 
     return render(request, 'accounts/profile_edit.html', context)
@@ -72,3 +79,46 @@ def delete_child(request, child_id):
     child.delete()
     messages.success(request, 'Ребенок успешно удален!')
     return redirect('profile')
+
+
+@login_required
+def change_password(request):
+    if request.method == 'POST':
+        form = PasswordChangeForm(request.user, request.POST)
+        if form.is_valid():
+            old_password = form.cleaned_data.get('old_password')
+            new_password1 = form.cleaned_data.get('new_password1')
+            new_password2 = form.cleaned_data.get('new_password2')
+
+            # Проверка, что новый пароль не совпадает со старым
+            if old_password == new_password1:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Новый пароль не должен совпадать со старым.',
+                })
+
+            # Проверка, что новый пароль и его подтверждение совпадают
+            if new_password1 != new_password2:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Новый пароль и его подтверждение не совпадают.',
+                })
+
+            # Если все проверки пройдены, сохраняем новый пароль
+            user = form.save()
+            update_session_auth_hash(request, user)  # Обновляем сессию, чтобы пользователь не вышел из системы
+            return JsonResponse({
+                'success': True,
+                'message': 'Пароль успешно изменен!',
+            })
+        else:
+            # Если форма не валидна, выводим первую ошибку
+            for field, errors in form.errors.items():
+                for error in errors:
+                    return JsonResponse({
+                        'success': False,
+                        'message': error,
+                    })
+    else:
+        form = PasswordChangeForm(request.user)
+    return render(request, 'accounts/change_password.html', {'form': form})
