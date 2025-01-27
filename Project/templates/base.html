@@ -20,24 +20,22 @@
     <!-- Шапка -->
     <header class="bg-white shadow">
         <!-- Контейнер для шапки с абсолютным позиционированием логотипа -->
-        <div class="relative">
+        <div class="relative py-4 md:py-6">
             <!-- Верхний текст (скрыт на мобильных устройствах) -->
-            <div class="container mx-auto flex justify-between items-center p-4">
+            <div class="container mx-auto flex justify-between items-center px-4">
                 <div class="hidden md:flex justify-end w-full text-sm text-gray-600">
                     <p>
                         г. Альметьевск, ул. Ленина, 100, 3 этаж | Тел: +7-953-499-55-05
                     </p>
                 </div>
             </div>
-
             <!-- Логотип, который будет поверх текста (корректное масштабирование) -->
-            <div class="absolute left-1/2 transform -translate-x-1/2 top-0">
-                <img src="{% static 'main/img/logo.png' %}" alt="logo" class="h-28 w-auto object-contain">
+            <div class="absolute left-0 md:left-1/2 transform md:-translate-x-1/2 top-0 ml-4 md:ml-0">
+                <img src="{% static 'main/img/logo.png' %}" alt="logo" class="h-16 w-auto object-contain md:h-28">
             </div>
         </div>
-
         <!-- Навигация -->
-        <div class="container mx-auto flex justify-between items-center p-4">
+        <div class="container mx-auto flex justify-between items-center px-4 py-2 md:py-4">
             <!-- Бургер-меню для мобильных устройств -->
             <div class="md:hidden">
                 <button onclick="toggleMenu()" class="text-gray-700 hover:text-blue-600 focus:outline-none">
@@ -46,7 +44,6 @@
                     </svg>
                 </button>
             </div>
-
             <!-- Основное меню (скрыто на мобильных устройствах) -->
             <nav class="hidden md:flex items-center space-x-4 ml-auto">
                 <a href="{% url 'index' %}" class="text-gray-700 hover:text-blue-600">На главную</a>
@@ -55,9 +52,8 @@
                 <a href="#prices" class="text-gray-700 hover:text-blue-600">Цены</a>
                 <a href="#contact" class="text-gray-700 hover:text-blue-600">Контакты</a>
             </nav>
-
             <!-- Мобильное меню (скрыто по умолчанию) -->
-            <div id="mobile-menu" class="hidden md:hidden absolute top-24 left-0 w-full bg-white shadow-lg z-50">
+            <div id="mobile-menu" class="hidden md:hidden absolute top-16 left-0 w-full bg-white shadow-lg z-50">
                 <div class="flex flex-col space-y-4 p-4">
                     <a href="{% url 'index' %}" class="text-gray-700 hover:text-blue-600">На главную</a>
                     <a href="#about" class="text-gray-700 hover:text-blue-600">О нас</a>
@@ -66,7 +62,6 @@
                     <a href="#contact" class="text-gray-700 hover:text-blue-600">Контакты</a>
                 </div>
             </div>
-
             <!-- Социальные сети и кнопки -->
             <div class="flex items-center space-x-4 ml-4">
                 <!-- Социальные сети (скрыты на мобильных устройствах) -->
@@ -78,7 +73,6 @@
                         <img src="{% static 'main/img/svg/vk_icon_nav.svg' %}" alt="ВКонтакте" class="h-6 w-6">
                     </a>
                 </div>
-
                 <!-- Кнопки для авторизованных пользователей -->
                 {% if user.is_authenticated %}
                     <a href="{% url 'profile' %}" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-4 rounded-lg shadow-md hover:from-blue-600 hover:to-purple-700 transition duration-300">
@@ -104,20 +98,16 @@
             </div>
         </div>
     </header>
-
     <!-- Баннер -->
     {% block banner %}{% endblock %}  <!-- Новый блок для баннера -->
-
     <!-- Основной контент -->
     <main class="container mx-auto px-6 py-12 flex-grow">
         {% block content %}
         <!-- Сюда будет подставляться контент из дочерних шаблонов -->
         {% endblock %}
     </main>
-
     <!-- Секции на всю ширину -->
     {% block full_width %}{% endblock %}
-
     <!-- Подвал -->
     <footer class="bg-white shadow-lg mt-auto">
         <div class="container mx-auto px-6 py-4 text-center">
