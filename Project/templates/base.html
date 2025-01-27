@@ -19,20 +19,18 @@
 <body class="bg-gradient-to-r from-blue-500 to-purple-600 min-h-screen flex flex-col">
     <!-- Шапка -->
     <header class="bg-white shadow">
-        <!-- Контейнер для шапки с абсолютным позиционированием логотипа -->
-        <div class="relative">
-            <!-- Верхний текст (скрыт на мобильных устройствах) -->
-            <div class="container mx-auto flex justify-between items-center p-4">
-                <div class="hidden md:flex justify-end w-full text-sm text-gray-600">
-                    <p>
-                        г. Альметьевск, ул. Ленина, 100, 3 этаж | Тел: +7-953-499-55-05
-                    </p>
-                </div>
+        <!-- Контейнер для шапки -->
+        <div class="container mx-auto flex justify-between items-center p-4">
+            <!-- Логотип (по центру, но слева, компактный) -->
+            <div class="flex-shrink-0">
+                <img src="{% static 'main/img/logo.png' %}" alt="logo" class="h-12 w-auto">
             </div>
 
-            <!-- Логотип, который будет поверх текста (корректное масштабирование) -->
-            <div class="absolute left-1/2 transform -translate-x-1/2 top-0">
-                <img src="{% static 'main/img/logo.png' %}" alt="logo" class="h-28 w-auto object-contain">
+            <!-- Верхний текст (скрыт на мобильных устройствах) -->
+            <div class="hidden md:flex justify-end w-full text-sm text-gray-600">
+                <p>
+                    г. Альметьевск, ул. Ленина, 100, 3 этаж | Тел: +7-953-499-55-05
+                </p>
             </div>
         </div>
 
@@ -81,13 +79,25 @@
 
                 <!-- Кнопки для авторизованных пользователей -->
                 {% if user.is_authenticated %}
+                    <!-- Профиль (иконка на мобильных устройствах) -->
                     <a href="{% url 'profile' %}" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-4 rounded-lg shadow-md hover:from-blue-600 hover:to-purple-700 transition duration-300">
-                        Профиль
+                        <span class="hidden md:inline">Профиль</span>
+                        <span class="md:hidden">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                        </span>
                     </a>
+                    <!-- Выйти (иконка на мобильных устройствах) -->
                     <form action="{% url 'logout' %}" method="post" class="inline">
                         {% csrf_token %}
                         <button type="submit" class="bg-gradient-to-r from-red-500 to-pink-600 text-white py-2 px-4 rounded-lg shadow-md hover:from-red-600 hover:to-pink-700 transition duration-300">
-                            Выйти
+                            <span class="hidden md:inline">Выйти</span>
+                            <span class="md:hidden">
+                                <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                </svg>
+                            </span>
                         </button>
                     </form>
                 {% else %}
