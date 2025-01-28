@@ -7,12 +7,28 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.http import JsonResponse
 
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from main.models import Profile  # Исправляем импорт
+from bookings.models import Booking  # Импортируем модель Booking из приложения bookings
+
 @login_required
 def profile(request):
     user = request.user
+
+    # Создаем профиль, если его нет
     if not hasattr(user, 'profile'):
         Profile.objects.create(user=user)
-    return render(request, 'accounts/profile.html', {'user': user})
+
+    # Получаем последние 5 бронирований пользователя
+    bookings = Booking.objects.filter(user=user).order_by('-booking_date')[:5]
+
+    # Передаем данные в шаблон
+    context = {
+        'user': user,
+        'bookings': bookings,  # Добавляем бронирования в контекст
+    }
+    return render(request, 'accounts/profile.html', context)
 
 @login_required
 def profile_edit(request):

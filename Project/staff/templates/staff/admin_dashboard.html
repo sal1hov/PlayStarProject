@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1>Панель администратора</h1>
+<p>Добро пожаловать, {{ user.username }}!</p>
+<a href="{% url 'admin:index' %}" class="btn btn-primary">Перейти в Django-админку</a>
+
+<h2>Список пользователей</h2>
+<ul>
+    {% for user in users %}
+    <li>{{ user.username }}</li>
+    {% endfor %}
+</ul>
+{% endblock %}

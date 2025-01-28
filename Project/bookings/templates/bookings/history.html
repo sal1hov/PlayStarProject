@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="bg-white p-8 rounded-lg shadow-2xl">
+    <h2 class="text-4xl font-bold text-gray-800 mb-6">История бронирований</h2>
+
+    {% if bookings %}
+        <ul class="space-y-4">
+            {% for booking in bookings %}
+                <li class="bg-gray-100 p-4 rounded-lg">
+                    <p class="text-gray-800"><strong>{{ booking.event_name }}</strong></p>
+                    <p class="text-gray-600">Дата бронирования: {{ booking.booking_date }}</p>
+                    <p class="text-gray-600">Дата мероприятия: {{ booking.event_date }}</p>
+                    <p class="text-gray-600">Статус: {{ booking.status }}</p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="text-gray-600">У вас пока нет бронирований.</p>
+    {% endif %}
+</div>
+{% endblock %}
