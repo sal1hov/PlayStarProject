@@ -133,8 +133,7 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGOUT_REDIRECT_URL = 'index'  # Перенаправление на главную страницу после выхода
+LOGOUT_REDIRECT_URL = 'index'
 
 AUTH_USER_MODEL = 'main.CustomUser'
-
 
