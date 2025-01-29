@@ -1,9 +1,11 @@
+# main/models.py
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 # Кастомная модель пользователя
 class CustomUser(AbstractUser):
     phone_number = models.CharField(max_length=15, unique=True, verbose_name="Номер телефона")
+    role = models.CharField(max_length=50, choices=[('admin', 'Admin'), ('staff', 'Staff'), ('client', 'Client')], default='client', verbose_name="Роль")
 
     def __str__(self):
         return self.username

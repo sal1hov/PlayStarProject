@@ -62,8 +62,10 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],  # Указываем путь к корневой папке templates
-        'APP_DIRS': True,  # Разрешаем поиск шаблонов в папках templates приложений
+        'DIRS': [
+            BASE_DIR / 'templates',
+        ],
+        'APP_DIRS': True,  # Это позволяет Django искать шаблоны внутри app
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -74,6 +76,7 @@ TEMPLATES = [
         },
     },
 ]
+
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
@@ -133,7 +136,7 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGOUT_REDIRECT_URL = 'index'
+LOGOUT_REDIRECT_URL = '/'
 
 AUTH_USER_MODEL = 'main.CustomUser'
 

@@ -6,11 +6,10 @@ from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.http import JsonResponse
-
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
 from main.models import Profile  # Исправляем импорт
 from bookings.models import Booking  # Импортируем модель Booking из приложения bookings
+from django.contrib.auth import authenticate, login
+from core.views import get_user_role_redirect
 
 @login_required
 def profile(request):
@@ -138,3 +137,19 @@ def change_password(request):
     else:
         form = PasswordChangeForm(request.user)
     return render(request, 'accounts/change_password.html', {'form': form})
+
+# Сотрудники
+
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect(get_user_role_redirect(user))  # Перенаправление по роли
+        else:
+            return render(request, 'registration/login.html', {'error': 'Неверные данные'})
+    return render(request, 'registration/login.html')
+
+
