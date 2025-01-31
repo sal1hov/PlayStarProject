@@ -1,5 +1,5 @@
 # main/views.py
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from .forms import RegisterForm
@@ -8,6 +8,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import Group
 from main.models import CustomUser  # Импортируем кастомную модель пользователя
 from bookings.models import Booking  # Предполагается, что модель бронирований находится в приложении bookings
+from bookings.forms import BookingForm  # Импортируем форму для бронирований
 
 def role_required(*group_names):
     """Декоратор для проверки групп."""
@@ -17,6 +18,43 @@ def role_required(*group_names):
                 return True
         return False
     return user_passes_test(in_groups)
+
+@login_required
+def profile_view(request):
+    user = request.user
+    bookings = Booking.objects.filter(user=user).order_by('-booking_date')  # Получаем все бронирования текущего пользователя
+    if request.method == 'POST':
+        form = BookingForm(request.POST)
+        if form.is_valid():
+            booking = form.save(commit=False)
+            booking.user = user
+            booking.status = 'pending'  # Устанавливаем статус "ожидает утверждения"
+            booking.save()
+            messages.success(request, 'Бронирование успешно создано.')
+            return redirect('profile')
+    else:
+        form = BookingForm()
+    return render(request, 'accounts/profile.html', {'user': user, 'bookings': bookings, 'form': form})
+
+@login_required
+def edit_booking(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)  # Проверяем, что бронирование принадлежит текущему пользователю
+    if request.method == 'POST':
+        form = BookingForm(request.POST, instance=booking)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Бронирование успешно отредактировано.')
+            return redirect('profile')
+    else:
+        form = BookingForm(instance=booking)
+    return render(request, 'bookings/edit_booking.html', {'form': form, 'booking': booking})
+
+@login_required
+def delete_booking(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)  # Проверяем, что бронирование принадлежит текущему пользователю
+    booking.delete()
+    messages.success(request, 'Бронирование успешно удалено.')
+    return redirect('profile')
 
 def index(request):
     return render(request, 'main/index.html')
@@ -89,10 +127,6 @@ def employee_dashboard(request):
         # Здесь можно добавить логику для панели сотрудника
         return render(request, 'staff/employee_dashboard.html')
     return redirect('index')  # Перенаправление, если роль не подходит
-
-@login_required
-def profile_view(request):
-    return render(request, 'accounts/profile.html', {'user': request.user})
 
 def logout_view(request):
     logout(request)
