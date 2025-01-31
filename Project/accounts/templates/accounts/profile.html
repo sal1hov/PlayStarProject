@@ -1,7 +1,6 @@
 <!-- Project/accounts/templates/accounts/profile.html -->
 {% extends 'base.html' %}
 {% load group_check %} <!-- Загрузка кастомного фильтра -->
-
 {% block title %}Профиль пользователя{% endblock %}
 {% block content %}
 <div class="flex space-x-8 max-w-6xl mx-auto">
@@ -141,17 +140,60 @@
             </a>
         </div>
     </div>
-    <!-- Правая часть: История бронирований -->
+    <!-- Правая часть: История бронирований и форма для создания новых бронирований -->
     <div class="w-1/2 bg-white p-8 rounded-lg shadow-2xl">
         <h2 class="text-4xl font-bold text-gray-800 mb-6">История бронирований</h2>
+
+        <!-- Форма для добавления нового бронирования -->
+        <form method="post" class="mb-6">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <div class="flex items-center space-x-2">
+                    <label for="{{ form.event_name.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Название мероприятия:</label>
+                    {{ form.event_name }}
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label for="{{ form.event_date.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Дата мероприятия:</label>
+                    {{ form.event_date }}
+                </div>
+                <div class="flex items-center space-x-2">
+                    <label for="{{ form.status.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Статус:</label>
+                    {{ form.status }}
+                </div>
+            </div>
+            <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
+                Создать новое бронирование
+            </button>
+        </form>
+
         {% if bookings %}
             <ul class="space-y-4">
                 {% for booking in bookings %}
-                    <li class="bg-gray-100 p-4 rounded-lg">
-                        <p class="text-gray-800"><strong>{{ booking.event_name }}</strong></p>
-                        <p class="text-gray-600">Дата бронирования: {{ booking.booking_date }}</p>
-                        <p class="text-gray-600">Дата мероприятия: {{ booking.event_date }}</p>
-                        <p class="text-gray-600">Статус: {{ booking.status }}</p>
+                    <li class="bg-gray-100 p-4 rounded-lg flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <p class="text-gray-800"><strong>{{ booking.event_name }}</strong></p>
+                            <p class="text-gray-600">Дата бронирования: {{ booking.booking_date }}</p>
+                            <p class="text-gray-600">Дата мероприятия: {{ booking.event_date }}</p>
+                            <p class="text-gray-600">Статус: {{ booking.status }}</p>
+                        </div>
+                        <!-- Дополнительные действия для бронирования (например, редактирование или удаление) -->
+                        <div class="flex space-x-2">
+                            <!-- Пример ссылки на редактирование бронирования -->
+                            <a href="{% url 'edit_booking' booking.id %}" class="text-blue-500 hover:text-blue-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H19m-9 4h4" />
+                                </svg>
+                            </a>
+                            <!-- Пример ссылки на удаление бронирования -->
+                            <form action="{% url 'delete_booking' booking.id %}" method="post" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" class="text-red-500 hover:text-red-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
                     </li>
                 {% endfor %}
             </ul>
