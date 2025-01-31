@@ -7,13 +7,28 @@
     <!-- Форма для редактирования бронирования -->
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
+        <div class="space-y-4">
+            <div class="flex items-center space-x-2">
+                <label for="{{ form.event_name.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Название мероприятия:</label>
+                {{ form.event_name }}
+            </div>
+            <div class="flex items-center space-x-2">
+                <label for="{{ form.event_date.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Дата мероприятия:</label>
+                {{ form.event_date }}
+            </div>
+            <div class="flex items-center space-x-2">
+                <label for="{{ form.status.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Статус:</label>
+                {{ form.status }}
+            </div>
+        </div>
         <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
             Сохранить изменения
         </button>
     </form>
-    <a href="{% url 'admin_dashboard' %}" class="mt-4 block text-center text-gray-600 hover:underline">
-        Вернуться к списку бронирований
+
+    <!-- Кнопка для возврата к профилю пользователя -->
+    <a href="{% url 'profile' %}" class="mt-4 block text-center text-gray-600 hover:underline">
+        Вернуться к профилю
     </a>
 </div>
 {% endblock %}
