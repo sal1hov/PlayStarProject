@@ -1,13 +1,13 @@
+<!-- Project/accounts/templates/accounts/profile.html -->
 {% extends 'base.html' %}
+{% load group_check %} <!-- Загрузка кастомного фильтра -->
 
 {% block title %}Профиль пользователя{% endblock %}
-
 {% block content %}
 <div class="flex space-x-8 max-w-6xl mx-auto">
     <!-- Левая часть: Профиль пользователя -->
     <div class="w-1/2 bg-white p-8 rounded-lg shadow-2xl">
         <h2 class="text-4xl font-bold text-gray-800 mb-6">Личный кабинет</h2>
-
         <!-- Уведомления -->
         {% if messages %}
             <div class="mb-6">
@@ -18,7 +18,6 @@
                 {% endfor %}
             </div>
         {% endif %}
-
         <!-- Поля профиля с иконками -->
         <div class="space-y-4 text-left">
             <!-- Имя пользователя -->
@@ -28,7 +27,6 @@
                 </svg>
                 <p><strong>Имя пользователя:</strong> {{ user.username }}</p>
             </div>
-
             <!-- Имя -->
             <div class="flex items-center space-x-2">
                 <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,7 +34,6 @@
                 </svg>
                 <p><strong>Имя:</strong> {{ user.first_name }}</p>
             </div>
-
             <!-- Фамилия -->
             <div class="flex items-center space-x-2">
                 <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -44,7 +41,6 @@
                 </svg>
                 <p><strong>Фамилия:</strong> {{ user.last_name }}</p>
             </div>
-
             <!-- Номер телефона -->
             <div class="flex items-center space-x-2">
                 <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -52,7 +48,6 @@
                 </svg>
                 <p><strong>Номер телефона:</strong> {{ user.phone_number }}</p>
             </div>
-
             <!-- Email -->
             <div class="flex items-center space-x-2">
                 <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -61,7 +56,6 @@
                 <p><strong>Email:</strong> {{ user.email }}</p>
             </div>
         </div>
-
         <!-- Список детей -->
         <div class="mt-6">
             <h3 class="text-2xl font-bold text-gray-800 mb-4">Дети</h3>
@@ -87,14 +81,27 @@
                 <p class="text-gray-600">Дети не добавлены.</p>
             {% endif %}
         </div>
-
         <!-- Кнопки для действий -->
         <div class="mt-6 space-x-4">
             <a href="{% url 'profile_edit' %}" class="inline-block bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
                 Редактировать профиль
             </a>
+            {% if user.is_authenticated %}
+                {% if user|has_group:'Admin' or user.is_superuser %}
+                    <a href="{% url 'admin_dashboard' %}" class="inline-block bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition duration-300">
+                        Перейти на админ-панель
+                    </a>
+                {% elif user|has_group:'Manager' %}
+                    <a href="{% url 'manager_dashboard' %}" class="inline-block bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition duration-300">
+                        Перейти на панель менеджера
+                    </a>
+                {% elif user|has_group:'Staff' %}
+                    <a href="{% url 'employee_dashboard' %}" class="inline-block bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">
+                        Перейти на панель сотрудника
+                    </a>
+                {% endif %}
+            {% endif %}
         </div>
-
         <!-- Баллы и бонусы -->
         <div class="mt-6">
             <h3 class="text-2xl font-bold text-gray-800 mb-4">Баллы и бонусы</h3>
@@ -109,7 +116,6 @@
                 Узнать больше
             </a>
         </div>
-
         <!-- Часто задаваемые вопросы -->
         <div class="mt-6">
             <h3 class="text-2xl font-bold text-gray-800 mb-4">Часто задаваемые вопросы</h3>
@@ -135,11 +141,9 @@
             </a>
         </div>
     </div>
-
     <!-- Правая часть: История бронирований -->
     <div class="w-1/2 bg-white p-8 rounded-lg shadow-2xl">
         <h2 class="text-4xl font-bold text-gray-800 mb-6">История бронирований</h2>
-
         {% if bookings %}
             <ul class="space-y-4">
                 {% for booking in bookings %}

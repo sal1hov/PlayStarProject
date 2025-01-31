@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
-from .models import CustomUser, Child, Profile  # Убедимся, что Profile импортирован
+from .models import CustomUser, Child, Profile
 
 class RegisterForm(UserCreationForm):
     # Валидация имени, фамилии и имени ребёнка (только буквы и пробелы)
@@ -54,6 +54,7 @@ class RegisterForm(UserCreationForm):
 
     def save(self, commit=True):
         user = super().save(commit=False)
+        user.role = 'CLIENT'  # Устанавливаем роль по умолчанию
         if commit:
             user.save()
             # Проверяем, существует ли профиль для пользователя

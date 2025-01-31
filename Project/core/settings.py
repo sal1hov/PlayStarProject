@@ -62,10 +62,8 @@ ROOT_URLCONF = 'core.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            BASE_DIR / 'templates',
-        ],
-        'APP_DIRS': True,  # Это позволяет Django искать шаблоны внутри app
+        'DIRS': [BASE_DIR / 'templates'],  # Убедитесь, что путь указан правильно
+        'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -136,7 +134,8 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-LOGOUT_REDIRECT_URL = '/'
+# settings.py
+LOGIN_REDIRECT_URL = '/'
 
+# Кастомная модель пользователя
 AUTH_USER_MODEL = 'main.CustomUser'
-

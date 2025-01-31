@@ -2,18 +2,28 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
-# Кастомная модель пользователя
 class CustomUser(AbstractUser):
+    # Роли пользователей
+    ROLE_CHOICES = [
+        ('CLIENT', 'Клиент'),
+        ('STAFF', 'Сотрудник'),
+        ('MANAGER', 'Менеджер'),
+        ('ADMIN', 'Администратор'),
+    ]
     phone_number = models.CharField(max_length=15, unique=True, verbose_name="Номер телефона")
-    role = models.CharField(max_length=50, choices=[('admin', 'Admin'), ('staff', 'Staff'), ('client', 'Client')], default='client', verbose_name="Роль")
+    role = models.CharField(
+        max_length=10,
+        choices=ROLE_CHOICES,
+        default='CLIENT',  # По умолчанию роль "Клиент"
+        verbose_name='Роль'
+    )
 
     def __str__(self):
-        return self.username
+        return f"{self.username} ({self.get_role_display()})"
 
 # Модель профиля, связанная с кастомным пользователем
 class Profile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)  # Используйте CustomUser
-    photo = models.ImageField(upload_to='profile_photos/', blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
 
 # Модель для ребенка, связанная с профилем

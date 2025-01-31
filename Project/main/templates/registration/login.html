@@ -1,13 +1,9 @@
 {% extends 'base.html' %}
-
 {% load static %}
-
 {% block title %}Вход{% endblock %}
-
 {% block content %}
 <div class="max-w-md w-full bg-white p-6 rounded-lg shadow-2xl transform transition-all hover:scale-105 mx-auto mt-44">
     <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Вход в систему</h2>
-
     <!-- Отображение уведомлений -->
     {% if messages %}
         <div class="mb-4">
@@ -21,7 +17,6 @@
             {% endfor %}
         </div>
     {% endif %}
-
     <form method="post">
         {% csrf_token %}
         <!-- Поле для имени пользователя -->
@@ -36,7 +31,6 @@
                 <input type="text" name="username" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Введите имя пользователя" required>
             </div>
         </div>
-
         <!-- Поле для пароля -->
         <div class="mb-4">
             <label class="block text-gray-700 text-sm font-bold mb-2">Пароль</label>
@@ -54,19 +48,16 @@
                 </span>
             </div>
         </div>
-
         <!-- Кнопка входа -->
         <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
             Войти
         </button>
     </form>
-
     <!-- Ссылка на регистрацию -->
     <p class="mt-4 text-center text-gray-600">
         Нет аккаунта?
         <a href="{% url 'register' %}" class="text-blue-600 hover:text-blue-700 font-semibold hover:underline">Зарегистрируйтесь</a>.
     </p>
 </div>
-
 <script src="{% static 'main/js/scripts.js' %}"></script>
 {% endblock %}
