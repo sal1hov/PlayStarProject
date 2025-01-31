@@ -1,6 +1,12 @@
+<!-- staff/templates/staff/manager_dashboard.html -->
 {% extends 'base.html' %}
-
+{% block title %}Панель менеджера{% endblock %}
 {% block content %}
-<h1>Панель менеджера</h1>
-<p>Добро пожаловать, {{ user.username }}!</p>
+<div class="flex space-x-8 max-w-6xl mx-auto">
+    <div class="w-full bg-white p-8 rounded-lg shadow-2xl">
+        <h2 class="text-4xl font-bold text-gray-800 mb-6">Панель менеджера</h2>
+        <p class="text-xl font-semibold text-gray-800 mb-6">Добро пожаловать, {{ user.username }}!</p>
+        <!-- Тут можно добавить специфичные для менеджера данные и функциональность -->
+    </div>
+</div>
 {% endblock %}
