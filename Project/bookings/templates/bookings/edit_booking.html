@@ -1,41 +1,104 @@
-<!-- bookings/templates/bookings/edit_booking.html -->
 {% extends 'base.html' %}
+
 {% block title %}Редактирование бронирования{% endblock %}
+
 {% block content %}
 <div class="max-w-md w-full bg-white p-6 rounded-lg shadow-2xl transform transition-all hover:scale-105 mx-auto mt-44">
     <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Редактирование бронирования</h2>
 
-    {% if booking.event_date <= now %}
-        <div class="text-center text-red-500 font-semibold mb-4">
-            Это бронирование уже прошло. Невозможно изменить данные.
-        </div>
-    {% else %}
-        <!-- Форма для редактирования бронирования -->
-        <form method="post">
-            {% csrf_token %}
-            <div class="space-y-4">
-                <div class="flex items-center space-x-2">
-                    <label for="{{ form.event_name.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Название мероприятия:</label>
-                    {{ form.event_name }}
-                </div>
-                <div class="flex items-center space-x-2">
-                    <label for="{{ form.event_date.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Дата мероприятия:</label>
-                    {{ form.event_date }}
-                </div>
-                <div class="flex items-center space-x-2">
-                    <label for="{{ form.status.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Статус:</label>
-                    {{ form.status }}
-                </div>
+    <!-- Уведомление -->
+    <div id="notification"
+         class="hidden mb-4 p-3 rounded-lg text-white text-center"></div>
+
+    <form id="booking-form" method="post">
+        {% csrf_token %}
+        <div class="space-y-4">
+            <div>
+                <label for="{{ form.event_name.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">
+                    Название мероприятия:
+                </label>
+                {{ form.event_name }}
             </div>
-            <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
+            <div>
+                <label for="event_date" class="block text-gray-700 text-sm font-bold mb-2">
+                    Дата и время мероприятия:
+                </label>
+                <input type="datetime-local" id="event_date" name="event_date"
+                       value="{{ form.event_date.value|default:'' }}"
+                       min="{{ today }}" class="border p-2 rounded w-full">
+            </div>
+        </div>
+
+        <!-- Скрыть кнопку, если статус "Отклонено" или "Прошло" -->
+        {% if booking.status == "Отклонено" or booking.status == "Прошло" %}
+            <p class="text-red-500 text-center">Редактирование невозможно для отклонённых или прошедших бронирований.</p>
+        {% else %}
+            <button type="submit"
+                    class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg
+                           hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 mt-4">
                 Сохранить изменения
             </button>
-        </form>
-    {% endif %}
+        {% endif %}
 
-    <!-- Кнопка для возврата к профилю пользователя -->
+    </form>
+
     <a href="{% url 'profile' %}" class="mt-4 block text-center text-gray-600 hover:underline">
         Вернуться к профилю
     </a>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("booking-form");
+    const notification = document.getElementById("notification");
+    const today = new Date().toISOString().split('T')[0];
+
+    // Устанавливаем минимально допустимую дату и время (сегодня)
+    const now = new Date();
+    const todayWithTime = now.toISOString().slice(0, 16); // До минут
+    document.getElementById("event_date").setAttribute("min", todayWithTime);
+
+    form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        const formData = new FormData(form);
+
+        // Перед отправкой данных, форматируем дату
+        const eventDateInput = document.getElementById("event_date");
+        const eventDateValue = new Date(eventDateInput.value).toISOString().slice(0, 16);
+        eventDateInput.value = eventDateValue;  // Устанавливаем дату в правильном формате
+
+        fetch("{% url 'edit_booking' booking.id %}", {
+            method: "POST",
+            body: formData,
+            headers: { "X-Requested-With": "XMLHttpRequest" },
+        })
+        .then(response => response.json())
+        .then(data => {
+            notification.textContent = data.message;
+            notification.classList.remove("hidden");
+            notification.classList.add(data.success ? "bg-green-500" : "bg-red-500");
+
+            // Очищаем старые ошибки
+            document.querySelectorAll(".error-message").forEach(el => el.remove());
+
+            if (data.success) {
+                setTimeout(() => window.location.href = "{% url 'profile' %}", 1500);
+            } else if (data.errors) {
+                // Отображаем ошибки под соответствующими полями
+                for (const [field, messages] of Object.entries(data.errors)) {
+                    const input = document.querySelector(`[name="${field}"]`);
+                    if (input) {
+                        const errorDiv = document.createElement("div");
+                        errorDiv.className = "error-message text-red-500 text-sm mt-1";
+                        errorDiv.textContent = messages.join(", ");
+                        input.parentNode.appendChild(errorDiv);
+                    }
+                }
+            }
+        });
+    });
+});
+
+</script>
+
 {% endblock %}
