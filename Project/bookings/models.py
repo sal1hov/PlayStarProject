@@ -6,7 +6,7 @@ class Booking(models.Model):
     event_name = models.CharField(max_length=255, verbose_name='Название мероприятия')
     booking_date = models.DateTimeField(auto_now_add=True, verbose_name='Дата бронирования')
     event_date = models.DateTimeField(verbose_name='Дата мероприятия')
-    status = models.CharField(max_length=50, default='Активно', verbose_name='Статус')
+    status = models.CharField(max_length=50, blank=True, null=True, default='Активно', verbose_name='Статус')
     children_count = models.PositiveIntegerField(default=1, verbose_name='Количество детей')  # Новое поле
     comment = models.TextField(max_length=255, blank=True, null=True, verbose_name='Комментарий')  # Новое поле
 

@@ -15,11 +15,11 @@ def manage_booking(request, booking_id, action):
     booking = get_object_or_404(Booking, id=booking_id)
     if request.user.groups.filter(name='Admin').exists() or request.user.groups.filter(name='Manager').exists() or request.user.is_superuser:
         if action == 'approve':
-            booking.status = 'approved'
+            booking.status = 'Подтверждено'
             booking.save()
             messages.success(request, 'Бронирование успешно утверждено.')
         elif action == 'reject':
-            booking.status = 'rejected'
+            booking.status = 'Отклонено'
             booking.save()
             messages.success(request, 'Бронирование успешно отклонено.')
         else:
@@ -48,7 +48,6 @@ def delete_booking(request, booking_id):
     return redirect('profile')
 
 
-@csrf_exempt  # Временно отключаем CSRF для упрощения тестирования
 @login_required
 def create_booking(request):
     if request.method == 'POST':
@@ -62,9 +61,11 @@ def create_booking(request):
                 'message': 'Бронирование успешно создано! Ожидайте звонка от менеджера или подтверждения на сайте.'
             })
         else:
+            # Возвращаем ошибки формы
             return JsonResponse({
                 'success': False,
-                'message': 'Ошибка при создании бронирования. Проверьте данные.'
+                'message': 'Ошибка при создании бронирования. Проверьте данные.',
+                'errors': form.errors  # Добавляем ошибки формы в ответ
             })
     return JsonResponse({
         'success': False,
