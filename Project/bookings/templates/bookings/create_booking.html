@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block title %}Создать бронирование{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-2xl">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6">Создать новое бронирование</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="space-y-4">
+            <div class="flex items-center space-x-2">
+                <label for="{{ form.event_name.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Название мероприятия:</label>
+                {{ form.event_name }}
+            </div>
+            <div class="flex items-center space-x-2">
+                <label for="{{ form.event_date.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Дата мероприятия:</label>
+                {{ form.event_date }}
+            </div>
+            <div class="flex items-center space-x-2">
+                <label for="{{ form.status.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Статус:</label>
+                {{ form.status }}
+            </div>
+        </div>
+        <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
+            Создать бронирование
+        </button>
+    </form>
+</div>
+{% endblock %}

@@ -43,3 +43,17 @@ def delete_booking(request, booking_id):
     booking.delete()
     messages.success(request, 'Бронирование успешно удалено.')
     return redirect('profile')
+
+@login_required
+def create_booking(request):
+    if request.method == 'POST':
+        form = BookingForm(request.POST)
+        if form.is_valid():
+            booking = form.save(commit=False)
+            booking.user = request.user  # Привязываем бронирование к текущему пользователю
+            booking.save()
+            messages.success(request, 'Бронирование успешно создано!')
+            return redirect('profile')  # Перенаправляем на страницу профиля
+    else:
+        form = BookingForm()
+    return render(request, 'bookings/create_booking.html', {'form': form})
