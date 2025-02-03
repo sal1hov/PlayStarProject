@@ -6,7 +6,9 @@ from .models import Booking
 from .forms import BookingForm  # Импортируем форму для бронирований
 from staff.views import role_required  # Импортируем функцию role_required
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from django.contrib.auth.decorators import login_required
+from django.utils.dateparse import parse_date
 
 
 @login_required
@@ -27,17 +29,29 @@ def manage_booking(request, booking_id, action):
         return redirect('admin_dashboard')
     return redirect('index')  # Перенаправление, если роль не подходит
 
+
+from django.utils import timezone
+
+
 @login_required
 def edit_booking(request, booking_id):
-    booking = get_object_or_404(Booking, id=booking_id, user=request.user)  # Проверяем, что бронирование принадлежит текущему пользователю
+    booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+
     if request.method == 'POST':
         form = BookingForm(request.POST, instance=booking)
+
         if form.is_valid():
+            # Если форма прошла валидацию, сохраняем
             form.save()
-            messages.success(request, 'Бронирование успешно отредактировано.')
-            return redirect('profile')
+            return JsonResponse({'success': True, 'message': 'Бронирование успешно обновлено!'})
+        else:
+            # Вывод ошибок в консоль для отладки
+            print(form.errors)  # Выведет ошибки в консоль
+            return JsonResponse({'success': False, 'message': 'Исправьте ошибки в форме.', 'errors': form.errors})
+
     else:
         form = BookingForm(instance=booking)
+
     return render(request, 'bookings/edit_booking.html', {'form': form, 'booking': booking})
 
 @login_required
