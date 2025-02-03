@@ -5,6 +5,9 @@ from django.contrib import messages
 from .models import Booking
 from .forms import BookingForm  # Импортируем форму для бронирований
 from staff.views import role_required  # Импортируем функцию role_required
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
 
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))  # Используем импортированную функцию
@@ -44,16 +47,26 @@ def delete_booking(request, booking_id):
     messages.success(request, 'Бронирование успешно удалено.')
     return redirect('profile')
 
+
+@csrf_exempt  # Временно отключаем CSRF для упрощения тестирования
 @login_required
 def create_booking(request):
     if request.method == 'POST':
         form = BookingForm(request.POST)
         if form.is_valid():
             booking = form.save(commit=False)
-            booking.user = request.user  # Привязываем бронирование к текущему пользователю
+            booking.user = request.user
             booking.save()
-            messages.success(request, 'Бронирование успешно создано!')
-            return redirect('profile')  # Перенаправляем на страницу профиля
-    else:
-        form = BookingForm()
-    return render(request, 'bookings/create_booking.html', {'form': form})
+            return JsonResponse({
+                'success': True,
+                'message': 'Бронирование успешно создано! Ожидайте звонка от менеджера или подтверждения на сайте.'
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': 'Ошибка при создании бронирования. Проверьте данные.'
+            })
+    return JsonResponse({
+        'success': False,
+        'message': 'Недопустимый метод запроса.'
+    })
