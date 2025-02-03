@@ -1,15 +1,15 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from .forms import UserUpdateForm, ProfileUpdateForm, ChildForm
-from main.models import Profile, Child  # Импортируем модели из main
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
-from django.contrib import messages
 from django.http import JsonResponse
-from main.models import Profile  # Исправляем импорт
-from bookings.models import Booking  # Импортируем модель Booking из приложения bookings
 from django.contrib.auth import authenticate, login
 from core.views import get_user_role_redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .forms import UserUpdateForm, ProfileUpdateForm, ChildForm
+from main.models import Profile, Child
+from bookings.models import Booking  # Импортируем модель Booking
+from bookings.forms import BookingForm  # Импортируем форму для бронирований
 
 @login_required
 def profile(request):
@@ -22,10 +22,24 @@ def profile(request):
     # Получаем последние 5 бронирований пользователя
     bookings = Booking.objects.filter(user=user).order_by('-booking_date')[:5]
 
-    # Передаем данные в шаблон
+    # Обработка формы создания нового бронирования
+    if request.method == 'POST' and 'create_booking' in request.POST:
+        booking_form = BookingForm(request.POST)
+        if booking_form.is_valid():
+            booking = booking_form.save(commit=False)
+            booking.user = user  # Привязываем бронирование к текущему пользователю
+            booking.save()
+            messages.success(request, 'Бронирование успешно создано.')
+            return redirect('profile')
+        else:
+            messages.error(request, 'Ошибка при создании бронирования.')
+    else:
+        booking_form = BookingForm()
+
     context = {
         'user': user,
-        'bookings': bookings,  # Добавляем бронирования в контекст
+        'bookings': bookings,
+        'booking_form': booking_form,  # Передаем форму для создания бронирования
     }
     return render(request, 'accounts/profile.html', context)
 
