@@ -1,0 +1,45 @@
+<!-- staff/templates/staff/edit_user.html -->
+{% extends 'base.html' %}
+{% block title %}Редактирование пользователя{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+    <h2 class="text-4xl font-bold text-gray-800 mb-6">Редактирование пользователя</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-4">
+            <label for="username" class="block text-gray-700 font-semibold">Имя пользователя:</label>
+            <input type="text" name="username" id="username" value="{{ user.username }}" class="w-full p-2 border border-gray-300 rounded-lg">
+        </div>
+
+        <div class="mb-4">
+            <label for="first_name" class="block text-gray-700 font-semibold">Имя:</label>
+            <input type="text" name="first_name" id="first_name" value="{{ user.first_name }}" class="w-full p-2 border border-gray-300 rounded-lg">
+        </div>
+
+        <div class="mb-4">
+            <label for="last_name" class="block text-gray-700 font-semibold">Фамилия:</label>
+            <input type="text" name="last_name" id="last_name" value="{{ user.last_name }}" class="w-full p-2 border border-gray-300 rounded-lg">
+        </div>
+
+        <div class="mb-4">
+            <label for="children" class="block text-gray-700 font-semibold">Количество детей:</label>
+            <input type="number" name="children" id="children" value="{{ user.children }}" class="w-full p-2 border border-gray-300 rounded-lg">
+        </div>
+
+        <div class="mb-4">
+            <label for="phone" class="block text-gray-700 font-semibold">Телефон:</label>
+            <input type="text" name="phone" id="phone" value="{{ user.phone }}" class="w-full p-2 border border-gray-300 rounded-lg">
+        </div>
+
+        <div class="mb-4">
+            <label for="password" class="block text-gray-700 font-semibold">Пароль:</label>
+            <input type="password" name="password" id="password" class="w-full p-2 border border-gray-300 rounded-lg">
+        </div>
+
+        <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
+            Сохранить изменения
+        </button>
+    </form>
+</div>
+{% endblock %}
