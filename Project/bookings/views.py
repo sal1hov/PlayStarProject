@@ -4,9 +4,10 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from .models import Booking
 from .forms import BookingForm  # Импортируем форму для бронирований
+from staff.views import role_required  # Импортируем функцию role_required
 
 @login_required
-@user_passes_test(role_required('Admin', 'Manager'))
+@user_passes_test(role_required('Admin', 'Manager'))  # Используем импортированную функцию
 def manage_booking(request, booking_id, action):
     booking = get_object_or_404(Booking, id=booking_id)
     if request.user.groups.filter(name='Admin').exists() or request.user.groups.filter(name='Manager').exists() or request.user.is_superuser:
