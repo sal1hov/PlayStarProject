@@ -17,6 +17,27 @@
     </script>
 </head>
 <body class="bg-gradient-to-r from-blue-500 to-purple-600 min-h-screen flex flex-col">
+{% if messages %}
+    <div class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50">
+        {% for message in messages %}
+            <div class="p-4 mb-4 rounded-lg text-white text-center shadow-lg transition-opacity duration-500 opacity-100
+                        {% if message.tags == 'success' %} bg-green-500 {% else %} bg-red-500 {% endif %}"
+                 id="message-{{ forloop.counter }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    <script>
+        // Автоматическое скрытие сообщений через 3 секунды
+        setTimeout(() => {
+            document.querySelectorAll('[id^="message-"]').forEach(msg => {
+                msg.classList.add('opacity-0');
+                setTimeout(() => msg.remove(), 500);
+            });
+        }, 3000);
+    </script>
+{% endif %}
+
     <!-- Шапка -->
     <header class="bg-white shadow">
         <!-- Контейнер для шапки с абсолютным позиционированием логотипа -->
