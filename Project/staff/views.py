@@ -122,7 +122,7 @@ def export_bookings_csv(request):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="bookings.csv"'
     writer = csv.writer(response)
-    writer.writerow(['ID', 'User', 'Date', 'Status'])
+    writer.writerow(['ID', 'User', 'Date', 'Status', ])
     for booking in Booking.objects.all():
         writer.writerow([booking.id, booking.user.username, booking.booking_date, booking.status])
     return response

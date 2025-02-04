@@ -2,9 +2,26 @@
 {% block title %}Панель администратора{% endblock %}
 {% block content %}
 <div class="flex space-x-8 max-w-6xl mx-auto">
-    <!-- Левая часть: Приветствие и переход в Django-админку -->
+    <!-- Навигационная панель -->
     <div class="w-full bg-white p-8 rounded-lg shadow-2xl">
         <h2 class="text-4xl font-bold text-gray-800 mb-6">Панель администратора</h2>
+
+        <!-- Навигация -->
+        <div class="mb-6 flex space-x-4">
+            <a href="{% url 'admin_dashboard' %}" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
+                Главная
+            </a>
+            <a href="{% url 'manager_dashboard' %}" class="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">
+                Панель менеджера
+            </a>
+            <a href="{% url 'employee_dashboard' %}" class="bg-purple-500 text-white py-2 px-4 rounded-lg hover:bg-purple-600 transition duration-300">
+                Панель сотрудника
+            </a>
+            <a href="{% url 'admin:index' %}" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
+                Django-админка
+            </a>
+        </div>
+
         <!-- Уведомления -->
         {% if messages %}
             <div class="mb-6">
@@ -15,10 +32,6 @@
                 {% endfor %}
             </div>
         {% endif %}
-        <p class="text-xl font-semibold text-gray-800 mb-6">Добро пожаловать, {{ user.username }}!</p>
-        <a href="{% url 'admin:index' %}" class="inline-block bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300 mb-6">
-            Перейти в Django-админку
-        </a>
 
         <!-- Статистика -->
         <div class="bg-gray-100 p-6 rounded-lg mb-6">
@@ -27,6 +40,10 @@
                 <div class="bg-white p-4 rounded-lg shadow">
                     <p class="text-gray-600">Всего пользователей</p>
                     <p class="text-2xl font-bold text-gray-800">{{ total_users }}</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <p class="text-gray-600">Отфильтровано пользователей</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ filtered_users_count }}</p>
                 </div>
                 <div class="bg-white p-4 rounded-lg shadow">
                     <p class="text-gray-600">Всего бронирований</p>
@@ -39,26 +56,26 @@
             </div>
         </div>
 
-<!-- Фильтрация и поиск пользователей -->
-<div class="mb-6">
-    <h3 class="text-2xl font-bold text-gray-800 mb-4">Фильтрация и поиск пользователей</h3>
-    <form method="get" class="flex space-x-4">
-        <input type="text" name="search" placeholder="Поиск по имени" class="p-2 border rounded-lg" value="{{ request.GET.search }}">
-        <select name="role" class="p-2 border rounded-lg">
-            <option value="">Все роли</option>
-            <option value="ADMIN" {% if request.GET.role == "ADMIN" %}selected{% endif %}>Администратор</option>
-            <option value="MANAGER" {% if request.GET.role == "MANAGER" %}selected{% endif %}>Менеджер</option>
-            <option value="STAFF" {% if request.GET.role == "STAFF" %}selected{% endif %}>Сотрудник</option>
-            <option value="CLIENT" {% if request.GET.role == "CLIENT" %}selected{% endif %}>Клиент</option>
-        </select>
-        <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
-            Применить
-        </button>
-        <a href="{% url 'admin_dashboard' %}" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
-            Сбросить
-        </a>
-    </form>
-</div>
+        <!-- Фильтрация и поиск пользователей -->
+        <div class="mb-6">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Фильтрация и поиск пользователей</h3>
+            <form method="get" class="flex space-x-4">
+                <input type="text" name="search" placeholder="Поиск по имени" class="p-2 border rounded-lg" value="{{ request.GET.search }}">
+                <select name="role" class="p-2 border rounded-lg">
+                    <option value="">Все роли</option>
+                    <option value="ADMIN" {% if request.GET.role == "ADMIN" %}selected{% endif %}>Администратор</option>
+                    <option value="MANAGER" {% if request.GET.role == "MANAGER" %}selected{% endif %}>Менеджер</option>
+                    <option value="STAFF" {% if request.GET.role == "STAFF" %}selected{% endif %}>Сотрудник</option>
+                    <option value="CLIENT" {% if request.GET.role == "CLIENT" %}selected{% endif %}>Клиент</option>
+                </select>
+                <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
+                    Применить
+                </button>
+                <a href="{% url 'admin_dashboard' %}" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
+                    Сбросить
+                </a>
+            </form>
+        </div>
 
         <!-- Список пользователей -->
         <div class="mt-6">
