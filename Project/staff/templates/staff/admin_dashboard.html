@@ -1,4 +1,3 @@
-<!-- staff/templates/staff/admin_dashboard.html -->
 {% extends 'base.html' %}
 {% block title %}Панель администратора{% endblock %}
 {% block content %}
@@ -21,6 +20,46 @@
             Перейти в Django-админку
         </a>
 
+        <!-- Статистика -->
+        <div class="bg-gray-100 p-6 rounded-lg mb-6">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Статистика</h3>
+            <div class="grid grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <p class="text-gray-600">Всего пользователей</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ total_users }}</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <p class="text-gray-600">Всего бронирований</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ total_bookings }}</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <p class="text-gray-600">Новые бронирования</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ pending_bookings }}</p>
+                </div>
+            </div>
+        </div>
+
+<!-- Фильтрация и поиск пользователей -->
+<div class="mb-6">
+    <h3 class="text-2xl font-bold text-gray-800 mb-4">Фильтрация и поиск пользователей</h3>
+    <form method="get" class="flex space-x-4">
+        <input type="text" name="search" placeholder="Поиск по имени" class="p-2 border rounded-lg" value="{{ request.GET.search }}">
+        <select name="role" class="p-2 border rounded-lg">
+            <option value="">Все роли</option>
+            <option value="ADMIN" {% if request.GET.role == "ADMIN" %}selected{% endif %}>Администратор</option>
+            <option value="MANAGER" {% if request.GET.role == "MANAGER" %}selected{% endif %}>Менеджер</option>
+            <option value="STAFF" {% if request.GET.role == "STAFF" %}selected{% endif %}>Сотрудник</option>
+            <option value="CLIENT" {% if request.GET.role == "CLIENT" %}selected{% endif %}>Клиент</option>
+        </select>
+        <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
+            Применить
+        </button>
+        <a href="{% url 'admin_dashboard' %}" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
+            Сбросить
+        </a>
+    </form>
+</div>
+
         <!-- Список пользователей -->
         <div class="mt-6">
             <h3 class="text-2xl font-bold text-gray-800 mb-4">Список пользователей</h3>
@@ -33,16 +72,15 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                                 </svg>
                                 <p class="text-gray-800">{{ user.username }}</p>
+                                <span class="text-sm text-gray-600">({{ user.get_role_display }})</span>
                             </div>
-                            <!-- Дополнительные действия для пользователя (например, редактирование или удаление) -->
+                            <!-- Дополнительные действия для пользователя -->
                             <div class="flex space-x-2">
-                                <!-- Ссылка на редактирование пользователя -->
                                 <a href="{% url 'edit_user' user.id %}" class="text-blue-500 hover:text-blue-700">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H19m-9 4h4" />
                                     </svg>
                                 </a>
-                                <!-- Ссылка на удаление пользователя -->
                                 <form action="{% url 'delete_user' user.id %}" method="post" class="inline">
                                     {% csrf_token %}
                                     <button type="submit" class="text-red-500 hover:text-red-700">
@@ -55,15 +93,15 @@
                         </li>
                     {% endfor %}
                 </ul>
-                <!-- Кнопка "Показать больше" -->
+                <!-- Пагинация -->
                 <div class="mt-6 flex justify-between">
                     {% if users.has_previous %}
-                        <a href="?page={{ users.previous_page_number }}" class="inline-block bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
+                        <a href="?page={{ users.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}" class="inline-block bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
                             Назад
                         </a>
                     {% endif %}
                     {% if users.has_next %}
-                        <a href="?page={{ users.next_page_number }}" class="inline-block bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
+                        <a href="?page={{ users.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}" class="inline-block bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
                             Показать больше
                         </a>
                     {% endif %}
@@ -71,6 +109,17 @@
             {% else %}
                 <p class="text-gray-600">Пользователи не найдены.</p>
             {% endif %}
+        </div>
+
+        <!-- Экспорт данных -->
+        <div class="mt-6">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Экспорт данных</h3>
+            <a href="{% url 'export_users_csv' %}" class="inline-block bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">
+                Экспорт пользователей в CSV
+            </a>
+            <a href="{% url 'export_bookings_csv' %}" class="inline-block bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300 ml-4">
+                Экспорт бронирований в CSV
+            </a>
         </div>
 
         <!-- Список бронирований -->
@@ -86,21 +135,18 @@
                                 <p class="text-gray-600">Дата мероприятия: {{ booking.event_date }}</p>
                                 <p class="text-gray-600">Статус: {{ booking.status }}</p>
                             </div>
-                            <!-- Дополнительные действия для бронирования (например, утверждение, отклонение или редактирование) -->
+                            <!-- Дополнительные действия для бронирования -->
                             <div class="flex space-x-2">
-                                <!-- Ссылка на утверждение бронирования -->
                                 <a href="{% url 'manage_booking' booking.id 'approve' %}" class="text-green-500 hover:text-green-700">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </a>
-                                <!-- Ссылка на отклонение бронирования -->
                                 <a href="{% url 'manage_booking' booking.id 'reject' %}" class="text-red-500 hover:text-red-700">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 </a>
-                                <!-- Ссылка на редактирование бронирования -->
                                 <a href="{% url 'edit_booking' booking.id %}" class="text-blue-500 hover:text-blue-700">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H19m-9 4h4" />
