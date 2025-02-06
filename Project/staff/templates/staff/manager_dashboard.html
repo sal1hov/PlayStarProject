@@ -1,4 +1,3 @@
-<!-- staff/templates/staff/manager_dashboard.html -->
 {% extends 'base.html' %}
 {% block title %}Панель менеджера{% endblock %}
 {% block content %}
@@ -6,7 +5,148 @@
     <div class="w-full bg-white p-8 rounded-lg shadow-2xl">
         <h2 class="text-4xl font-bold text-gray-800 mb-6">Панель менеджера</h2>
         <p class="text-xl font-semibold text-gray-800 mb-6">Добро пожаловать, {{ user.username }}!</p>
-        <!-- Тут можно добавить специфичные для менеджера данные и функциональность -->
+
+        <!-- Уведомления -->
+        {% if messages %}
+            <div class="mb-6">
+                {% for message in messages %}
+                    <div class="p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Статистика бронирований -->
+        <div class="bg-gray-100 p-6 rounded-lg mb-6">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Статистика бронирований</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <p class="text-gray-600">Ожидают подтверждения</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ pending_bookings_count }}</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <p class="text-gray-600">Подтверждено</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ approved_bookings_count }}</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <p class="text-gray-600">Отклонено</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ rejected_bookings_count }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Фильтрация и поиск бронирований -->
+        <div class="mb-6">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Фильтрация и поиск бронирований</h3>
+            <form method="get" class="flex space-x-4">
+                <input type="text" name="search" placeholder="Поиск по названию" class="p-2 border rounded-lg flex-1" value="{{ request.GET.search }}">
+                <select name="status" class="p-2 border rounded-lg">
+                    <option value="">Все статусы</option>
+                    <option value="pending" {% if request.GET.status == "pending" %}selected{% endif %}>Ожидает подтверждения</option>
+                    <option value="approved" {% if request.GET.status == "approved" %}selected{% endif %}>Подтверждено</option>
+                    <option value="rejected" {% if request.GET.status == "rejected" %}selected{% endif %}>Отклонено</option>
+                </select>
+                <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
+                    Применить
+                </button>
+                <a href="{% url 'manager_dashboard' %}" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
+                    Сбросить
+                </a>
+            </form>
+        </div>
+
+        <!-- Список бронирований -->
+        <div class="mt-6">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Список бронирований</h3>
+            {% if bookings %}
+                <ul class="space-y-4">
+                    {% for booking in bookings %}
+                        <li class="bg-gray-100 p-4 rounded-lg flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <p class="text-gray-800"><strong>{{ booking.event_name }}</strong></p>
+                                <p class="text-gray-600">Дата бронирования: {{ booking.booking_date }}</p>
+                                <p class="text-gray-600">Статус: {{ booking.status }}</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <!-- Кнопка для просмотра деталей -->
+                                <button onclick="openModal('{{ booking.event_name }}', '{{ booking.booking_date }}', '{{ booking.event_date }}', '{{ booking.children_count }}', '{{ booking.comment }}')" class="text-blue-500 hover:text-blue-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                </button>
+                                <!-- Кнопка для утверждения бронирования -->
+                                <a href="{% url 'manage_booking' booking.id 'approve' %}" class="text-green-500 hover:text-green-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </a>
+                                <!-- Кнопка для отклонения бронирования -->
+                                <a href="{% url 'manage_booking' booking.id 'reject' %}" class="text-red-500 hover:text-red-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </a>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-gray-600">Бронирования не найдены.</p>
+            {% endif %}
+        </div>
     </div>
 </div>
+
+<!-- Модальное окно для просмотра деталей бронирования -->
+<div id="bookingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center">
+    <div class="bg-white p-6 rounded-lg w-1/3">
+        <h3 class="text-2xl font-bold text-gray-800 mb-4">Детали бронирования</h3>
+        <div class="space-y-4">
+            <div>
+                <p class="text-gray-600">Название мероприятия:</p>
+                <p class="text-gray-800 font-semibold" id="modalEventName"></p>
+            </div>
+            <div>
+                <p class="text-gray-600">Дата бронирования:</p>
+                <p class="text-gray-800 font-semibold" id="modalBookingDate"></p>
+            </div>
+            <div>
+                <p class="text-gray-600">Дата мероприятия:</p>
+                <p class="text-gray-800 font-semibold" id="modalEventDate"></p>
+            </div>
+            <div>
+                <p class="text-gray-600">Количество детей:</p>
+                <p class="text-gray-800 font-semibold" id="modalChildrenCount"></p>
+            </div>
+            <div>
+                <p class="text-gray-600">Комментарий:</p>
+                <p class="text-gray-800 font-semibold" id="modalComment"></p>
+            </div>
+        </div>
+        <div class="mt-6 flex justify-end">
+            <button onclick="closeModal()" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
+                Закрыть
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Функция для открытия модального окна
+    function openModal(eventName, bookingDate, eventDate, childrenCount, comment) {
+        document.getElementById('modalEventName').innerText = eventName;
+        document.getElementById('modalBookingDate').innerText = bookingDate;
+        document.getElementById('modalEventDate').innerText = eventDate;
+        document.getElementById('modalChildrenCount').innerText = childrenCount;
+        document.getElementById('modalComment').innerText = comment;
+        document.getElementById('bookingModal').classList.remove('hidden');
+    }
+
+    // Функция для закрытия модального окна
+    function closeModal() {
+        document.getElementById('bookingModal').classList.add('hidden');
+    }
+</script>
 {% endblock %}

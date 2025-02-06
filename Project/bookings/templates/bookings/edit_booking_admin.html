@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto p-6">
+    <h2 class="text-2xl font-bold mb-4">Редактирование бронирования</h2>
+    
+    <form id="adminEditBookingForm" method="post" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="booking_id" value="{{ booking.id }}">
+
+        <div>
+            <label class="block text-gray-700">Название мероприятия:</label>
+            <input type="text" name="event_name" value="{{ booking.event_name }}" class="w-full p-2 border rounded-lg">
+        </div>
+
+        <div>
+            <label class="block text-gray-700">Дата бронирования:</label>
+            <input type="date" name="booking_date" value="{{ booking.booking_date|date:'Y-m-d' }}" class="w-full p-2 border rounded-lg">
+        </div>
+
+        <div>
+            <label class="block text-gray-700">Дата мероприятия:</label>
+            <input type="date" name="event_date" value="{{ booking.event_date|date:'Y-m-d' }}" class="w-full p-2 border rounded-lg">
+        </div>
+
+        <div>
+            <label class="block text-gray-700">Количество детей:</label>
+            <input type="number" name="children_count" value="{{ booking.children_count }}" class="w-full p-2 border rounded-lg">
+        </div>
+
+        <div>
+            <label class="block text-gray-700">Комментарий:</label>
+            <textarea name="comment" class="w-full p-2 border rounded-lg">{{ booking.comment }}</textarea>
+        </div>
+
+        <div>
+            <label class="block text-gray-700">Статус бронирования:</label>
+            <select name="status" class="w-full p-2 border rounded-lg">
+                <option value="Ожидание" {% if booking.status == 'Ожидание' %}selected{% endif %}>Ожидание</option>
+                <option value="Подтверждено" {% if booking.status == 'Подтверждено' %}selected{% endif %}>Подтверждено</option>
+                <option value="Отклонено" {% if booking.status == 'Отклонено' %}selected{% endif %}>Отклонено</option>
+            </select>
+        </div>
+
+        <div class="mt-6 flex justify-end space-x-2">
+            <a href="{% url 'admin_dashboard' %}" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600">Отмена</a>
+            <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600">Сохранить</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.getElementById('adminEditBookingForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        let formData = new FormData(this);
+        
+        fetch("{% url 'edit_booking_admin' booking.id %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Бронирование обновлено');
+                window.location.href = "{% url 'admin_dashboard' %}";
+            } else {
+                alert('Ошибка при обновлении');
+            }
+        });
+    });
+</script>
+{% endblock %}

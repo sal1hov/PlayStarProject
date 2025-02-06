@@ -1,4 +1,3 @@
-# bookings/views.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
@@ -30,9 +29,6 @@ def manage_booking(request, booking_id, action):
     return redirect('index')  # Перенаправление, если роль не подходит
 
 
-from django.utils import timezone
-
-
 @login_required
 def edit_booking(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id, user=request.user)
@@ -53,6 +49,26 @@ def edit_booking(request, booking_id):
         form = BookingForm(instance=booking)
 
     return render(request, 'bookings/edit_booking.html', {'form': form, 'booking': booking})
+
+
+@login_required
+@user_passes_test(role_required('Admin', 'Manager'))
+def edit_booking_admin(request, booking_id):
+    booking = get_object_or_404(Booking, id=booking_id)
+
+    if request.method == 'POST':
+        form = BookingForm(request.POST, instance=booking)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Бронирование успешно обновлено!')
+            return redirect('admin_dashboard')
+        else:
+            messages.error(request, 'Ошибка при обновлении бронирования.')
+    else:
+        form = BookingForm(instance=booking)
+
+    return render(request, 'bookings/edit_booking_admin.html', {'form': form, 'booking': booking})
+
 
 @login_required
 def delete_booking(request, booking_id):
