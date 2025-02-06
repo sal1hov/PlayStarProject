@@ -127,3 +127,4 @@ def export_bookings_csv(request):
         writer.writerow([booking.id, booking.user.username, booking.booking_date, booking.status])
     return response
 
+
