@@ -21,6 +21,8 @@ def role_required(*group_names):
     return user_passes_test(in_groups)
 
 
+@login_required
+@user_passes_test(role_required('Admin', 'Manager'))
 def admin_dashboard(request):
     # Получаем всех пользователей без фильтров для статистики
     all_users = CustomUser.objects.all()
@@ -41,6 +43,17 @@ def admin_dashboard(request):
 
     # Бронирования
     bookings = Booking.objects.all()
+
+    # Фильтрация бронирований
+    booking_search = request.GET.get('booking_search')
+    if booking_search:
+        bookings = bookings.filter(event_name__icontains=booking_search)
+
+    booking_status = request.GET.get('booking_status')
+    if booking_status:
+        bookings = bookings.filter(status=booking_status)
+
+    # Общее количество бронирований
     total_bookings = bookings.count()
     pending_bookings = bookings.filter(status='pending').count()
 
@@ -143,3 +156,4 @@ def site_settings_view(request):
     else:
         form = SiteSettingsForm(instance=settings_obj)
     return render(request, 'staff/settings.html', {'form': form})
+

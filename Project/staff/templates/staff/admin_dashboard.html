@@ -18,7 +18,7 @@
                 </a>
                 <a href="{% url 'site_settings' %}" class="block py-2 px-4 hover:bg-gray-700 rounded-lg transition duration-300">
                     Настройки сайта
-
+                </a>
             </nav>
         </div>
         <div class="space-y-4">
@@ -155,7 +155,7 @@
         <div id="bookings-tab" class="tab-content hidden">
             <!-- Фильтр бронирований -->
             <div class="bg-white p-6 rounded-lg shadow mb-6">
-                <form method="get" class="flex flex-col md:flex-row md:items-center md:space-x-4">
+                <form id="booking-search-form" method="get" class="flex flex-col md:flex-row md:items-center md:space-x-4">
                     <input type="text" name="booking_search" placeholder="Поиск по мероприятию" value="{{ request.GET.booking_search }}"
                            class="p-2 border rounded-lg flex-1 mb-4 md:mb-0">
                     <select name="booking_status" class="p-2 border rounded-lg mb-4 md:mb-0">
@@ -164,7 +164,7 @@
                         <option value="Одобрено" {% if request.GET.booking_status == "Одобрено" %}selected{% endif %}>Одобрено</option>
                         <option value="Отклонено" {% if request.GET.booking_status == "Отклонено" %}selected{% endif %}>Отклонено</option>
                     </select>
-                    <button type="submit" class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition duration-300">
+                    <button type="submit" id="booking-search-button" class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition duration-300">
                         Применить
                     </button>
                     <a href="{% url 'admin_dashboard' %}" class="bg-gray-500 text-white p-2 rounded-lg hover:bg-gray-600 transition duration-300">
@@ -338,6 +338,31 @@
                     }
                 });
             });
+
+<!--            AJAX Для бронирования без перезагрузки-->
+            $(document).ready(function() {
+        // Обработка отправки формы поиска бронирований
+        $('#booking-search-form').on('submit', function(event) {
+            event.preventDefault(); // Отменяем стандартную отправку формы
+
+            // Получаем данные из формы
+            const formData = $(this).serialize();
+
+            // Отправляем AJAX-запрос
+            $.ajax({
+                url: "{% url 'admin_dashboard' %}", // URL для отправки запроса
+                type: "GET",
+                data: formData,
+                success: function(response) {
+                    // Обновляем только таблицу с бронированиями
+                    $('#bookings-tab').html($(response).find('#bookings-tab').html());
+                },
+                error: function(xhr, status, error) {
+                    console.error("Ошибка при выполнении запроса:", error);
+                }
+            });
+        });
+    });
         </script>
     </main>
 </div>
