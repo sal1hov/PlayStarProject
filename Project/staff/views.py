@@ -6,8 +6,10 @@ from django.contrib.auth import update_session_auth_hash
 from django.http import HttpResponse
 import csv
 from main.models import CustomUser  # Используем кастомную модель пользователя
-from bookings.models import Booking  # Предполагается, что модель бронирований находится в приложении bookings
+from bookings.models import Booking  # Модель бронирований из приложения bookings
 from django.core.paginator import Paginator
+from .models import SiteSettings
+from .forms import SiteSettingsForm
 
 def role_required(*group_names):
     """Декоратор для проверки групп."""
@@ -127,4 +129,17 @@ def export_bookings_csv(request):
         writer.writerow([booking.id, booking.user.username, booking.booking_date, booking.status])
     return response
 
-
+@login_required
+@role_required('Admin')
+def site_settings_view(request):
+    # Получаем экземпляр настроек; если его нет, создаём (singleton)
+    settings_obj, created = SiteSettings.objects.get_or_create(id=1)
+    if request.method == 'POST':
+        form = SiteSettingsForm(request.POST, instance=settings_obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Настройки сайта обновлены.")
+            return redirect('site_settings')
+    else:
+        form = SiteSettingsForm(instance=settings_obj)
+    return render(request, 'staff/settings.html', {'form': form})

@@ -17,4 +17,7 @@ urlpatterns = [
     # Экспорт данных
     path('export/users/', views.export_users_csv, name='export_users_csv'),
     path('export/bookings/', views.export_bookings_csv, name='export_bookings_csv'),
+
+    # Новый URL для настроек сайта
+    path('settings/', views.site_settings_view, name='site_settings'),
 ]
