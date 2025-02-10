@@ -7,8 +7,7 @@
     <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Редактирование бронирования</h2>
 
     <!-- Уведомление -->
-    <div id="notification"
-         class="hidden mb-4 p-3 rounded-lg text-white text-center"></div>
+    <div id="notification" class="hidden mb-4 p-3 rounded-lg text-white text-center"></div>
 
     <form id="booking-form" method="post">
         {% csrf_token %}
@@ -29,7 +28,6 @@
             </div>
         </div>
 
-        <!-- Скрыть кнопку, если статус "Отклонено" или "Прошло" -->
         {% if booking.status == "Отклонено" or booking.status == "Прошло" %}
             <p class="text-red-500 text-center">Редактирование невозможно для отклонённых или прошедших бронирований.</p>
         {% else %}
@@ -51,7 +49,6 @@
 document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("booking-form");
     const notification = document.getElementById("notification");
-    const today = new Date().toISOString().split('T')[0];
 
     // Устанавливаем минимально допустимую дату и время (сегодня)
     const now = new Date();
@@ -62,10 +59,10 @@ document.addEventListener("DOMContentLoaded", function () {
         event.preventDefault();
         const formData = new FormData(form);
 
-        // Перед отправкой данных, форматируем дату
+        // Перед отправкой форматируем дату
         const eventDateInput = document.getElementById("event_date");
         const eventDateValue = new Date(eventDateInput.value).toISOString().slice(0, 16);
-        eventDateInput.value = eventDateValue;  // Устанавливаем дату в правильном формате
+        eventDateInput.value = eventDateValue;
 
         fetch("{% url 'edit_booking' booking.id %}", {
             method: "POST",
@@ -78,13 +75,12 @@ document.addEventListener("DOMContentLoaded", function () {
             notification.classList.remove("hidden");
             notification.classList.add(data.success ? "bg-green-500" : "bg-red-500");
 
-            // Очищаем старые ошибки
+            // Удаляем старые ошибки
             document.querySelectorAll(".error-message").forEach(el => el.remove());
 
             if (data.success) {
                 setTimeout(() => window.location.href = "{% url 'profile' %}", 1500);
             } else if (data.errors) {
-                // Отображаем ошибки под соответствующими полями
                 for (const [field, messages] of Object.entries(data.errors)) {
                     const input = document.querySelector(`[name="${field}"]`);
                     if (input) {
@@ -98,7 +94,6 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
-
 </script>
 
 {% endblock %}

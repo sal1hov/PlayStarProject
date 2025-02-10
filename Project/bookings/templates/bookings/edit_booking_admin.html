@@ -2,7 +2,7 @@
 {% block content %}
 <div class="container mx-auto p-6">
     <h2 class="text-2xl font-bold mb-4">Редактирование бронирования</h2>
-    
+
     <form id="adminEditBookingForm" method="post" class="space-y-4">
         {% csrf_token %}
         <input type="hidden" name="booking_id" value="{{ booking.id }}">
@@ -52,12 +52,13 @@
     document.getElementById('adminEditBookingForm').addEventListener('submit', function(event) {
         event.preventDefault();
         let formData = new FormData(this);
-        
+
         fetch("{% url 'edit_booking_admin' booking.id %}", {
             method: 'POST',
             body: formData,
             headers: {
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'X-Requested-With': 'XMLHttpRequest'
             }
         })
         .then(response => response.json())
