@@ -12,6 +12,8 @@ from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from django.http import JsonResponse
 from django.template.loader import render_to_string
+from django.shortcuts import render
+from .models import Notification
 
 def role_required(*group_names):
     """Декоратор для проверки групп."""
@@ -173,3 +175,7 @@ def filter_users(request):
 
     html = render_to_string('staff/users_table.html', {'users': users})
     return JsonResponse({'html': html})
+
+def notifications_view(request):
+    notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
+    return render(request, 'staff/notifications.html', {'notifications': notifications})
