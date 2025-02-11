@@ -18,6 +18,8 @@ urlpatterns = [
     path('export/users/', views.export_users_csv, name='export_users_csv'),
     path('export/bookings/', views.export_bookings_csv, name='export_bookings_csv'),
 
-    # Новый URL для настроек сайта
-    path('settings/', views.site_settings_view, name='site_settings'),
+    path('statistics/', views.statistics_view, name='statistics'),
+    path('notifications/', views.notifications_view, name='notifications'),
+    path('events/', views.events_view, name='events'),
+    path('filter-users/', views.filter_users, name='filter_users'),
 ]

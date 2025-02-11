@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block title %}Мероприятия{% endblock %}
+{% block content %}
+<div class="flex min-h-screen">
+    <!-- Боковое меню -->
+    <aside class="w-64 bg-gray-800 text-white p-6 flex flex-col justify-between">
+        <!-- Меню (скопируйте из admin_dashboard.html) -->
+    </aside>
+
+    <!-- Основной контент -->
+    <main class="flex-1 p-8 bg-gray-100">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">Мероприятия</h1>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for event in events %}
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4">{{ event.name }}</h2>
+                <p class="text-gray-700">{{ event.description }}</p>
+                <p class="text-sm text-gray-500 mt-2">{{ event.date|date:"d.m.Y H:i" }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+{% endblock %}

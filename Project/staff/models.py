@@ -1,6 +1,6 @@
-# staff/models.py
 from django.db import models
 from django.contrib.auth import get_user_model
+from main.models import CustomUser  # Импортируем CustomUser
 
 class StaffProfile(models.Model):
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE)
@@ -9,7 +9,6 @@ class StaffProfile(models.Model):
     def __str__(self):
         return f'{self.user.username} - {self.position}'
 
-# Новая модель для настроек сайта
 class SiteSettings(models.Model):
     site_title = models.CharField(max_length=255, verbose_name="Заголовок сайта")
     meta_description = models.TextField(blank=True, null=True, verbose_name="Мета описание")
@@ -22,3 +21,22 @@ class SiteSettings(models.Model):
     class Meta:
         verbose_name = "Настройка сайта"
         verbose_name_plural = "Настройки сайта"
+
+class Notification(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='notifications')
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.user.username} - {self.message[:50]}'
+
+class Event(models.Model):
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    date = models.DateTimeField()
+    location = models.CharField(max_length=255)
+    image = models.ImageField(upload_to='events/', null=True, blank=True)
+
+    def __str__(self):
+        return self.name

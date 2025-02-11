@@ -8,8 +8,10 @@ import csv
 from main.models import CustomUser  # Используем кастомную модель пользователя
 from bookings.models import Booking  # Модель бронирований из приложения bookings
 from django.core.paginator import Paginator
-from .models import SiteSettings
-from .forms import SiteSettingsForm
+from django.db.models import Count
+from django.db.models.functions import TruncMonth
+from django.http import JsonResponse
+from django.template.loader import render_to_string
 
 def role_required(*group_names):
     """Декоратор для проверки групп."""
@@ -142,18 +144,32 @@ def export_bookings_csv(request):
         writer.writerow([booking.id, booking.user.username, booking.booking_date, booking.status])
     return response
 
-@login_required
-@role_required('Admin')
-def site_settings_view(request):
-    # Получаем экземпляр настроек; если его нет, создаём (singleton)
-    settings_obj, created = SiteSettings.objects.get_or_create(id=1)
-    if request.method == 'POST':
-        form = SiteSettingsForm(request.POST, instance=settings_obj)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Настройки сайта обновлены.")
-            return redirect('site_settings')
-    else:
-        form = SiteSettingsForm(instance=settings_obj)
-    return render(request, 'staff/settings.html', {'form': form})
+def statistics_view(request):
+    # Статистика пользователей по месяцам
+    users_by_month = CustomUser.objects.annotate(
+        month=TruncMonth('date_joined')
+    ).values('month').annotate(count=Count('id')).order_by('month')
 
+    # Статистика бронирований по статусам
+    bookings_by_status = Booking.objects.values('status').annotate(count=Count('id')).order_by('status')
+
+    return render(request, 'staff/statistics.html', {
+        'users_by_month': list(users_by_month),
+        'bookings_by_status': list(bookings_by_status),
+    })
+def events_view(request):
+    events = Event.objects.all()
+    return render(request, 'staff/events.html', {'events': events})
+
+def filter_users(request):
+    users = CustomUser.objects.all()
+    search_query = request.GET.get('search', '').strip()
+    role_filter = request.GET.get('role', '').strip().upper()
+
+    if search_query:
+        users = users.filter(username__icontains=search_query)
+    if role_filter:
+        users = users.filter(role=role_filter)
+
+    html = render_to_string('staff/users_table.html', {'users': users})
+    return JsonResponse({'html': html})

@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Статистика{% endblock %}
+{% block content %}
+<div class="flex min-h-screen">
+    <!-- Боковое меню -->
+    <aside class="w-64 bg-gray-800 text-white p-6 flex flex-col justify-between">
+        <!-- Меню (скопируйте из admin_dashboard.html) -->
+    </aside>
+
+    <!-- Основной контент -->
+    <main class="flex-1 p-8 bg-gray-100">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">Статистика</h1>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4">Регистрации пользователей по месяцам</h2>
+                <canvas id="usersChart"></canvas>
+            </div>
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h2 class="text-xl font-bold mb-4">Бронирования по статусам</h2>
+                <canvas id="bookingsChart"></canvas>
+            </div>
+        </div>
+    </main>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const usersData = {{ users_by_month|safe }};
+    const bookingsData = {{ bookings_by_status|safe }};
+
+    new Chart(document.getElementById('usersChart'), {
+        type: 'line',
+        data: {
+            labels: usersData.map(item => item.month),
+            datasets: [{
+                label: 'Регистрации',
+                data: usersData.map(item => item.count),
+                borderColor: 'rgba(75, 192, 192, 1)',
+                fill: false,
+            }]
+        }
+    });
+
+    new Chart(document.getElementById('bookingsChart'), {
+        type: 'bar',
+        data: {
+            labels: bookingsData.map(item => item.status),
+            datasets: [{
+                label: 'Бронирования',
+                data: bookingsData.map(item => item.count),
+                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+            }]
+        }
+    });
+</script>
+{% endblock %}
