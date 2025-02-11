@@ -21,5 +21,9 @@ urlpatterns = [
     path('statistics/', views.statistics_view, name='statistics'),
     path('notifications/', views.notifications_view, name='notifications'),
     path('events/', views.events_view, name='events'),
-    path('filter-users/', views.filter_users, name='filter_users'),
+
+    path('notifications/mark_as_read/<int:notification_id>/', views.mark_as_read, name='mark_as_read'),
+    path('notifications/delete/<int:notification_id>/', views.delete_notification, name='delete_notification'),
+    path('notifications/clear/', views.clear_notifications, name='clear_notifications'),
 ]
+

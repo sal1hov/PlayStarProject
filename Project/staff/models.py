@@ -23,13 +23,13 @@ class SiteSettings(models.Model):
         verbose_name_plural = "Настройки сайта"
 
 class Notification(models.Model):
-    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='notifications')
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)  # Используем get_user_model()
     message = models.TextField()
-    is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)  # Флаг для отображения прочитано ли уведомление
 
     def __str__(self):
-        return f'{self.user.username} - {self.message[:50]}'
+        return f"Notification for {self.user.username} - {self.message[:20]}..."
 
 class Event(models.Model):
     name = models.CharField(max_length=255)

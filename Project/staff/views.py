@@ -14,6 +14,8 @@ from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.shortcuts import render
 from .models import Notification
+from .models import Event
+
 
 def role_required(*group_names):
     """Декоратор для проверки групп."""
@@ -146,36 +148,48 @@ def export_bookings_csv(request):
         writer.writerow([booking.id, booking.user.username, booking.booking_date, booking.status])
     return response
 
+
 def statistics_view(request):
     # Статистика пользователей по месяцам
     users_by_month = CustomUser.objects.annotate(
         month=TruncMonth('date_joined')
     ).values('month').annotate(count=Count('id')).order_by('month')
+    users_by_month = list(users_by_month)
+    # Преобразуем поле month в строку в формате "YYYY-MM"
+    for item in users_by_month:
+        if item['month']:
+            item['month'] = item['month'].strftime('%Y-%m')
 
     # Статистика бронирований по статусам
     bookings_by_status = Booking.objects.values('status').annotate(count=Count('id')).order_by('status')
 
     return render(request, 'staff/statistics.html', {
-        'users_by_month': list(users_by_month),
+        'users_by_month': users_by_month,
         'bookings_by_status': list(bookings_by_status),
     })
+
 def events_view(request):
     events = Event.objects.all()
     return render(request, 'staff/events.html', {'events': events})
 
-def filter_users(request):
-    users = CustomUser.objects.all()
-    search_query = request.GET.get('search', '').strip()
-    role_filter = request.GET.get('role', '').strip().upper()
-
-    if search_query:
-        users = users.filter(username__icontains=search_query)
-    if role_filter:
-        users = users.filter(role=role_filter)
-
-    html = render_to_string('staff/users_table.html', {'users': users})
-    return JsonResponse({'html': html})
-
 def notifications_view(request):
     notifications = Notification.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'staff/notifications.html', {'notifications': notifications})
+
+@login_required
+def mark_as_read(request, notification_id):
+    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+    notification.is_read = True
+    notification.save()
+    return JsonResponse({'success': True, 'message': 'Уведомление помечено как прочитанное.'})
+
+@login_required
+def delete_notification(request, notification_id):
+    notification = get_object_or_404(Notification, id=notification_id, user=request.user)
+    notification.delete()
+    return JsonResponse({'success': True, 'message': 'Уведомление удалено.'})
+
+@login_required
+def clear_notifications(request):
+    Notification.objects.filter(user=request.user).delete()
+    return JsonResponse({'success': True, 'message': 'Все уведомления очищены.'})

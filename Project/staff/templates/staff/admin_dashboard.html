@@ -19,6 +19,13 @@
                 <a href="{% url 'statistics' %}" class="block py-2 px-4 hover:bg-gray-700 rounded-lg transition duration-300">
                     Статистика
                 </a>
+                <!-- Новые ссылки на страницы уведомлений и мероприятий -->
+                <a href="{% url 'notifications' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">
+                    Уведомления
+                </a>
+                <a href="{% url 'events' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">
+                    Мероприятия
+                </a>
             </nav>
         </div>
         <div class="space-y-4">
@@ -359,23 +366,6 @@
                 },
                 error: function(xhr, status, error) {
                     console.error("Ошибка при выполнении запроса:", error);
-                }
-            });
-        });
-    });
-
-<!--            AJAX для страниц-->
-
-    $(document).ready(function() {
-        $('#user-search-form').on('submit', function(event) {
-            event.preventDefault();
-            const formData = $(this).serialize();
-            $.ajax({
-                url: "{% url 'filter_users' %}",
-                type: "GET",
-                data: formData,
-                success: function(response) {
-                    $('#users-table').html(response.html);
                 }
             });
         });
