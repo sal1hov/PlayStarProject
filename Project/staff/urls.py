@@ -1,4 +1,3 @@
-# staff/urls.py
 from django.urls import path
 from . import views
 
@@ -19,11 +18,14 @@ urlpatterns = [
     path('export/bookings/', views.export_bookings_csv, name='export_bookings_csv'),
 
     path('statistics/', views.statistics_view, name='statistics'),
-    path('notifications/', views.notifications_view, name='notifications'),
     path('events/', views.events_view, name='events'),
+    # Новые маршруты для мероприятий
+    path('events/create/', views.create_event, name='create_event'),
+    path('events/import/', views.import_events, name='import_events'),
+    path('events/<int:event_id>/edit/', views.edit_event, name='edit_event'),
+    path('events/<int:event_id>/approve/', views.approve_event, name='approve_event'),
+    path('events/<int:event_id>/reject/', views.reject_event, name='reject_event'),
+    path('export/holidays/', views.export_holidays_csv, name='export_holidays_csv'),
+    path('events/<int:event_id>/delete/', views.delete_event, name='delete_event'),
 
-    path('notifications/mark_as_read/<int:notification_id>/', views.mark_as_read, name='mark_as_read'),
-    path('notifications/delete/<int:notification_id>/', views.delete_notification, name='delete_notification'),
-    path('notifications/clear/', views.clear_notifications, name='clear_notifications'),
 ]
-

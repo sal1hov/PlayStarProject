@@ -1,6 +1,5 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from main.models import CustomUser  # Импортируем CustomUser
 
 class StaffProfile(models.Model):
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE)
@@ -22,14 +21,20 @@ class SiteSettings(models.Model):
         verbose_name = "Настройка сайта"
         verbose_name_plural = "Настройки сайта"
 
-class Notification(models.Model):
-    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE)  # Используем get_user_model()
-    message = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_read = models.BooleanField(default=False)  # Флаг для отображения прочитано ли уведомление
+# Новые константы для выбора типа и статуса модерации
+EVENT_TYPES = (
+    ('holiday', 'Праздник'),
+    ('concert', 'Концерт'),
+    ('seminar', 'Семинар'),
+    ('other', 'Другое'),
+)
 
-    def __str__(self):
-        return f"Notification for {self.user.username} - {self.message[:20]}..."
+MODERATION_STATUS = (
+    ('approved', 'Принято'),
+    ('rejected', 'Отказано'),
+    ('unavailable', 'Недоступно'),
+    ('pending', 'На модерации'),
+)
 
 class Event(models.Model):
     name = models.CharField(max_length=255)
@@ -37,6 +42,8 @@ class Event(models.Model):
     date = models.DateTimeField()
     location = models.CharField(max_length=255)
     image = models.ImageField(upload_to='events/', null=True, blank=True)
+    event_type = models.CharField(max_length=50, choices=EVENT_TYPES, default='other', verbose_name="Тип мероприятия")
+    moderation_status = models.CharField(max_length=50, choices=MODERATION_STATUS, default='pending', verbose_name="Статус модерации")
 
     def __str__(self):
         return self.name

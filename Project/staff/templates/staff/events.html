@@ -7,52 +7,227 @@
         <div>
             <h2 class="text-2xl font-bold mb-8">Админ-панель</h2>
             <nav class="space-y-4">
-                <a href="{% url 'admin_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">
-                    Главная
-                </a>
-                <a href="{% url 'manager_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">
-                    Панель менеджера
-                </a>
-                <a href="{% url 'employee_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">
-                    Панель сотрудника
-                </a>
-                <a href="{% url 'statistics' %}" class="block py-2 px-4 hover:bg-gray-700 rounded-lg transition duration-300">
-                    Статистика
-                </a>
-                <!-- Новые ссылки на страницы уведомлений и мероприятий -->
-                <a href="{% url 'notifications' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">
-                    Уведомления
-                </a>
-                <a href="{% url 'events' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">
-                    Мероприятия
-                </a>
+                <a href="{% url 'admin_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Главная</a>
+                <a href="{% url 'manager_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Панель менеджера</a>
+                <a href="{% url 'employee_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Панель сотрудника</a>
+                <a href="{% url 'statistics' %}" class="block py-2 px-4 hover:bg-gray-700 rounded-lg transition duration-300">Статистика</a>
+                <a href="{% url 'events' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Мероприятия</a>
             </nav>
         </div>
         <div class="space-y-4">
-            <a href="{% url 'export_users_csv' %}" class="block py-2 px-4 bg-green-500 rounded-lg text-white hover:bg-green-600 transition duration-300">
-                Экспорт пользователей
-            </a>
-            <a href="{% url 'export_bookings_csv' %}" class="block py-2 px-4 bg-green-500 rounded-lg text-white hover:bg-green-600 transition duration-300">
-                Экспорт бронирований
-            </a>
-            <a href="{% url 'admin:index' %}" class="block py-2 px-4 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition duration-300">
-                Django-админка
-            </a>
+            <a href="{% url 'export_users_csv' %}" class="block py-2 px-4 bg-green-500 rounded-lg text-white hover:bg-green-600 transition duration-300">Экспорт пользователей</a>
+            <a href="{% url 'export_bookings_csv' %}" class="block py-2 px-4 bg-green-500 rounded-lg text-white hover:bg-green-600 transition duration-300">Экспорт бронирований</a>
+            <a href="{% url 'export_holidays_csv' %}" class="block py-2 px-4 bg-green-500 rounded-lg text-white hover:bg-green-600 transition duration-300">Экспорт праздников</a>
+            <a href="{% url 'admin:index' %}" class="block py-2 px-4 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition duration-300">Django-админка</a>
         </div>
     </aside>
 
     <!-- Основной контент -->
     <main class="flex-1 p-8 bg-gray-100">
-        <h1 class="text-3xl font-bold text-gray-800 mb-8">Мероприятия</h1>
+        <div class="flex justify-between items-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Мероприятия</h1>
+            <!-- Кнопка создания мероприятия -->
+            <button onclick="openCreateEventModal()" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
+                Создать мероприятие
+            </button>
+            <!-- Кнопка импорта мероприятий -->
+            <button onclick="openImportModal()" class="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">
+                Импортировать мероприятия
+            </button>
+        </div>
+
+        <!-- Фильтрация и сортировка мероприятий -->
+        <div class="mb-6 flex justify-between">
+            <form method="GET" action="{% url 'events' %}">
+                <div class="flex space-x-4">
+                    <!-- Фильтрация по месяцам -->
+                    <select name="month_filter" class="p-2 rounded-lg">
+                        <option value="">Все месяцы</option>
+                        {% for month in months %}
+                            <option value="{{ month }}" {% if month == month_filter %}selected{% endif %}>{{ month }}</option>
+                        {% endfor %}
+                    </select>
+
+                    <!-- Сортировка по имени или дате -->
+                    <select name="sort_by" class="p-2 rounded-lg">
+                        <option value="date" {% if sort_by == 'date' %}selected{% endif %}>По дате</option>
+                        <option value="name" {% if sort_by == 'name' %}selected{% endif %}>По имени</option>
+                    </select>
+
+                    <button type="submit" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600">Применить</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Список мероприятий -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for event in events %}
             <div class="bg-white p-6 rounded-lg shadow">
                 <h2 class="text-xl font-bold mb-4">{{ event.name }}</h2>
                 <p class="text-gray-700">{{ event.description }}</p>
                 <p class="text-sm text-gray-500 mt-2">{{ event.date|date:"d.m.Y H:i" }}</p>
+                <p class="text-sm text-gray-500 mt-1">Статус модерации:
+                    {% if event.moderation_status == "approved" %}
+                        <span class="text-green-500 font-semibold">Принято</span>
+                    {% elif event.moderation_status == "rejected" %}
+                        <span class="text-red-500 font-semibold">Отказано</span>
+                    {% elif event.moderation_status == "unavailable" %}
+                        <span class="text-gray-500 font-semibold">Недоступно</span>
+                    {% else %}
+                        <span class="text-yellow-500 font-semibold">На модерации</span>
+                    {% endif %}
+                </p>
+                <div class="flex justify-between mt-4">
+                    <button onclick="openEditEventModal({{ event.id }})" class="text-blue-500 hover:text-blue-700">Редактировать</button>
+                    <!-- Кнопка удаления -->
+                    <a href="{% url 'delete_event' event.id %}" class="text-red-500 hover:text-red-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        Удалить
+                    </a>
+                    {% if event.moderation_status == "pending" %}
+                        <a href="{% url 'approve_event' event.id %}" class="text-green-500 hover:text-green-700">Принять</a>
+                        <a href="{% url 'reject_event' event.id %}" class="text-red-500 hover:text-red-700">Отклонить</a>
+                    {% endif %}
+                </div>
             </div>
             {% endfor %}
         </div>
+
     </main>
 </div>
+
+<!-- Модальное окно создания мероприятия -->
+<div id="createEventModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center">
+    <div class="bg-white p-6 rounded-lg w-1/2">
+        <h2 class="text-2xl font-bold mb-4">Создать мероприятие</h2>
+        <form id="createEventForm" method="post" enctype="multipart/form-data" action="{% url 'create_event' %}">
+            {% csrf_token %}
+            <!-- Поля формы, определённые в EventForm -->
+            <div class="mb-4">
+                <label class="block text-gray-700">Название:</label>
+                <input type="text" name="name" class="w-full p-2 border rounded-lg" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700">Дата и время:</label>
+                <input type="datetime-local" name="date" class="w-full p-2 border rounded-lg" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700">Тип мероприятия:</label>
+                <select name="event_type" class="w-full p-2 border rounded-lg">
+                    <option value="holiday">Праздник</option>
+                    <option value="concert">Концерт</option>
+                    <option value="seminar">Семинар</option>
+                    <option value="other" selected>Другое</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700">Описание:</label>
+                <textarea name="description" class="w-full p-2 border rounded-lg" rows="4" required></textarea>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700">Местоположение:</label>
+                <input type="text" name="location" class="w-full p-2 border rounded-lg" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700">Статус модерации:</label>
+                <select name="moderation_status" class="w-full p-2 border rounded-lg">
+                    <option value="pending" selected>На модерации</option>
+                    <option value="approved">Принято</option>
+                    <option value="rejected">Отказано</option>
+                    <option value="unavailable">Недоступно</option>
+                </select>
+            </div>
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="closeCreateEventModal()" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">Отмена</button>
+                <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">Создать</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно редактирования мероприятия -->
+<div id="editEventModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center">
+    <div class="bg-white p-6 rounded-lg w-1/2">
+        <h2 class="text-2xl font-bold mb-4">Редактировать мероприятие</h2>
+        <form id="editEventForm" method="post" enctype="multipart/form-data" action="{% url 'edit_event' 0 %}">
+            {% csrf_token %}
+            <!-- Поля формы, которые можно динамически заполнять из JS -->
+            <div class="mb-4">
+                <label class="block text-gray-700">Название:</label>
+                <input type="text" name="name" class="w-full p-2 border rounded-lg" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700">Дата и время:</label>
+                <input type="datetime-local" name="date" class="w-full p-2 border rounded-lg" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700">Тип мероприятия:</label>
+                <select name="event_type" class="w-full p-2 border rounded-lg">
+                    <option value="holiday">Праздник</option>
+                    <option value="concert">Концерт</option>
+                    <option value="seminar">Семинар</option>
+                    <option value="other" selected>Другое</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700">Описание:</label>
+                <textarea name="description" class="w-full p-2 border rounded-lg" rows="4" required></textarea>
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700">Местоположение:</label>
+                <input type="text" name="location" class="w-full p-2 border rounded-lg" required>
+            </div>
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="closeEditEventModal()" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">Отмена</button>
+                <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">Сохранить изменения</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно импорта мероприятий -->
+<div id="importEventModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center">
+    <div class="bg-white p-6 rounded-lg w-1/2">
+        <h2 class="text-2xl font-bold mb-4">Импорт мероприятий</h2>
+        <form id="importEventForm" method="post" enctype="multipart/form-data" action="{% url 'import_events' %}">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label class="block text-gray-700">Выберите файл (.csv, .xls, .xlsx):</label>
+                <input type="file" name="file" class="w-full p-2 border rounded-lg" required>
+            </div>
+            <div class="flex justify-end space-x-4">
+                <button type="button" onclick="closeImportModal()" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">Отмена</button>
+                <button type="submit" class="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">Импортировать</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openCreateEventModal() {
+        document.getElementById('createEventModal').classList.remove('hidden');
+    }
+    function closeCreateEventModal() {
+        document.getElementById('createEventModal').classList.add('hidden');
+    }
+
+    function openImportModal() {
+        document.getElementById('importEventModal').classList.remove('hidden');
+    }
+    function closeImportModal() {
+        document.getElementById('importEventModal').classList.add('hidden');
+    }
+
+    function openEditEventModal(eventId) {
+        // Здесь можно будет динамически загрузить информацию о мероприятии по ID
+        // Для простоты пример с открытием модального окна без загрузки данных
+        document.getElementById('editEventModal').classList.remove('hidden');
+    }
+
+    function closeEditEventModal() {
+        document.getElementById('editEventModal').classList.add('hidden');
+    }
+</script>
 {% endblock %}

@@ -2,8 +2,8 @@
 from django.contrib import admin
 from django.urls import path, include
 from main.views import index, register, profile_view, logout_view
-from staff.views import edit_user, delete_user
-from bookings.views import edit_booking, delete_booking, manage_booking
+from staff.views import edit_user, delete_user, manage_booking  # Исправили импорт
+from bookings.views import edit_booking, delete_booking
 
 urlpatterns = [
     path('admin/', admin.site.urls),
