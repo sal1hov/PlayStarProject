@@ -44,6 +44,8 @@ class Event(models.Model):
     image = models.ImageField(upload_to='events/', null=True, blank=True)
     event_type = models.CharField(max_length=50, choices=EVENT_TYPES, default='other', verbose_name="Тип мероприятия")
     moderation_status = models.CharField(max_length=50, choices=MODERATION_STATUS, default='pending', verbose_name="Статус модерации")
+    # Добавляем связь с бронированием (если событие создано по бронированию)
+    booking = models.OneToOneField('bookings.Booking', on_delete=models.CASCADE, null=True, blank=True, verbose_name='Бронирование')
 
     def __str__(self):
         return self.name

@@ -4,10 +4,11 @@ from django.contrib import messages
 from .models import Booking
 from .forms import BookingForm
 from staff.views import role_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponseNotAllowed
 from django.utils import timezone
 from django.utils.dateparse import parse_date
-from django.http import HttpResponseNotAllowed
+# Импортируем модель Event из приложения staff
+from staff.models import Event
 
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
@@ -95,6 +96,18 @@ def create_booking(request):
             booking = form.save(commit=False)
             booking.user = request.user
             booking.save()
+
+            # Создаем мероприятие и сохраняем связь с бронированием
+            Event.objects.create(
+                name=booking.event_name,
+                description=booking.comment or 'Событие создано по бронированию.',
+                date=booking.event_date,
+                location='Не указано',  # Можно заменить на нужное значение
+                event_type='birthday',  # Фиксированное значение для бронирований
+                moderation_status='pending',  # По умолчанию мероприятие на модерации
+                booking=booking  # Привязываем бронирование
+            )
+
             return JsonResponse({
                 'success': True,
                 'message': 'Бронирование успешно создано! Ожидайте звонка от менеджера или подтверждения на сайте.'

@@ -197,6 +197,18 @@ def events_view(request):
     })
 
 
+# Новое представление для просмотра информации о мероприятии через AJAX
+@login_required
+@user_passes_test(role_required('Admin', 'Manager'))
+def event_view(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        html = render_to_string('staff/partials/view_event.html', {'event': event}, request=request)
+        return JsonResponse({'html': html})
+    else:
+        return JsonResponse({'error': 'This endpoint is only accessible via AJAX.'}, status=400)
+
+
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
 def create_event(request):
@@ -319,7 +331,14 @@ def approve_event(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     event.moderation_status = 'approved'
     event.save()
-    messages.success(request, f'Мероприятие "{event.name}" принято.')
+
+    # Если мероприятие связано с бронированием, обновляем его статус
+    if event.booking:
+        event.booking.status = 'Подтверждено'
+        event.booking.save()
+        messages.success(request, f'Мероприятие "{event.name}" и связанное бронирование подтверждены.')
+    else:
+        messages.success(request, f'Мероприятие "{event.name}" подтверждено.')
     return redirect('events')
 
 
@@ -329,7 +348,14 @@ def reject_event(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     event.moderation_status = 'rejected'
     event.save()
-    messages.success(request, f'Мероприятие "{event.name}" отклонено.')
+
+    # Если мероприятие связано с бронированием, обновляем его статус
+    if event.booking:
+        event.booking.status = 'Отклонено'
+        event.booking.save()
+        messages.success(request, f'Мероприятие "{event.name}" и связанное бронирование отклонены.')
+    else:
+        messages.success(request, f'Мероприятие "{event.name}" отклонено.')
     return redirect('events')
 
 
