@@ -24,8 +24,8 @@ class SiteSettings(models.Model):
 # Новые константы для выбора типа и статуса модерации
 EVENT_TYPES = (
     ('holiday', 'Праздник'),
-    ('concert', 'Концерт'),
-    ('seminar', 'Семинар'),
+    ('birthday', 'День рождения'),
+    ('animators', 'Открытые анимации'),
     ('other', 'Другое'),
 )
 
