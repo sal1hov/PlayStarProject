@@ -2,13 +2,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 import csv
 from main.models import CustomUser
 from bookings.models import Booking
 from django.core.paginator import Paginator
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
+from django.template.loader import render_to_string
 from .models import Event
 import io
 import pandas as pd  # для импорта из Excel
@@ -23,6 +24,7 @@ def role_required(*group_names):
                 return True
         return False
     return user_passes_test(in_groups)
+
 
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
@@ -65,6 +67,7 @@ def admin_dashboard(request):
         'pending_bookings': pending_bookings
     })
 
+
 @login_required
 @role_required('Admin')
 def edit_user(request, user_id):
@@ -84,6 +87,7 @@ def edit_user(request, user_id):
         return redirect('admin_dashboard')
     return render(request, 'staff/edit_user.html', {'user': user_to_edit})
 
+
 @login_required
 @role_required('Admin')
 def delete_user(request, user_id):
@@ -91,6 +95,7 @@ def delete_user(request, user_id):
     user_to_delete.delete()
     messages.success(request, 'Пользователь успешно удален.')
     return redirect('admin_dashboard')
+
 
 @login_required
 @role_required('Admin', 'Manager')
@@ -104,16 +109,19 @@ def manage_booking(request, booking_id, action):
     messages.success(request, f'Бронирование успешно {"утверждено" if action == "approve" else "отклонено"}.')
     return redirect('admin_dashboard')
 
+
 @login_required
 @role_required('Admin', 'Manager')
 def manager_dashboard(request):
     bookings = Booking.objects.all()
     return render(request, 'staff/manager_dashboard.html', {'bookings': bookings})
 
+
 @login_required
 @role_required('Staff')
 def employee_dashboard(request):
     return render(request, 'staff/employee_dashboard.html')
+
 
 @login_required
 @role_required('Admin')
@@ -126,16 +134,18 @@ def export_users_csv(request):
         writer.writerow([user.id, user.username, user.first_name, user.last_name, user.email])
     return response
 
+
 @login_required
 @role_required('Admin')
 def export_bookings_csv(request):
     response = HttpResponse(content_type='text/csv')
     response['Content-Disposition'] = 'attachment; filename="bookings.csv"'
     writer = csv.writer(response)
-    writer.writerow(['ID', 'User', 'Date', 'Status', ])
+    writer.writerow(['ID', 'User', 'Date', 'Status'])
     for booking in Booking.objects.all():
         writer.writerow([booking.id, booking.user.username, booking.booking_date, booking.status])
     return response
+
 
 def statistics_view(request):
     users_by_month = CustomUser.objects.annotate(
@@ -187,23 +197,19 @@ def events_view(request):
     })
 
 
-
-
-
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
 def create_event(request):
     if request.method == 'POST':
         form = EventForm(request.POST, request.FILES)
         if form.is_valid():
-            event = form.save()
+            form.save()
             messages.success(request, 'Мероприятие успешно создано и отправлено на модерацию.')
             return redirect('events')
         else:
             messages.error(request, 'Ошибка при создании мероприятия.')
     else:
         form = EventForm()
-    # Если запрос AJAX, можно вернуть HTML формы для модального окна (при необходимости)
     return render(request, 'staff/event_modal_form.html', {'form': form})
 
 
@@ -218,7 +224,6 @@ def import_events(request):
     if request.method == 'POST' and request.FILES.get('file'):
         file = request.FILES['file']
         try:
-            # Определяем тип файла и считываем данные с использованием pandas
             if file.name.endswith('.csv'):
                 df = pd.read_csv(file)
             elif file.name.endswith(('.xls', '.xlsx')):
@@ -227,21 +232,17 @@ def import_events(request):
                 messages.error(request, "Неподдерживаемый формат файла.")
                 return redirect('events')
 
-            # Переименование столбцов для соответствия ожидаемым
             df.columns = [col.strip().lower() for col in df.columns]
 
-            # Проверка на наличие столбца 'name'
             if 'name' not in df.columns:
                 messages.error(request, "Файл не содержит столбца 'name'.")
                 return redirect('events')
 
             for index, row in df.iterrows():
-                # Проверяем, что name не пустое
                 if not row.get('name'):
                     messages.error(request, f"Ошибка: строка {index+1} не содержит имя мероприятия.")
-                    continue  # Пропускаем строки с пустым name
+                    continue
 
-                # Нормализация типа мероприятия
                 etype = row.get('event_type', 'other')
                 if isinstance(etype, str):
                     etype = etype.strip().lower()
@@ -281,13 +282,13 @@ def export_events_csv(request):
     response['Content-Disposition'] = 'attachment; filename="events.csv"'
     writer = csv.writer(response)
     writer.writerow(
-        ['ID', 'Название', 'Дата и время', 'Описание', 'Местоположение', 'Тип мероприятия', 'Статус модерации'])
+        ['ID', 'Название', 'Дата и время', 'Описание', 'Местоположение', 'Тип мероприятия', 'Статус модерации']
+    )
 
     events = Event.objects.all()
     for event in events:
         writer.writerow([event.id, event.name, event.date, event.description, event.location, event.event_type,
                          event.moderation_status])
-
     return response
 
 
@@ -295,17 +296,22 @@ def export_events_csv(request):
 @user_passes_test(role_required('Admin', 'Manager'))
 def edit_event(request, event_id):
     event = get_object_or_404(Event, id=event_id)
-    if request.method == 'POST':
+    # Требуем, чтобы доступ к этому эндпоинту был только через AJAX
+    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        return JsonResponse({'error': 'This endpoint is only accessible via AJAX.'}, status=400)
+
+    if request.method == 'GET':
+        form = EventForm(instance=event)
+        html = render_to_string('staff/partials/edit_event_form.html', {'form': form, 'event': event}, request=request)
+        return JsonResponse({'html': html})
+    elif request.method == 'POST':
         form = EventForm(request.POST, request.FILES, instance=event)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Мероприятие успешно обновлено.')
-            return redirect('events')
+            return JsonResponse({'success': True, 'message': 'Мероприятие успешно обновлено.'})
         else:
-            messages.error(request, 'Ошибка при обновлении мероприятия.')
-    else:
-        form = EventForm(instance=event)
-    return render(request, 'staff/edit_event.html', {'form': form})
+            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+
 
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
@@ -316,6 +322,7 @@ def approve_event(request, event_id):
     messages.success(request, f'Мероприятие "{event.name}" принято.')
     return redirect('events')
 
+
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
 def reject_event(request, event_id):
@@ -324,6 +331,7 @@ def reject_event(request, event_id):
     event.save()
     messages.success(request, f'Мероприятие "{event.name}" отклонено.')
     return redirect('events')
+
 
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))

@@ -1,0 +1,31 @@
+<form id="editEventForm" method="post" enctype="multipart/form-data" action="{% url 'edit_event' event.id %}">
+    {% csrf_token %}
+    <div class="mb-4">
+        <label class="block text-gray-700">Название:</label>
+        {{ form.name }}
+    </div>
+    <div class="mb-4">
+        <label class="block text-gray-700">Дата и время:</label>
+        {{ form.date }}
+    </div>
+    <div class="mb-4">
+        <label class="block text-gray-700">Тип мероприятия:</label>
+        {{ form.event_type }}
+    </div>
+    <div class="mb-4">
+        <label class="block text-gray-700">Описание:</label>
+        {{ form.description }}
+    </div>
+    <div class="mb-4">
+        <label class="block text-gray-700">Местоположение:</label>
+        {{ form.location }}
+    </div>
+    <div class="mb-4">
+        <label class="block text-gray-700">Статус модерации:</label>
+        {{ form.moderation_status }}
+    </div>
+    <div class="flex justify-end space-x-4">
+        <button type="button" onclick="closeEditEventModal()" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">Отмена</button>
+        <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">Сохранить изменения</button>
+    </div>
+</form>
