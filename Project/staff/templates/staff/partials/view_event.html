@@ -5,13 +5,13 @@
         <p class="text-gray-700"><strong>Дата:</strong> {{ event.date|date:"d.m.Y H:i" }}</p>
         <p class="text-gray-700"><strong>Описание:</strong> {{ event.description }}</p>
         <p class="text-gray-700"><strong>Местоположение:</strong> {{ event.location }}</p>
-        {% if event.booking %}
-            <p class="text-gray-700"><strong>Количество детей:</strong> {{ event.booking.children_count }}</p>
-            <p class="text-gray-700"><strong>Имя пользователя:</strong> {{ event.booking.user.first_name }} {{ event.booking.user.last_name }}</p>
-            <p class="text-gray-700"><strong>Логин:</strong> {{ event.booking.user.username }}</p>
+        {% if booking %}
+            <p class="text-gray-700"><strong>Количество детей:</strong> {{ booking.children_count }}</p>
+            <p class="text-gray-700"><strong>Имя клиента:</strong> {{ booking.user.first_name }} {{ booking.user.last_name }}</p>
+            <p class="text-gray-700"><strong>Логин:</strong> {{ booking.user.username }}</p>
         {% else %}
             <p class="text-gray-700"><strong>Количество детей:</strong> Не указано</p>
-            <p class="text-gray-700"><strong>Имя пользователя:</strong> Не указано</p>
+            <p class="text-gray-700"><strong>Имя клиента:</strong> Не указано</p>
             <p class="text-gray-700"><strong>Логин:</strong> Не указано</p>
         {% endif %}
     </div>
