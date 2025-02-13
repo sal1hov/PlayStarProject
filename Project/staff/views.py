@@ -241,12 +241,27 @@ def import_events(request):
                     messages.error(request, f"Ошибка: строка {index+1} не содержит имя мероприятия.")
                     continue  # Пропускаем строки с пустым name
 
+                # Нормализация типа мероприятия
+                etype = row.get('event_type', 'other')
+                if isinstance(etype, str):
+                    etype = etype.strip().lower()
+                    if etype in ['праздник', 'holiday']:
+                        etype = 'holiday'
+                    elif etype in ['концерт', 'concert']:
+                        etype = 'concert'
+                    elif etype in ['семинар', 'seminar']:
+                        etype = 'seminar'
+                    else:
+                        etype = 'other'
+                else:
+                    etype = 'other'
+
                 event = Event(
                     name=row.get('name'),
                     description=row.get('description'),
                     date=row.get('date'),
                     location=row.get('location'),
-                    event_type=row.get('event_type', 'other'),
+                    event_type=etype,
                     moderation_status='pending'
                 )
                 event.save()
@@ -259,23 +274,22 @@ def import_events(request):
     return redirect('events')
 
 
-
 @login_required
 @role_required('Admin')
-def export_holidays_csv(request):
+def export_events_csv(request):
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="holidays.csv"'
+    response['Content-Disposition'] = 'attachment; filename="events.csv"'
     writer = csv.writer(response)
-    writer.writerow(['ID', 'Название', 'Дата и время', 'Описание', 'Местоположение', 'Статус модерации'])
+    writer.writerow(
+        ['ID', 'Название', 'Дата и время', 'Описание', 'Местоположение', 'Тип мероприятия', 'Статус модерации'])
 
-    # Отбираем только праздники, но без ограничений по количеству
-    holidays = Event.objects.filter(event_type='holiday')
-
-    # Если праздников больше одного, они все должны экспортироваться
-    for event in holidays:
-        writer.writerow([event.id, event.name, event.date, event.description, event.location, event.moderation_status])
+    events = Event.objects.all()
+    for event in events:
+        writer.writerow([event.id, event.name, event.date, event.description, event.location, event.event_type,
+                         event.moderation_status])
 
     return response
+
 
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))

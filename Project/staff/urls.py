@@ -25,7 +25,7 @@ urlpatterns = [
     path('events/<int:event_id>/edit/', views.edit_event, name='edit_event'),
     path('events/<int:event_id>/approve/', views.approve_event, name='approve_event'),
     path('events/<int:event_id>/reject/', views.reject_event, name='reject_event'),
-    path('export/holidays/', views.export_holidays_csv, name='export_holidays_csv'),
+    path('export/events/', views.export_events_csv, name='export_events_csv'),
     path('events/<int:event_id>/delete/', views.delete_event, name='delete_event'),
 
 ]

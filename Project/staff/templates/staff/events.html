@@ -17,7 +17,7 @@
         <div class="space-y-4">
             <a href="{% url 'export_users_csv' %}" class="block py-2 px-4 bg-green-500 rounded-lg text-white hover:bg-green-600 transition duration-300">Экспорт пользователей</a>
             <a href="{% url 'export_bookings_csv' %}" class="block py-2 px-4 bg-green-500 rounded-lg text-white hover:bg-green-600 transition duration-300">Экспорт бронирований</a>
-            <a href="{% url 'export_holidays_csv' %}" class="block py-2 px-4 bg-green-500 rounded-lg text-white hover:bg-green-600 transition duration-300">Экспорт праздников</a>
+            <a href="{% url 'export_events_csv' %}" class="block py-2 px-4 bg-green-500 rounded-lg text-white hover:bg-green-600 transition duration-300">Экспорт праздников</a>
             <a href="{% url 'admin:index' %}" class="block py-2 px-4 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition duration-300">Django-админка</a>
         </div>
     </aside>
@@ -77,20 +77,43 @@
                         <span class="text-yellow-500 font-semibold">На модерации</span>
                     {% endif %}
                 </p>
-                <div class="flex justify-between mt-4">
-                    <button onclick="openEditEventModal({{ event.id }})" class="text-blue-500 hover:text-blue-700">Редактировать</button>
-                    <!-- Кнопка удаления -->
-                    <a href="{% url 'delete_event' event.id %}" class="text-red-500 hover:text-red-700">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                        Удалить
-                    </a>
-                    {% if event.moderation_status == "pending" %}
-                        <a href="{% url 'approve_event' event.id %}" class="text-green-500 hover:text-green-700">Принять</a>
-                        <a href="{% url 'reject_event' event.id %}" class="text-red-500 hover:text-red-700">Отклонить</a>
-                    {% endif %}
-                </div>
+                <div class="flex justify-around mt-4">
+    <!-- Кнопка редактирования -->
+    <button onclick="openEditEventModal({{ event.id }})" class="text-blue-500 hover:text-blue-700" title="Редактировать">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" stroke="currentColor"
+             viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M11 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2v-5M16.5 3.5a2.121 2.121 0 113 3L12 14l-4 1 1-4 7.5-7.5z"/>
+        </svg>
+    </button>
+    <!-- Кнопка удаления -->
+    <a href="{% url 'delete_event' event.id %}" class="text-red-500 hover:text-red-700" title="Удалить">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" stroke="currentColor"
+             viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22"/>
+        </svg>
+    </a>
+    {% if event.moderation_status == "pending" %}
+        <!-- Кнопка принятия -->
+        <a href="{% url 'approve_event' event.id %}" class="text-green-500 hover:text-green-700" title="Принять">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M5 13l4 4L19 7"/>
+            </svg>
+        </a>
+        <!-- Кнопка отклонения -->
+        <a href="{% url 'reject_event' event.id %}" class="text-red-500 hover:text-red-700" title="Отклонить">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" stroke="currentColor"
+                 viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </a>
+    {% endif %}
+</div>
+
             </div>
             {% endfor %}
         </div>
