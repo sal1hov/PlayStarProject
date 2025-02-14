@@ -32,19 +32,20 @@ def manage_booking(request, booking_id, action):
 def edit_booking(request, booking_id):
     if request.user.groups.filter(name__in=['Admin', 'Manager']).exists() or request.user.is_superuser:
         booking = get_object_or_404(Booking, id=booking_id)
+        enforce = False  # Администратор/менеджер может редактировать даже с прошедшей датой
     else:
         booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+        enforce = True   # Обычный пользователь – дата не должна быть в прошлом
 
     if request.method == 'POST':
-        form = BookingForm(request.POST, instance=booking)
+        form = BookingForm(request.POST, instance=booking, enforce_future_date=enforce)
         if form.is_valid():
             form.save()
             return JsonResponse({'success': True, 'message': 'Бронирование успешно обновлено!'})
         else:
-            print(form.errors)
             return JsonResponse({'success': False, 'message': 'Исправьте ошибки в форме.', 'errors': form.errors})
     else:
-        form = BookingForm(instance=booking)
+        form = BookingForm(instance=booking, enforce_future_date=enforce)
 
     return render(request, 'bookings/edit_booking.html', {'form': form, 'booking': booking})
 

@@ -165,7 +165,6 @@ def statistics_view(request):
 
 
 def events_view(request):
-    # Получаем все мероприятия
     events = Event.objects.all()
 
     # Фильтрация по типу события (если выбран)
@@ -173,28 +172,39 @@ def events_view(request):
     if filter_by_type:
         events = events.filter(event_type=filter_by_type)
 
-    # Сортировка мероприятий
+    # Фильтрация по дате
+    event_date = request.GET.get('event_date')
+    if event_date:
+        events = events.filter(date__date=event_date)
+
+    # Фильтрация по статусу
+    moderation_status = request.GET.get('moderation_status')
+    if moderation_status:
+        events = events.filter(moderation_status=moderation_status)
+
+    # Сортировка
     sort_by = request.GET.get('sort_by', '')
     if sort_by == 'date':
         events = events.order_by('date')
     elif sort_by == 'name':
         events = events.order_by('name')
 
-    # Фильтрация по месяцу
-    month_filter = request.GET.get('month_filter')
-    if month_filter:
-        events = events.filter(date__month=month_filter)
-
-    # Пагинация (если нужно)
+    # Пагинация
     paginator = Paginator(events, 10)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
 
+    # Проверяем, есть ли мероприятия по заданным фильтрам
+    no_events = events.count() == 0
+
     return render(request, 'staff/events.html', {
         'events': page_obj,
-        'month_filter': month_filter,  # передаем для использования в шаблоне
-        'sort_by': sort_by  # передаем параметр сортировки
+        'event_date': event_date,
+        'moderation_status': moderation_status,
+        'sort_by': sort_by,
+        'no_events': no_events,
     })
+
 
 
 # Новое представление для просмотра информации о мероприятии через AJAX

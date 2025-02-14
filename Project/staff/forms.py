@@ -31,15 +31,38 @@ class SiteSettingsForm(forms.ModelForm):
         model = SiteSettings
         fields = ['site_title', 'meta_description', 'meta_keywords', 'google_analytics']
 
+
 class EventForm(forms.ModelForm):
     class Meta:
         model = Event
         fields = ['name', 'description', 'date', 'location', 'image', 'event_type', 'moderation_status']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'w-full p-2 border rounded-lg', 'placeholder': 'Название мероприятия'}),
-            'description': forms.Textarea(attrs={'class': 'w-full p-2 border rounded-lg', 'placeholder': 'Описание мероприятия', 'rows': 4}),
-            'date': forms.DateTimeInput(attrs={'class': 'w-full p-2 border rounded-lg', 'type': 'datetime-local'}),
-            'location': forms.TextInput(attrs={'class': 'w-full p-2 border rounded-lg', 'placeholder': 'Местоположение'}),
+            'name': forms.TextInput(attrs={
+                'class': 'w-full p-2 border rounded-lg',
+                'placeholder': 'Название мероприятия'
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'w-full p-2 border rounded-lg',
+                'placeholder': 'Описание мероприятия',
+                'rows': 4
+            }),
+            'date': forms.DateTimeInput(
+                attrs={
+                    'class': 'w-full p-2 border rounded-lg',
+                    'type': 'datetime-local'
+                },
+                format='%Y-%m-%dT%H:%M'
+            ),
+            'location': forms.TextInput(attrs={
+                'class': 'w-full p-2 border rounded-lg',
+                'placeholder': 'Местоположение'
+            }),
             'event_type': forms.Select(attrs={'class': 'w-full p-2 border rounded-lg'}),
             'moderation_status': forms.Select(attrs={'class': 'w-full p-2 border rounded-lg'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super(EventForm, self).__init__(*args, **kwargs)
+        # Если редактируем существующее событие, форматируем дату для input datetime-local
+        if self.instance and self.instance.pk and self.instance.date:
+            self.fields['date'].initial = self.instance.date.strftime('%Y-%m-%dT%H:%M')

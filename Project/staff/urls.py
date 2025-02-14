@@ -28,4 +28,5 @@ urlpatterns = [
     path('export/events/', views.export_events_csv, name='export_events_csv'),
     path('events/<int:event_id>/delete/', views.delete_event, name='delete_event'),
     path('events/<int:event_id>/view/', views.event_view, name='event_view'),
+
 ]
