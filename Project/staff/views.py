@@ -379,3 +379,15 @@ def delete_event(request, event_id):
     event.delete()
     messages.success(request, 'Мероприятие успешно удалено.')
     return redirect('events')
+
+@login_required
+@user_passes_test(role_required('Admin', 'Manager'))
+def view_booking(request, event_id):
+    event = get_object_or_404(Event, id=event_id)
+    # Ищем бронирование, где название мероприятия совпадает с именем события
+    booking = Booking.objects.filter(event_name=event.name).first()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        html = render_to_string('staff/partials/view_booking.html', {'booking': booking}, request=request)
+        return JsonResponse({'html': html})
+    else:
+        return JsonResponse({'error': 'This endpoint is only accessible via AJAX.'}, status=400)

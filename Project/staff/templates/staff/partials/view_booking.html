@@ -1,0 +1,16 @@
+<div class="p-6 bg-white rounded-lg shadow-lg">
+    <h2 class="text-2xl font-bold text-gray-800 mb-4">Просмотр бронирования</h2>
+    {% if booking %}
+        <p class="text-gray-700"><strong>Имя клиента:</strong> {{ booking.user.first_name }} {{ booking.user.last_name }}</p>
+        <p class="text-gray-700"><strong>Логин:</strong> {{ booking.user.username }}</p>
+        <p class="text-gray-700"><strong>Количество детей:</strong> {{ booking.children_count }}</p>
+        <!-- При необходимости добавьте другие поля бронирования -->
+    {% else %}
+        <p class="text-gray-700">Бронирование не найдено.</p>
+    {% endif %}
+    <div class="mt-6 text-right">
+        <button type="button" onclick="closeViewBookingModal()" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition duration-300">
+            Закрыть
+        </button>
+    </div>
+</div>

@@ -27,6 +27,8 @@ urlpatterns = [
     path('events/<int:event_id>/reject/', views.reject_event, name='reject_event'),
     path('export/events/', views.export_events_csv, name='export_events_csv'),
     path('events/<int:event_id>/delete/', views.delete_event, name='delete_event'),
+    # ... остальные пути
     path('events/<int:event_id>/view/', views.event_view, name='event_view'),
+    path('events/<int:event_id>/view_booking/', views.view_booking, name='view_booking'),
 
 ]
