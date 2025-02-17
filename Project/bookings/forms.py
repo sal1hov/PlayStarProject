@@ -7,10 +7,15 @@ class BookingForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         # Если enforce_future_date True – проверяем, что дата не в прошлом.
         self.enforce_future_date = kwargs.pop('enforce_future_date', True)
+        # Если exclude_status True – удаляем поле status из формы
+        exclude_status = kwargs.pop('exclude_status', False)
         super().__init__(*args, **kwargs)
+        if exclude_status:
+            self.fields.pop('status', None)
 
     class Meta:
         model = Booking
+        # Поле status остается в Meta, но может быть исключено в __init__
         fields = ['event_name', 'event_date', 'status', 'children_count', 'comment']
         widgets = {
             'event_name': forms.TextInput(attrs={
@@ -34,7 +39,6 @@ class BookingForm(forms.ModelForm):
 
     def clean_event_date(self):
         event_date = self.cleaned_data.get('event_date')
-        # Если включена проверка и дата уже прошла – ошибка.
         if event_date and self.enforce_future_date and event_date < timezone.now():
             raise ValidationError("Дата мероприятия не может быть в прошлом!")
         return event_date

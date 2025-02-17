@@ -146,11 +146,11 @@
         <h2 class="text-4xl font-bold text-gray-800 mb-6">История бронирований</h2>
 
         <!-- Всегда показываем кнопку "Забронировать" -->
-<div class="flex justify-center w-full">
-    <button onclick="openModal()" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
-        Забронировать
-    </button>
-</div>
+        <div class="flex justify-center w-full">
+            <button onclick="openModal()" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
+                Забронировать
+            </button>
+        </div>
         <!-- Если бронирования есть, показываем их список -->
         {% if bookings %}
             <ul class="space-y-4">
@@ -160,17 +160,15 @@
                             <p class="text-gray-800"><strong>{{ booking.event_name }}</strong></p>
                             <p class="text-gray-600">Дата бронирования: {{ booking.booking_date }}</p>
                             <p class="text-gray-600">Дата мероприятия: {{ booking.event_date }}</p>
-                            <p class="text-gray-600">Статус: {{ booking.status }}</p>
+                            <p class="text-gray-600">Статус: {{ booking.get_status_display }}</p>
                         </div>
                         <!-- Дополнительные действия для бронирования (например, редактирование или удаление) -->
                         <div class="flex space-x-2">
-                            <!-- Пример ссылки на редактирование бронирования -->
                             <a href="{% url 'edit_booking' booking.id %}" class="text-blue-500 hover:text-blue-700">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H19m-9 4h4" />
                                 </svg>
                             </a>
-                            <!-- Пример ссылки на удаление бронирования -->
                             <form action="{% url 'delete_booking' booking.id %}" method="post" class="inline">
                                 {% csrf_token %}
                                 <button type="submit" class="text-red-500 hover:text-red-700">
@@ -225,7 +223,6 @@
     </div>
 </div>
 
-
 <!-- Скрипт для управления модальным окном и отправки формы через AJAX -->
 <script>
     function openModal() {
@@ -237,41 +234,39 @@
     }
 
     // Обработка отправки формы через AJAX
-document.getElementById('bookingForm').addEventListener('submit', function (e) {
-    e.preventDefault();  // Отменяем стандартную отправку формы
+    document.getElementById('bookingForm').addEventListener('submit', function (e) {
+        e.preventDefault();  // Отменяем стандартную отправку формы
 
-    const formData = new FormData(this);
+        const formData = new FormData(this);
 
-    fetch(this.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRFToken': formData.get('csrfmiddlewaretoken')  // Передаем CSRF-токен
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Показываем уведомление об успешном создании бронирования
-            alert(data.message);
-            closeModal();  // Закрываем модальное окно
-            location.reload();  // Перезагружаем страницу, чтобы обновить список бронирований
-        } else {
-            // Показываем сообщение об ошибке и ошибки формы
-            let errorMessage = data.message;
-            if (data.errors) {
-                errorMessage += '\n\nОшибки:\n';
-                for (const field in data.errors) {
-                    errorMessage += `${field}: ${data.errors[field].join(', ')}\n`;
-                }
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
             }
-            alert(errorMessage);
-        }
-    })
-    .catch(error => {
-        console.error('Ошибка:', error);
-        alert('Произошла ошибка при отправке формы.');
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                closeModal();
+                location.reload();
+            } else {
+                let errorMessage = data.message;
+                if (data.errors) {
+                    errorMessage += '\n\nОшибки:\n';
+                    for (const field in data.errors) {
+                        errorMessage += `${field}: ${data.errors[field].join(', ')}\n`;
+                    }
+                }
+                alert(errorMessage);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при отправке формы.');
+        });
     });
-});
 </script>
 {% endblock %}

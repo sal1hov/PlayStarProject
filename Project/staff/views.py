@@ -15,7 +15,6 @@ import io
 import pandas as pd  # для импорта из Excel
 from .forms import EventForm
 
-
 def role_required(*group_names):
     """Декоратор для проверки групп."""
     def in_groups(user):
@@ -24,7 +23,6 @@ def role_required(*group_names):
                 return True
         return False
     return user_passes_test(in_groups)
-
 
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
@@ -67,7 +65,6 @@ def admin_dashboard(request):
         'pending_bookings': pending_bookings
     })
 
-
 @login_required
 @role_required('Admin')
 def edit_user(request, user_id):
@@ -87,7 +84,6 @@ def edit_user(request, user_id):
         return redirect('admin_dashboard')
     return render(request, 'staff/edit_user.html', {'user': user_to_edit})
 
-
 @login_required
 @role_required('Admin')
 def delete_user(request, user_id):
@@ -95,7 +91,6 @@ def delete_user(request, user_id):
     user_to_delete.delete()
     messages.success(request, 'Пользователь успешно удален.')
     return redirect('admin_dashboard')
-
 
 @login_required
 @role_required('Admin', 'Manager')
@@ -109,19 +104,16 @@ def manage_booking(request, booking_id, action):
     messages.success(request, f'Бронирование успешно {"утверждено" if action == "approve" else "отклонено"}.')
     return redirect('admin_dashboard')
 
-
 @login_required
 @role_required('Admin', 'Manager')
 def manager_dashboard(request):
     bookings = Booking.objects.all()
     return render(request, 'staff/manager_dashboard.html', {'bookings': bookings})
 
-
 @login_required
 @role_required('Staff')
 def employee_dashboard(request):
     return render(request, 'staff/employee_dashboard.html')
-
 
 @login_required
 @role_required('Admin')
@@ -134,7 +126,6 @@ def export_users_csv(request):
         writer.writerow([user.id, user.username, user.first_name, user.last_name, user.email])
     return response
 
-
 @login_required
 @role_required('Admin')
 def export_bookings_csv(request):
@@ -145,7 +136,6 @@ def export_bookings_csv(request):
     for booking in Booking.objects.all():
         writer.writerow([booking.id, booking.user.username, booking.booking_date, booking.status])
     return response
-
 
 def statistics_view(request):
     users_by_month = CustomUser.objects.annotate(
@@ -162,7 +152,6 @@ def statistics_view(request):
         'users_by_month': users_by_month,
         'bookings_by_status': list(bookings_by_status),
     })
-
 
 def events_view(request):
     events = Event.objects.all()
@@ -205,8 +194,6 @@ def events_view(request):
         'no_events': no_events,
     })
 
-
-
 # Новое представление для просмотра информации о мероприятии через AJAX
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
@@ -220,23 +207,33 @@ def event_view(request, event_id):
     else:
         return JsonResponse({'error': 'This endpoint is only accessible via AJAX.'}, status=400)
 
-
-
 @login_required
-@user_passes_test(role_required('Admin', 'Manager'))
+@role_required('Admin')
 def create_event(request):
     if request.method == 'POST':
         form = EventForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            # Создаем мероприятие, не сохраняя сразу, чтобы добавить данные пользователя
+            event = form.save(commit=False)
+            # Предполагается, что в модели Event есть поля client_name и client_login
+            event.client_name = request.user.get_full_name() or request.user.username
+            event.client_login = request.user.username
+            event.save()
             messages.success(request, 'Мероприятие успешно создано и отправлено на модерацию.')
-            return redirect('events')
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Мероприятие успешно создано.'})
+            else:
+                return redirect('events')
         else:
             messages.error(request, 'Ошибка при создании мероприятия.')
     else:
         form = EventForm()
-    return render(request, 'staff/event_modal_form.html', {'form': form})
 
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        html = render_to_string('staff/partials/edit_event_form.html', {'form': form}, request=request)
+        return JsonResponse({'html': html})
+    else:
+        return render(request, 'staff/partials/edit_event_form.html', {'form': form})
 
 @login_required
 @role_required('Admin')
@@ -299,7 +296,6 @@ def import_events(request):
         messages.error(request, "Пожалуйста, загрузите файл для импорта.")
     return redirect('events')
 
-
 @login_required
 @role_required('Admin')
 def export_events_csv(request):
@@ -315,7 +311,6 @@ def export_events_csv(request):
         writer.writerow([event.id, event.name, event.date, event.description, event.location, event.event_type,
                          event.moderation_status])
     return response
-
 
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
@@ -337,7 +332,6 @@ def edit_event(request, event_id):
         else:
             return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
-
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
 def approve_event(request, event_id):
@@ -354,7 +348,6 @@ def approve_event(request, event_id):
         messages.success(request, f'Мероприятие "{event.name}" подтверждено.')
     return redirect('events')
 
-
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
 def reject_event(request, event_id):
@@ -370,7 +363,6 @@ def reject_event(request, event_id):
     else:
         messages.success(request, f'Мероприятие "{event.name}" отклонено.')
     return redirect('events')
-
 
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))

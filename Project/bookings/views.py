@@ -16,11 +16,11 @@ def manage_booking(request, booking_id, action):
     booking = get_object_or_404(Booking, id=booking_id)
     if request.user.groups.filter(name='Admin').exists() or request.user.groups.filter(name='Manager').exists() or request.user.is_superuser:
         if action == 'approve':
-            booking.status = 'Подтверждено'
+            booking.status = 'approved'
             booking.save()
             messages.success(request, 'Бронирование успешно утверждено.')
         elif action == 'reject':
-            booking.status = 'Отклонено'
+            booking.status = 'rejected'
             booking.save()
             messages.success(request, 'Бронирование успешно отклонено.')
         else:
@@ -46,7 +46,6 @@ def edit_booking(request, booking_id):
             return JsonResponse({'success': False, 'message': 'Исправьте ошибки в форме.', 'errors': form.errors})
     else:
         form = BookingForm(instance=booking, enforce_future_date=enforce)
-
     return render(request, 'bookings/edit_booking.html', {'form': form, 'booking': booking})
 
 @login_required
@@ -92,10 +91,13 @@ def delete_booking(request, booking_id):
 @login_required
 def create_booking(request):
     if request.method == 'POST':
-        form = BookingForm(request.POST)
+        # Передаём exclude_status=True, чтобы пользователю не показывалось поле status
+        form = BookingForm(request.POST, exclude_status=True)
         if form.is_valid():
             booking = form.save(commit=False)
             booking.user = request.user
+            # Устанавливаем автоматический статус для нового бронирования
+            booking.status = 'active'  # 'active' будет отображаться как "На модерации"
             booking.save()
 
             # Создаем мероприятие и сохраняем связь с бронированием

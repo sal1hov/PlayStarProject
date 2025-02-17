@@ -1,3 +1,4 @@
+<!-- staff/templates/staff/partials/edit_event_form.html -->
 <!-- Кнопка выхода (крестик) в верхнем правом углу модального окна -->
 <div class="flex justify-end">
   <button type="button" onclick="closeEditEventModal()" class="text-gray-500 hover:text-gray-700">
@@ -8,7 +9,7 @@
   </button>
 </div>
 
-<form id="editEventForm" method="post" enctype="multipart/form-data" action="{% url 'edit_event' event.id %}">
+<form id="editEventForm" method="post" enctype="multipart/form-data" action="{% if event %}{% url 'edit_event' event.id %}{% else %}{% url 'create_event' %}{% endif %}">
   {% csrf_token %}
   <div class="mb-4">
     <label class="block text-gray-700">Название:</label>
