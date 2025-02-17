@@ -78,3 +78,44 @@ document.getElementById('changePasswordForm').addEventListener('submit', functio
         });
     });
 });
+
+// AJAX
+
+document.addEventListener('DOMContentLoaded', function() {
+    const firstNameField = document.getElementById('id_first_name');
+    const lastNameField = document.getElementById('id_last_name');
+    const phoneField = document.getElementById('id_phone_number');
+
+    if (firstNameField) {
+        firstNameField.addEventListener('input', function() {
+            const regex = /^[A-Za-zА-Яа-яЁё]+$/;
+            if (!regex.test(this.value) && this.value !== "") {
+                this.setCustomValidity('Имя может содержать только буквы.');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+
+    if (lastNameField) {
+        lastNameField.addEventListener('input', function() {
+            const regex = /^[A-Za-zА-Яа-яЁё]+$/;
+            if (!regex.test(this.value) && this.value !== "") {
+                this.setCustomValidity('Фамилия может содержать только буквы.');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+
+    if (phoneField) {
+        phoneField.addEventListener('input', function() {
+            const regex = /^\+?\d+$/;
+            if (!regex.test(this.value) && this.value !== "") {
+                this.setCustomValidity('Номер телефона может содержать только цифры и символ "+" в начале.');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    }
+});
