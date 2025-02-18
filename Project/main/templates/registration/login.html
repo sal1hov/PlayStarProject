@@ -4,6 +4,7 @@
 {% block content %}
 <div class="max-w-md w-full bg-white p-6 rounded-lg shadow-2xl transform transition-all hover:scale-105 mx-auto mt-44">
     <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Вход в систему</h2>
+
     <!-- Отображение уведомлений -->
     {% if messages %}
         <div class="mb-4">
@@ -17,6 +18,16 @@
             {% endfor %}
         </div>
     {% endif %}
+
+    <!-- Если есть ошибки в форме, выводим сообщение об ошибке -->
+    {% if form.errors %}
+        <div class="mb-4">
+            <div class="alert alert-danger p-4 rounded-lg text-center bg-red-100 text-red-700">
+                Ошибка входа. Неверно введены данные.
+            </div>
+        </div>
+    {% endif %}
+
     <form method="post">
         {% csrf_token %}
         <!-- Поле для имени пользователя -->
