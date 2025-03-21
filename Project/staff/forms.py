@@ -1,9 +1,7 @@
-# staff/forms.py
 from django import forms
 from django.contrib.auth.models import User
 from main.models import Profile, Child
-from .models import SiteSettings
-from .models import Event, EVENT_TYPES, MODERATION_STATUS
+from .models import SiteSettings, Event, EVENT_TYPES, MODERATION_STATUS
 
 # Форма для обновления данных пользователя
 class UserUpdateForm(forms.ModelForm):
@@ -31,11 +29,11 @@ class SiteSettingsForm(forms.ModelForm):
         model = SiteSettings
         fields = ['site_title', 'meta_description', 'meta_keywords', 'google_analytics']
 
-
+# Форма для создания и редактирования мероприятий
 class EventForm(forms.ModelForm):
     class Meta:
         model = Event
-        fields = ['name', 'description', 'date', 'location', 'image', 'event_type', 'moderation_status']
+        fields = ['name', 'description', 'date', 'image', 'event_type', 'moderation_status', 'max_participants']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'w-full p-2 border rounded-lg',
@@ -53,12 +51,12 @@ class EventForm(forms.ModelForm):
                 },
                 format='%Y-%m-%dT%H:%M'
             ),
-            'location': forms.TextInput(attrs={
-                'class': 'w-full p-2 border rounded-lg',
-                'placeholder': 'Местоположение'
-            }),
             'event_type': forms.Select(attrs={'class': 'w-full p-2 border rounded-lg'}),
             'moderation_status': forms.Select(attrs={'class': 'w-full p-2 border rounded-lg'}),
+            'max_participants': forms.NumberInput(attrs={
+                'class': 'w-full p-2 border rounded-lg',
+                'placeholder': 'Максимальное количество участников'
+            }),
         }
 
     def __init__(self, *args, **kwargs):

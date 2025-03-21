@@ -7,13 +7,14 @@ import csv
 from main.models import CustomUser
 from bookings.models import Booking
 from django.core.paginator import Paginator
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth
 from django.template.loader import render_to_string
 from .models import Event
 import io
 import pandas as pd  # для импорта из Excel
 from .forms import EventForm
+from datetime import datetime
 
 def role_required(*group_names):
     """Декоратор для проверки групп."""
@@ -117,27 +118,20 @@ def employee_dashboard(request):
 
 @login_required
 @role_required('Admin')
-def export_users_csv(request):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="users.csv"'
-    writer = csv.writer(response)
-    writer.writerow(['ID', 'Username', 'First Name', 'Last Name', 'Email'])
-    for user in CustomUser.objects.all():
-        writer.writerow([user.id, user.username, user.first_name, user.last_name, user.email])
-    return response
-
-@login_required
-@role_required('Admin')
-def export_bookings_csv(request):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="bookings.csv"'
-    writer = csv.writer(response)
-    writer.writerow(['ID', 'User', 'Date', 'Status'])
-    for booking in Booking.objects.all():
-        writer.writerow([booking.id, booking.user.username, booking.booking_date, booking.status])
-    return response
-
 def statistics_view(request):
+    # Фильтр по диапазону дат
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+
+    if start_date and end_date:
+        # Преобразуем даты из формата дд.мм.гг в datetime
+        start_date = datetime.strptime(start_date, '%d.%m.%y')
+        end_date = datetime.strptime(end_date, '%d.%m.%y')
+        bookings = Booking.objects.filter(booking_date__range=(start_date, end_date))
+    else:
+        bookings = Booking.objects.all()
+
+    # Статистика пользователей по месяцам
     users_by_month = CustomUser.objects.annotate(
         month=TruncMonth('date_joined')
     ).values('month').annotate(count=Count('id')).order_by('month')
@@ -146,11 +140,38 @@ def statistics_view(request):
         if item['month']:
             item['month'] = item['month'].strftime('%Y-%m')
 
-    bookings_by_status = Booking.objects.values('status').annotate(count=Count('id')).order_by('status')
+    # Статистика бронирований по статусам
+    bookings_by_status = bookings.values('status').annotate(count=Count('id')).order_by('status')
+
+    # Новая статистика
+    online_bookings_count = bookings.filter(booking_type='online').count()
+    total_earnings = bookings.aggregate(total=Sum('amount'))['total'] or 0
+
+    # График доходов по месяцам
+    earnings_by_month = bookings.annotate(
+        month=TruncMonth('booking_date')
+    ).values('month').annotate(total=Sum('amount')).order_by('month')
+    earnings_by_month = list(earnings_by_month)
+    for item in earnings_by_month:
+        if item['month']:
+            item['month'] = item['month'].strftime('%Y-%m')
+
+    # Если запрос AJAX, возвращаем JSON
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'users_by_month': users_by_month,
+            'bookings_by_status': list(bookings_by_status),
+            'online_bookings_count': online_bookings_count,
+            'total_earnings': total_earnings,
+            'earnings_by_month': earnings_by_month,
+        })
 
     return render(request, 'staff/statistics.html', {
         'users_by_month': users_by_month,
         'bookings_by_status': list(bookings_by_status),
+        'online_bookings_count': online_bookings_count,
+        'total_earnings': total_earnings,
+        'earnings_by_month': earnings_by_month,
     })
 
 def events_view(request):
@@ -199,10 +220,8 @@ def events_view(request):
 @user_passes_test(role_required('Admin', 'Manager'))
 def event_view(request, event_id):
     event = get_object_or_404(Event, id=event_id)
-    # Получаем бронирование, где название мероприятия совпадает с именем события
-    booking = Booking.objects.filter(event_name=event.name).first()
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        html = render_to_string('staff/partials/view_event.html', {'event': event, 'booking': booking}, request=request)
+        html = render_to_string('staff/partials/view_event.html', {'event': event}, request=request)
         return JsonResponse({'html': html})
     else:
         return JsonResponse({'error': 'This endpoint is only accessible via AJAX.'}, status=400)
@@ -213,12 +232,7 @@ def create_event(request):
     if request.method == 'POST':
         form = EventForm(request.POST, request.FILES)
         if form.is_valid():
-            # Создаем мероприятие, не сохраняя сразу, чтобы добавить данные пользователя
-            event = form.save(commit=False)
-            # Предполагается, что в модели Event есть поля client_name и client_login
-            event.client_name = request.user.get_full_name() or request.user.username
-            event.client_login = request.user.username
-            event.save()
+            event = form.save()
             messages.success(request, 'Мероприятие успешно создано и отправлено на модерацию.')
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': True, 'message': 'Мероприятие успешно создано.'})
@@ -236,87 +250,9 @@ def create_event(request):
         return render(request, 'staff/partials/edit_event_form.html', {'form': form})
 
 @login_required
-@role_required('Admin')
-def import_events(request):
-    """
-    Импорт мероприятий из файлов .csv, .xls или .xlsx.
-    Ожидается, что в файле будут столбцы: name, description, date, location, event_type.
-    Все импортированные мероприятия получают статус модерации "pending".
-    """
-    if request.method == 'POST' and request.FILES.get('file'):
-        file = request.FILES['file']
-        try:
-            if file.name.endswith('.csv'):
-                df = pd.read_csv(file)
-            elif file.name.endswith(('.xls', '.xlsx')):
-                df = pd.read_excel(file)
-            else:
-                messages.error(request, "Неподдерживаемый формат файла.")
-                return redirect('events')
-
-            df.columns = [col.strip().lower() for col in df.columns]
-
-            if 'name' not in df.columns:
-                messages.error(request, "Файл не содержит столбца 'name'.")
-                return redirect('events')
-
-            for index, row in df.iterrows():
-                if not row.get('name'):
-                    messages.error(request, f"Ошибка: строка {index+1} не содержит имя мероприятия.")
-                    continue
-
-                etype = row.get('event_type', 'other')
-                if isinstance(etype, str):
-                    etype = etype.strip().lower()
-                    if etype in ['праздник', 'holiday']:
-                        etype = 'holiday'
-                    elif etype in ['концерт', 'concert']:
-                        etype = 'concert'
-                    elif etype in ['семинар', 'seminar']:
-                        etype = 'seminar'
-                    else:
-                        etype = 'other'
-                else:
-                    etype = 'other'
-
-                event = Event(
-                    name=row.get('name'),
-                    description=row.get('description'),
-                    date=row.get('date'),
-                    location=row.get('location'),
-                    event_type=etype,
-                    moderation_status='pending'
-                )
-                event.save()
-
-            messages.success(request, "Мероприятия успешно импортированы.")
-        except Exception as e:
-            messages.error(request, f"Ошибка при импорте: {e}")
-    else:
-        messages.error(request, "Пожалуйста, загрузите файл для импорта.")
-    return redirect('events')
-
-@login_required
-@role_required('Admin')
-def export_events_csv(request):
-    response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="events.csv"'
-    writer = csv.writer(response)
-    writer.writerow(
-        ['ID', 'Название', 'Дата и время', 'Описание', 'Местоположение', 'Тип мероприятия', 'Статус модерации']
-    )
-
-    events = Event.objects.all()
-    for event in events:
-        writer.writerow([event.id, event.name, event.date, event.description, event.location, event.event_type,
-                         event.moderation_status])
-    return response
-
-@login_required
 @user_passes_test(role_required('Admin', 'Manager'))
 def edit_event(request, event_id):
     event = get_object_or_404(Event, id=event_id)
-    # Требуем, чтобы доступ к этому эндпоинту был только через AJAX
     if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
         return JsonResponse({'error': 'This endpoint is only accessible via AJAX.'}, status=400)
 
@@ -338,14 +274,7 @@ def approve_event(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     event.moderation_status = 'approved'
     event.save()
-
-    # Если мероприятие связано с бронированием, обновляем его статус
-    if event.booking:
-        event.booking.status = 'Подтверждено'
-        event.booking.save()
-        messages.success(request, f'Мероприятие "{event.name}" и связанное бронирование подтверждены.')
-    else:
-        messages.success(request, f'Мероприятие "{event.name}" подтверждено.')
+    messages.success(request, f'Мероприятие "{event.name}" подтверждено.')
     return redirect('events')
 
 @login_required
@@ -354,14 +283,7 @@ def reject_event(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     event.moderation_status = 'rejected'
     event.save()
-
-    # Если мероприятие связано с бронированием, обновляем его статус
-    if event.booking:
-        event.booking.status = 'Отклонено'
-        event.booking.save()
-        messages.success(request, f'Мероприятие "{event.name}" и связанное бронирование отклонены.')
-    else:
-        messages.success(request, f'Мероприятие "{event.name}" отклонено.')
+    messages.success(request, f'Мероприятие "{event.name}" отклонено.')
     return redirect('events')
 
 @login_required
@@ -372,6 +294,7 @@ def delete_event(request, event_id):
     messages.success(request, 'Мероприятие успешно удалено.')
     return redirect('events')
 
+# Добавляем недостающую функцию view_booking
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
 def view_booking(request, event_id):

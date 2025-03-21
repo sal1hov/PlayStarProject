@@ -8,16 +8,11 @@
             <h2 class="text-2xl font-bold mb-8">Админ-панель</h2>
             <nav class="space-y-4">
                 <a href="{% url 'admin_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Главная</a>
-<!--                <a href="{% url 'manager_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Панель менеджера</a>-->
-<!--                <a href="{% url 'employee_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Панель сотрудника</a>-->
                 <a href="{% url 'statistics' %}" class="block py-2 px-4 hover:bg-gray-700 rounded-lg transition duration-300">Статистика</a>
                 <a href="{% url 'events' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Мероприятия</a>
             </nav>
         </div>
         <div class="space-y-4">
-            <a href="{% url 'export_users_csv' %}" class="block py-2 px-4 bg-green-500 rounded-lg text-white hover:bg-green-600 transition duration-300">Экспорт пользователей</a>
-            <a href="{% url 'export_bookings_csv' %}" class="block py-2 px-4 bg-green-500 rounded-lg text-white hover:bg-green-600 transition duration-300">Экспорт бронирований</a>
-            <a href="{% url 'export_events_csv' %}" class="block py-2 px-4 bg-green-500 rounded-lg text-white hover:bg-green-600 transition duration-300">Экспорт праздников</a>
             <a href="{% url 'admin:index' %}" class="block py-2 px-4 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition duration-300">Django-админка</a>
         </div>
     </aside>
@@ -26,12 +21,9 @@
   <main class="flex-1 p-8 bg-gray-100">
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-3xl font-bold text-gray-800">Мероприятия</h1>
-      <!-- Кнопки создания и импорта -->
+      <!-- Кнопка создания -->
       <button onclick="openCreateEventModal()" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
         Создать мероприятие
-      </button>
-      <button onclick="openImportModal()" class="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">
-        Импортировать мероприятия
       </button>
     </div>
 
@@ -71,6 +63,7 @@
             <h2 class="text-xl font-bold mb-4">{{ event.name }}</h2>
             <p class="text-gray-700">{{ event.description }}</p>
             <p class="text-sm text-gray-500 mt-2">{{ event.date|date:"d.m.Y H:i" }}</p>
+            <p class="text-sm text-gray-500 mt-1">Максимум участников: {{ event.max_participants }}</p>
             <p class="text-sm text-gray-500 mt-1">Статус модерации:
               {% if event.moderation_status == "approved" %}
                 <span class="text-green-500 font-semibold">Принято</span>
@@ -151,10 +144,10 @@
       <div class="mb-4">
         <label class="block text-gray-700">Тип мероприятия:</label>
         <select name="event_type" class="w-full p-2 border rounded-lg">
-          <option value="holiday">Праздник</option>
-          <option value="concert">Концерт</option>
-          <option value="seminar">Семинар</option>
-          <option value="other" selected>Другое</option>
+          <option value="выездные анимации">Выездные анимации</option>
+          <option value="открытые анимации">Открытые анимации</option>
+          <option value="панорамик">Панорамик</option>
+          <option value="другое" selected>Другое</option>
         </select>
       </div>
       <div class="mb-4">
@@ -162,8 +155,8 @@
         <textarea name="description" class="w-full p-2 border rounded-lg" rows="4" required></textarea>
       </div>
       <div class="mb-4">
-        <label class="block text-gray-700">Местоположение:</label>
-        <input type="text" name="location" class="w-full p-2 border rounded-lg" required>
+        <label class="block text-gray-700">Максимум участников:</label>
+        <input type="number" name="max_participants" class="w-full p-2 border rounded-lg" required>
       </div>
       <div class="mb-4">
         <label class="block text-gray-700">Статус модерации:</label>
@@ -193,28 +186,6 @@
   </div>
 </div>
 
-<!-- Модальное окно импорта мероприятий -->
-<div id="importEventModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center">
-  <div class="bg-white p-6 rounded-lg w-1/2">
-    <h2 class="text-2xl font-bold mb-4">Импорт мероприятий</h2>
-    <form id="importEventForm" method="post" enctype="multipart/form-data" action="{% url 'import_events' %}">
-      {% csrf_token %}
-      <div class="mb-4">
-        <label class="block text-gray-700">Выберите файл (.csv, .xls, .xlsx):</label>
-        <input type="file" name="file" class="w-full p-2 border rounded-lg" required>
-      </div>
-      <div class="flex justify-end space-x-4">
-        <button type="button" onclick="closeImportModal()" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
-          Отмена
-        </button>
-        <button type="submit" class="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">
-          Импортировать
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
 <!-- Модальное окно просмотра мероприятия -->
 <div id="viewEventModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center">
   <div class="bg-white p-6 rounded-lg w-1/2" id="viewEventContentContainer">
@@ -228,13 +199,6 @@
   }
   function closeCreateEventModal() {
     document.getElementById('createEventModal').classList.add('hidden');
-  }
-
-  function openImportModal() {
-    document.getElementById('importEventModal').classList.remove('hidden');
-  }
-  function closeImportModal() {
-    document.getElementById('importEventModal').classList.add('hidden');
   }
 
   function openEditEventModal(eventId) {

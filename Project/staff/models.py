@@ -21,12 +21,12 @@ class SiteSettings(models.Model):
         verbose_name = "Настройка сайта"
         verbose_name_plural = "Настройки сайта"
 
-# Новые константы для выбора типа и статуса модерации
+# Константы для выбора типа и статуса модерации
 EVENT_TYPES = (
-    ('holiday', 'Праздник'),
-    ('birthday', 'День рождения'),
-    ('animators', 'Открытые анимации'),
-    ('other', 'Другое'),
+    ('выездные анимации', 'Выездные анимации'),
+    ('открытые анимации', 'Открытые анимации'),
+    ('панорамик', 'Панорамик'),
+    ('другое', 'Другое'),
 )
 
 MODERATION_STATUS = (
@@ -37,14 +37,13 @@ MODERATION_STATUS = (
 )
 
 class Event(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField()
-    date = models.DateTimeField()
-    location = models.CharField(max_length=255)
-    image = models.ImageField(upload_to='events/', null=True, blank=True)
-    event_type = models.CharField(max_length=50, choices=EVENT_TYPES, default='other', verbose_name="Тип мероприятия")
+    name = models.CharField(max_length=255, verbose_name="Название мероприятия")
+    description = models.TextField(verbose_name="Описание мероприятия")
+    date = models.DateTimeField(verbose_name="Дата и время мероприятия")
+    image = models.ImageField(upload_to='events/', null=True, blank=True, verbose_name="Изображение мероприятия")
+    event_type = models.CharField(max_length=50, choices=EVENT_TYPES, default='другое', verbose_name="Тип мероприятия")
     moderation_status = models.CharField(max_length=50, choices=MODERATION_STATUS, default='pending', verbose_name="Статус модерации")
-    booking = models.OneToOneField('bookings.Booking', on_delete=models.CASCADE, null=True, blank=True, verbose_name='Бронирование')
+    max_participants = models.PositiveIntegerField(verbose_name="Максимальное количество участников", default=0)
 
     def __str__(self):
         return self.name
