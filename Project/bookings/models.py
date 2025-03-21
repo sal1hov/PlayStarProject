@@ -25,6 +25,7 @@ class Booking(models.Model):
     edited_by = models.CharField(max_length=50, blank=True, null=True, verbose_name='Отредактировано')
     booking_type = models.CharField(max_length=10, choices=BOOKING_TYPES, default=ONLINE, verbose_name='Тип бронирования')
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name='Сумма')
+    prepayment = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name='Предоплата')  # Новое поле
 
     def __str__(self):
         return f"{self.event_name} - {self.event_date}"

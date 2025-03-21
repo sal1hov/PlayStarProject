@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block title %}Управление доходами{% endblock %}
+{% block content %}
+<div class="flex min-h-screen">
+    <!-- Боковое меню -->
+    <aside class="w-64 bg-gray-800 text-white p-6 flex flex-col justify-between">
+        <div>
+            <h2 class="text-2xl font-bold mb-8">Админ-панель</h2>
+            <nav class="space-y-4">
+                <a href="{% url 'admin_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Главная</a>
+                <a href="{% url 'statistics' %}" class="block py-2 px-4 hover:bg-gray-700 rounded-lg transition duration-300">Статистика</a>
+                <a href="{% url 'income_management' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Управление доходами</a>
+                <a href="{% url 'events' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Мероприятия</a>
+            </nav>
+        </div>
+        <div class="space-y-4">
+            <a href="{% url 'admin:index' %}" class="block py-2 px-4 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition duration-300">Django-админка</a>
+        </div>
+    </aside>
+
+    <!-- Основной контент -->
+    <main class="flex-1 p-8 bg-gray-100">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">Управление доходами</h1>
+
+        <!-- Общий доход -->
+        <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
+            <h2 class="text-xl font-bold mb-4">Общий доход</h2>
+            <p class="text-gray-700 text-2xl">{{ total_income }} руб.</p>
+        </div>
+
+        <!-- Список бронирований -->
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <h2 class="text-xl font-bold mb-4">История бронирований</h2>
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="border-b">
+                        <th class="py-2">Мероприятие</th>
+                        <th class="py-2">Дата бронирования</th>
+                        <th class="py-2">Сумма</th>
+                        <th class="py-2">Предоплата</th>
+                        <th class="py-2">Статус</th>
+                        <th class="py-2">Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in bookings %}
+                    <tr class="border-b">
+                        <td class="py-2">{{ booking.event_name }}</td>
+                        <td class="py-2">{{ booking.booking_date }}</td>
+                        <td class="py-2">{{ booking.amount }} руб.</td>
+                        <td class="py-2">{{ booking.prepayment }} руб.</td>
+                        <td class="py-2">{{ booking.get_status_display }}</td>
+                        <td class="py-2">
+                            <button onclick="openIncomeModal('{{ booking.id }}')" class="bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600 transition duration-300">
+                                Добавить доход
+                            </button>
+                            <button onclick="addPrepayment('{{ booking.id }}')" class="bg-green-500 text-white py-1 px-3 rounded-lg hover:bg-green-600 transition duration-300 ml-2">
+                                Добавить предоплату
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<!-- Модальное окно для добавления дохода -->
+<div id="incomeModal" class="fixed inset-0 bg-black bg-opacity-50 hidden justify-center items-center">
+    <div class="bg-white p-6 rounded-lg w-1/3">
+        <h2 class="text-xl font-bold mb-4">Добавить доход</h2>
+        <form id="incomeForm" method="post" action="{% url 'add_income' %}">
+            {% csrf_token %}
+            <input type="hidden" id="bookingId" name="booking_id">
+            <div class="mb-4">
+                <label for="amount" class="block text-sm font-medium text-gray-700">Сумма</label>
+                <input type="number" id="amount" name="amount" class="w-full p-2 border rounded-lg" required>
+            </div>
+            <div class="flex justify-end">
+                <button type="button" onclick="closeIncomeModal()" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">Отмена</button>
+                <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300 ml-2">Сохранить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Функции для управления модальными окнами
+    function openIncomeModal(bookingId) {
+        document.getElementById('bookingId').value = bookingId;
+        document.getElementById('incomeModal').classList.remove('hidden');
+    }
+
+    function closeIncomeModal() {
+        document.getElementById('incomeModal').classList.add('hidden');
+    }
+
+    // Функция для добавления предоплаты
+    function addPrepayment(bookingId) {
+        const formData = new FormData();
+        formData.append('booking_id', bookingId);
+
+        fetch("{% url 'add_prepayment' %}", {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': '{{ csrf_token }}',  // Добавляем CSRF-токен
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();  // Перезагружаем страницу для обновления данных
+            } else {
+                alert('Ошибка при добавлении предоплаты: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+        });
+    }
+
+    // Обработка отправки формы дохода через AJAX
+    document.getElementById('incomeForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeIncomeModal();
+                window.location.reload();  // Перезагружаем страницу для обновления данных
+            } else {
+                alert('Ошибка при добавлении дохода: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+        });
+    });
+</script>
+{% endblock %}

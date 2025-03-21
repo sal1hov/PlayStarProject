@@ -5,9 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Семейный развлекательный центр{% endblock %}</title>
+    <!-- Подключение Flatpickr -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://npmcdn.com/flatpickr/dist/l10n/ru.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script> <!-- Основная библиотека -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script> <!-- Локализация -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.11/outline/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -74,19 +75,11 @@
             <!-- Основное меню (скрыто на мобильных устройствах) -->
             <nav class="hidden md:flex items-center space-x-4 ml-auto">
                 <a href="{% url 'index' %}" class="text-gray-700 hover:text-blue-600">На главную</a>
-<!--                <a href="#about" class="text-gray-700 hover:text-blue-600">О нас</a>-->
-<!--                <a href="#events" class="text-gray-700 hover:text-blue-600">Праздники</a>-->
-<!--                <a href="#prices" class="text-gray-700 hover:text-blue-600">Цены</a>-->
-<!--                <a href="#contact" class="text-gray-700 hover:text-blue-600">Контакты</a>-->
             </nav>
             <!-- Мобильное меню (скрыто по умолчанию) -->
             <div id="mobile-menu" class="hidden md:hidden absolute top-16 left-0 w-full bg-white shadow-lg z-50">
                 <div class="flex flex-col space-y-4 p-4">
                     <a href="{% url 'index' %}" class="text-gray-700 hover:text-blue-600">На главную</a>
-                    <a href="#about" class="text-gray-700 hover:text-blue-600">О нас</a>
-                    <a href="#events" class="text-gray-700 hover:text-blue-600">Праздники</a>
-                    <a href="#prices" class="text-gray-700 hover:text-blue-600">Цены</a>
-                    <a href="#contact" class="text-gray-700 hover:text-blue-600">Контакты</a>
                 </div>
             </div>
             <!-- Социальные сети и кнопки -->
@@ -126,7 +119,7 @@
         </div>
     </header>
     <!-- Баннер -->
-    {% block banner %}{% endblock %}  <!-- Новый блок для баннера -->
+    {% block banner %}{% endblock %}
     <!-- Основной контент -->
     <main class="container mx-auto px-6 py-12 flex-grow">
         {% block content %}

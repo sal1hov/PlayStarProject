@@ -9,6 +9,7 @@
             <nav class="space-y-4">
                 <a href="{% url 'admin_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Главная</a>
                 <a href="{% url 'statistics' %}" class="block py-2 px-4 hover:bg-gray-700 rounded-lg transition duration-300">Статистика</a>
+                <a href="{% url 'income_management' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Управление доходами</a>
                 <a href="{% url 'events' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Мероприятия</a>
             </nav>
         </div>
@@ -23,7 +24,7 @@
 
         <!-- Фильтр по диапазону дат -->
         <div class="mb-8">
-            <label for="dateRange" class="block text-sm font-medium text-gray-700">Выберите диапазон дат:</label>
+            <label for="dateRange" class="block text-sm font-medium text-gray-700">Выберите дату:</label>
             <div class="flex items-center space-x-4">
                 <input type="text" id="dateRange" name="dateRange" placeholder="Выберите диапазон" class="mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64">
                 <button id="applyFilter" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">Применить</button>
@@ -68,187 +69,214 @@
     </main>
 </div>
 <script>
-    // Инициализация Flatpickr для выбора диапазона дат
-    flatpickr("#dateRange", {
-        mode: "range", // Режим выбора диапазона
-        dateFormat: "d.m.y", // Формат даты: дд.мм.гг
-        locale: "ru", // Локализация на русский
-        static: false, // Календарь не встроен, а открывается по клику
-        inline: false, // Календарь не встроен
-    });
+    document.addEventListener("DOMContentLoaded", function() {
+        // Инициализация Flatpickr для выбора диапазона дат
+        flatpickr("#dateRange", {
+            mode: "range", // Режим выбора диапазона
+            dateFormat: "d.m.y", // Формат даты: дд.мм.гг
+            locale: "ru", // Локализация на русский
+            static: false, // Календарь не встроен, а открывается по клику
+            inline: false, // Календарь не встроен
+        });
 
-    // Извлекаем данные из элементов с type="application/json"
-    const usersData = JSON.parse(document.getElementById('users-data').textContent);
-    const bookingsData = JSON.parse(document.getElementById('bookings-data').textContent);
-    const earningsData = JSON.parse(document.getElementById('earnings-data').textContent);
+        // Извлекаем данные из элементов с type="application/json"
+        const usersData = JSON.parse(document.getElementById('users-data').textContent);
+        const bookingsData = JSON.parse(document.getElementById('bookings-data').textContent);
+        const earningsData = JSON.parse(document.getElementById('earnings-data').textContent);
 
-    // Функция для создания градиента
-    function createGradient(ctx, color1, color2) {
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, color1);
-        gradient.addColorStop(1, color2);
-        return gradient;
-    }
-
-    // Инициализация графиков
-    const usersCtx = document.getElementById('usersChart').getContext('2d');
-    const usersChart = new Chart(usersCtx, {
-        type: 'line',
-        data: {
-            labels: usersData.map(item => item.month),
-            datasets: [{
-                label: 'Регистрации',
-                data: usersData.map(item => item.count),
-                borderColor: createGradient(usersCtx, 'rgba(75, 192, 192, 1)', 'rgba(75, 192, 192, 0.5)'),
-                borderWidth: 2,
-                fill: true,
-                backgroundColor: createGradient(usersCtx, 'rgba(75, 192, 192, 0.2)', 'rgba(75, 192, 192, 0.05)'),
-                tension: 0.4, // Плавность линий
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false,
-                },
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)',
-                    },
-                },
-                x: {
-                    grid: {
-                        display: false,
-                    },
-                },
-            },
-        },
-    });
-
-    const bookingsCtx = document.getElementById('bookingsChart').getContext('2d');
-    const bookingsChart = new Chart(bookingsCtx, {
-        type: 'bar',
-        data: {
-            labels: bookingsData.map(item => item.status),
-            datasets: [{
-                label: 'Бронирования',
-                data: bookingsData.map(item => item.count),
-                backgroundColor: createGradient(bookingsCtx, 'rgba(153, 102, 255, 0.8)', 'rgba(153, 102, 255, 0.4)'),
-                borderColor: 'rgba(153, 102, 255, 1)',
-                borderWidth: 1,
-                borderRadius: 5, // Закруглённые углы у столбцов
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false,
-                },
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)',
-                    },
-                },
-                x: {
-                    grid: {
-                        display: false,
-                    },
-                },
-            },
-        },
-    });
-
-    const earningsCtx = document.getElementById('earningsChart').getContext('2d');
-    const earningsChart = new Chart(earningsCtx, {
-        type: 'line',
-        data: {
-            labels: earningsData.map(item => item.month),
-            datasets: [{
-                label: 'Доходы',
-                data: earningsData.map(item => item.total),
-                borderColor: createGradient(earningsCtx, 'rgba(255, 99, 132, 1)', 'rgba(255, 99, 132, 0.5)'),
-                borderWidth: 2,
-                fill: true,
-                backgroundColor: createGradient(earningsCtx, 'rgba(255, 99, 132, 0.2)', 'rgba(255, 99, 132, 0.05)'),
-                tension: 0.4, // Плавность линий
-            }]
-        },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: {
-                    display: false,
-                },
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: 'rgba(0, 0, 0, 0.05)',
-                    },
-                },
-                x: {
-                    grid: {
-                        display: false,
-                    },
-                },
-            },
-        },
-    });
-
-    // Функция для обновления данных через AJAX
-    function updateStatistics(dateRange = null) {
-        const url = new URL("{% url 'statistics' %}", window.location.origin);
-        if (dateRange) {
-            const [startDate, endDate] = dateRange.split(" to ");
-            url.searchParams.set('start_date', startDate);
-            url.searchParams.set('end_date', endDate);
+        // Функция для создания градиента
+        function createGradient(ctx, color1, color2) {
+            const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, color1);
+            gradient.addColorStop(1, color2);
+            return gradient;
         }
 
-        fetch(url, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Обновляем графики
-            usersChart.data.labels = data.users_by_month.map(item => item.month);
-            usersChart.data.datasets[0].data = data.users_by_month.map(item => item.count);
-            usersChart.update();
-
-            bookingsChart.data.labels = data.bookings_by_status.map(item => item.status);
-            bookingsChart.data.datasets[0].data = data.bookings_by_status.map(item => item.count);
-            bookingsChart.update();
-
-            earningsChart.data.labels = data.earnings_by_month.map(item => item.month);
-            earningsChart.data.datasets[0].data = data.earnings_by_month.map(item => item.total);
-            earningsChart.update();
-
-            // Обновляем текстовые данные
-            document.getElementById('onlineBookingsCount').textContent = data.online_bookings_count;
-            document.getElementById('totalEarnings').textContent = `${data.total_earnings} руб.`;
+        // Инициализация графиков
+        const usersCtx = document.getElementById('usersChart').getContext('2d');
+        const usersChart = new Chart(usersCtx, {
+            type: 'line',
+            data: {
+                labels: usersData.map(item => item.month),
+                datasets: [{
+                    label: 'Регистрации',
+                    data: usersData.map(item => item.count),
+                    borderColor: createGradient(usersCtx, 'rgba(75, 192, 192, 1)', 'rgba(75, 192, 192, 0.5)'),
+                    borderWidth: 2,
+                    fill: true,
+                    backgroundColor: createGradient(usersCtx, 'rgba(75, 192, 192, 0.2)', 'rgba(75, 192, 192, 0.05)'),
+                    tension: 0.4, // Плавность линий
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                        },
+                    },
+                    x: {
+                        grid: {
+                            display: false,
+                        },
+                    },
+                },
+            },
         });
+
+        const bookingsCtx = document.getElementById('bookingsChart').getContext('2d');
+        const bookingsChart = new Chart(bookingsCtx, {
+            type: 'bar',
+            data: {
+                labels: bookingsData.map(item => item.status),
+                datasets: [{
+                    label: 'Бронирования',
+                    data: bookingsData.map(item => item.count),
+                    backgroundColor: createGradient(bookingsCtx, 'rgba(153, 102, 255, 0.8)', 'rgba(153, 102, 255, 0.4)'),
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1,
+                    borderRadius: 5, // Закруглённые углы у столбцов
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                        },
+                    },
+                    x: {
+                        grid: {
+                            display: false,
+                        },
+                    },
+                },
+            },
+        });
+
+        const earningsCtx = document.getElementById('earningsChart').getContext('2d');
+        const earningsChart = new Chart(earningsCtx, {
+            type: 'line',
+            data: {
+                labels: earningsData.map(item => item.month),
+                datasets: [{
+                    label: 'Доходы',
+                    data: earningsData.map(item => item.total),
+                    borderColor: createGradient(earningsCtx, 'rgba(255, 99, 132, 1)', 'rgba(255, 99, 132, 0.5)'),
+                    borderWidth: 2,
+                    fill: true,
+                    backgroundColor: createGradient(earningsCtx, 'rgba(255, 99, 132, 0.2)', 'rgba(255, 99, 132, 0.05)'),
+                    tension: 0.4, // Плавность линий
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                        },
+                    },
+                    x: {
+                        grid: {
+                            display: false,
+                        },
+                    },
+                },
+            },
+        });
+
+        // Функция для обновления данных через AJAX
+function updateStatistics(dateRange = null) {
+    const url = new URL("{% url 'statistics' %}", window.location.origin);
+    if (dateRange) {
+        // Используем правильный разделитель
+        const [startDate, endDate] = dateRange.split(" — "); // Разделитель " — "
+        console.log('Start Date:', startDate); // Отладка
+        console.log('End Date:', endDate); // Отладка
+
+        // Преобразуем даты из DD.MM.YY в YYYY-MM-DD
+        const formattedStartDate = `20${startDate.split('.').reverse().join('-')}`;
+        const formattedEndDate = `20${endDate.split('.').reverse().join('-')}`;
+        console.log('Formatted Start Date:', formattedStartDate); // Отладка
+        console.log('Formatted End Date:', formattedEndDate); // Отладка
+
+        url.searchParams.set('start_date', formattedStartDate);
+        url.searchParams.set('end_date', formattedEndDate);
     }
 
-    // Обработчик для кнопки "Применить"
-    document.getElementById('applyFilter').addEventListener('click', () => {
-        const dateRange = document.getElementById('dateRange').value;
-        updateStatistics(dateRange);
-    });
+    fetch(url, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Ошибка сети или сервера');
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log(data); // Отладка
+        // Обновляем графики
+        usersChart.data.labels = data.users_by_month.map(item => item.month);
+        usersChart.data.datasets[0].data = data.users_by_month.map(item => item.count);
+        usersChart.update();
 
-    // Обработчик для кнопки "Сбросить"
-    document.getElementById('resetFilter').addEventListener('click', () => {
-        document.getElementById('dateRange').value = '';
-        updateStatistics();
+        bookingsChart.data.labels = data.bookings_by_status.map(item => item.status);
+        bookingsChart.data.datasets[0].data = data.bookings_by_status.map(item => item.count);
+        bookingsChart.update();
+
+        earningsChart.data.labels = data.earnings_by_month.map(item => item.month);
+        earningsChart.data.datasets[0].data = data.earnings_by_month.map(item => item.total);
+        earningsChart.update();
+
+        // Обновляем текстовые данные
+        document.getElementById('onlineBookingsCount').textContent = data.online_bookings_count;
+        document.getElementById('totalEarnings').textContent = `${data.total_earnings} руб.`;
+    })
+    .catch(error => {
+        console.error('Ошибка при загрузке данных:', error);
+        alert('Произошла ошибка при загрузке данных. Проверьте консоль для подробностей.');
+    });
+}
+
+        // Обработчик для кнопки "Применить"
+        document.getElementById('applyFilter').addEventListener('click', () => {
+            const dateRange = document.getElementById('dateRange').value;
+            console.log('Выбранный диапазон дат:', dateRange); // Отладка
+            if (!dateRange) {
+                console.error('Диапазон дат не выбран');
+                return;
+            }
+            updateStatistics(dateRange);
+        });
+
+        // Обработчик для кнопки "Сбросить"
+        document.getElementById('resetFilter').addEventListener('click', () => {
+            document.getElementById('dateRange').value = '';
+            updateStatistics();
+        });
     });
 </script>
 {% endblock %}

@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth.models import User
 from main.models import Profile, Child
 from .models import SiteSettings, Event, EVENT_TYPES, MODERATION_STATUS
+from bookings.models import Booking
 
 # Форма для обновления данных пользователя
 class UserUpdateForm(forms.ModelForm):
@@ -64,3 +65,9 @@ class EventForm(forms.ModelForm):
         # Если редактируем существующее событие, форматируем дату для input datetime-local
         if self.instance and self.instance.pk and self.instance.date:
             self.fields['date'].initial = self.instance.date.strftime('%Y-%m-%dT%H:%M')
+
+# Форма для управления доходами
+class IncomeForm(forms.ModelForm):
+    class Meta:
+        model = Booking
+        fields = ['event_name', 'amount', 'status']  # Исключили booking_date

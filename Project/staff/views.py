@@ -1,9 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
 from django.http import HttpResponse, JsonResponse
-import csv
+from django.views.decorators.csrf import csrf_exempt
 from main.models import CustomUser
 from bookings.models import Booking
 from django.core.paginator import Paginator
@@ -11,10 +10,9 @@ from django.db.models import Count, Sum
 from django.db.models.functions import TruncMonth
 from django.template.loader import render_to_string
 from .models import Event
-import io
-import pandas as pd  # для импорта из Excel
-from .forms import EventForm
+from .forms import EventForm, IncomeForm
 from datetime import datetime
+from django.utils import timezone
 
 def role_required(*group_names):
     """Декоратор для проверки групп."""
@@ -119,46 +117,74 @@ def employee_dashboard(request):
 @login_required
 @role_required('Admin')
 def statistics_view(request):
-    # Фильтр по диапазону дат
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
+    try:
+        # Фильтр по диапазону дат
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
 
-    if start_date and end_date:
-        # Преобразуем даты из формата дд.мм.гг в datetime
-        start_date = datetime.strptime(start_date, '%d.%m.%y')
-        end_date = datetime.strptime(end_date, '%d.%m.%y')
-        bookings = Booking.objects.filter(booking_date__range=(start_date, end_date))
-    else:
-        bookings = Booking.objects.all()
+        if start_date and end_date:
+            # Преобразуем даты из формата YYYY-MM-DD в datetime
+            try:
+                start_date = datetime.strptime(start_date, '%Y-%m-%d')
+                end_date = datetime.strptime(end_date, '%Y-%m-%d')
+            except ValueError as e:
+                print(f"Ошибка при преобразовании даты: {e}")
+                return JsonResponse({'error': 'Неверный формат даты'}, status=400)
 
-    # Статистика пользователей по месяцам
-    users_by_month = CustomUser.objects.annotate(
-        month=TruncMonth('date_joined')
-    ).values('month').annotate(count=Count('id')).order_by('month')
-    users_by_month = list(users_by_month)
-    for item in users_by_month:
-        if item['month']:
-            item['month'] = item['month'].strftime('%Y-%m')
+            # Фильтрация бронирований по дате
+            bookings = Booking.objects.filter(booking_date__range=(start_date, end_date))
 
-    # Статистика бронирований по статусам
-    bookings_by_status = bookings.values('status').annotate(count=Count('id')).order_by('status')
+            # Фильтрация пользователей по дате регистрации
+            users = CustomUser.objects.filter(date_joined__range=(start_date, end_date))
+        else:
+            bookings = Booking.objects.all()
+            users = CustomUser.objects.all()
 
-    # Новая статистика
-    online_bookings_count = bookings.filter(booking_type='online').count()
-    total_earnings = bookings.aggregate(total=Sum('amount'))['total'] or 0
+        # Статистика пользователей по месяцам
+        users_by_month = users.annotate(
+            month=TruncMonth('date_joined')
+        ).values('month').annotate(count=Count('id')).order_by('month')
+        users_by_month = list(users_by_month)
+        for item in users_by_month:
+            if item['month']:
+                item['month'] = item['month'].strftime('%Y-%m')
 
-    # График доходов по месяцам
-    earnings_by_month = bookings.annotate(
-        month=TruncMonth('booking_date')
-    ).values('month').annotate(total=Sum('amount')).order_by('month')
-    earnings_by_month = list(earnings_by_month)
-    for item in earnings_by_month:
-        if item['month']:
-            item['month'] = item['month'].strftime('%Y-%m')
+        # Статистика бронирований по статусам
+        bookings_by_status = bookings.values('status').annotate(count=Count('id')).order_by('status')
 
-    # Если запрос AJAX, возвращаем JSON
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return JsonResponse({
+        # Преобразуем статусы на русский язык
+        status_translation = {
+            'active': 'На модерации',
+            'approved': 'Подтверждено',
+            'rejected': 'Отклонено',
+        }
+        for item in bookings_by_status:
+            item['status'] = status_translation.get(item['status'], item['status'])
+
+        # Новая статистика
+        online_bookings_count = bookings.filter(booking_type='online').count()
+        total_earnings = bookings.aggregate(total=Sum('amount'))['total'] or 0
+
+        # График доходов по месяцам
+        earnings_by_month = bookings.annotate(
+            month=TruncMonth('booking_date')
+        ).values('month').annotate(total=Sum('amount')).order_by('month')
+        earnings_by_month = list(earnings_by_month)
+        for item in earnings_by_month:
+            if item['month']:
+                item['month'] = item['month'].strftime('%Y-%m')
+
+        # Если запрос AJAX, возвращаем JSON
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'users_by_month': users_by_month,
+                'bookings_by_status': list(bookings_by_status),
+                'online_bookings_count': online_bookings_count,
+                'total_earnings': total_earnings,
+                'earnings_by_month': earnings_by_month,
+            })
+
+        return render(request, 'staff/statistics.html', {
             'users_by_month': users_by_month,
             'bookings_by_status': list(bookings_by_status),
             'online_bookings_count': online_bookings_count,
@@ -166,13 +192,13 @@ def statistics_view(request):
             'earnings_by_month': earnings_by_month,
         })
 
-    return render(request, 'staff/statistics.html', {
-        'users_by_month': users_by_month,
-        'bookings_by_status': list(bookings_by_status),
-        'online_bookings_count': online_bookings_count,
-        'total_earnings': total_earnings,
-        'earnings_by_month': earnings_by_month,
-    })
+    except Exception as e:
+        # Логируем ошибку
+        print(f"Ошибка в statistics_view: {e}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Произошла ошибка на сервере'}, status=500)
+        else:
+            raise  # Пробрасываем исключение для отображения стандартной страницы ошибки Django
 
 def events_view(request):
     events = Event.objects.all()
@@ -306,3 +332,35 @@ def view_booking(request, event_id):
         return JsonResponse({'html': html})
     else:
         return JsonResponse({'error': 'This endpoint is only accessible via AJAX.'}, status=400)
+
+@login_required
+@role_required('Admin', 'Manager')
+def income_management(request):
+    # Получаем общий доход из бронирований
+    total_income = Booking.objects.aggregate(total=Sum('amount'))['total'] or 0
+
+    # Получаем все бронирования
+    bookings = Booking.objects.all().order_by('-booking_date')
+
+    return render(request, 'staff/income_management.html', {
+        'total_income': total_income,
+        'bookings': bookings,  # Передаем все бронирования
+    })
+
+@csrf_exempt
+@login_required
+@role_required('Admin', 'Manager')
+def add_prepayment(request):
+    if request.method == 'POST':
+        booking_id = request.POST.get('booking_id')
+
+        try:
+            booking = Booking.objects.get(id=booking_id)
+            booking.prepayment = 100  # Автоматически добавляем 100 рублей
+            booking.save()
+            return JsonResponse({'success': True})
+        except Booking.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Бронирование не найдено'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Недопустимый метод запроса'})

@@ -22,4 +22,8 @@ urlpatterns = [
     path('events/<int:event_id>/delete/', views.delete_event, name='delete_event'),
     path('events/<int:event_id>/view/', views.event_view, name='event_view'),
     path('events/<int:event_id>/view_booking/', views.view_booking, name='view_booking'),
+
+    path('income-management/', views.income_management, name='income_management'),
+    path('add-income/', views.add_income, name='add_income'),  # Маршрут для добавления дохода
+    path('add-prepayment/', views.add_prepayment, name='add_prepayment'),  # Новый маршрут для добавления предоплаты
 ]
