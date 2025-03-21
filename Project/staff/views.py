@@ -13,6 +13,7 @@ from .models import Event
 from .forms import EventForm, IncomeForm
 from datetime import datetime
 from django.utils import timezone
+from decimal import Decimal
 
 def role_required(*group_names):
     """Декоратор для проверки групп."""
@@ -24,7 +25,7 @@ def role_required(*group_names):
     return user_passes_test(in_groups)
 
 @login_required
-@user_passes_test(role_required('Admin', 'Manager'))
+@role_required('Admin', 'Manager')
 def admin_dashboard(request):
     all_users = CustomUser.objects.all()
     users = CustomUser.objects.all()
@@ -115,7 +116,7 @@ def employee_dashboard(request):
     return render(request, 'staff/employee_dashboard.html')
 
 @login_required
-@role_required('Admin')
+@role_required('Admin', 'Manager')
 def statistics_view(request):
     try:
         # Фильтр по диапазону дат
@@ -173,6 +174,14 @@ def statistics_view(request):
         for item in earnings_by_month:
             if item['month']:
                 item['month'] = item['month'].strftime('%Y-%m')
+
+        # Если данных нет, создаем пустые массивы
+        if not users_by_month:
+            users_by_month = [{'month': 'Нет данных', 'count': 0}]
+        if not bookings_by_status:
+            bookings_by_status = [{'status': 'Нет данных', 'count': 0}]
+        if not earnings_by_month:
+            earnings_by_month = [{'month': 'Нет данных', 'total': 0}]
 
         # Если запрос AJAX, возвращаем JSON
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -339,12 +348,27 @@ def income_management(request):
     # Получаем общий доход из бронирований
     total_income = Booking.objects.aggregate(total=Sum('amount'))['total'] or 0
 
-    # Получаем все бронирования
+    # Получаем все бронирования, сортируем по дате бронирования
     bookings = Booking.objects.all().order_by('-booking_date')
+
+    # Данные для графиков
+    earnings_by_month = bookings.annotate(
+        month=TruncMonth('booking_date')
+    ).values('month').annotate(total=Sum('amount')).order_by('month')
+
+    # Преобразуем данные для передачи в шаблон
+    earnings_by_month = list(earnings_by_month)
+    for item in earnings_by_month:
+        if item['month']:
+            item['month'] = item['month'].strftime('%Y-%m')
+
+    # Отладочный вывод
+    print("Данные для графиков:", earnings_by_month)
 
     return render(request, 'staff/income_management.html', {
         'total_income': total_income,
-        'bookings': bookings,  # Передаем все бронирования
+        'bookings': bookings,
+        'earnings_by_month': earnings_by_month,
     })
 
 @csrf_exempt
@@ -356,7 +380,7 @@ def add_prepayment(request):
 
         try:
             booking = Booking.objects.get(id=booking_id)
-            booking.prepayment = 100  # Автоматически добавляем 100 рублей
+            booking.prepayment = 1000  # Автоматически добавляем 1000 рублей
             booking.save()
             return JsonResponse({'success': True})
         except Booking.DoesNotExist:
@@ -364,3 +388,75 @@ def add_prepayment(request):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
     return JsonResponse({'success': False, 'error': 'Недопустимый метод запроса'})
+
+@csrf_exempt
+@login_required
+@role_required('Admin', 'Manager')
+def add_income(request):
+    if request.method == 'POST':
+        try:
+            booking_id = request.POST.get('booking_id')
+            amount = request.POST.get('amount')
+
+            if not booking_id or not amount:
+                return JsonResponse({'success': False, 'error': 'Необходимо указать ID бронирования и сумму.'})
+
+            try:
+                amount_decimal = Decimal(amount)  # Преобразуем сумму в Decimal
+            except (ValueError, TypeError):
+                return JsonResponse({'success': False, 'error': 'Сумма должна быть числом.'})
+
+            booking = Booking.objects.get(id=booking_id)
+            booking.amount += amount_decimal  # Теперь оба операнда имеют тип Decimal
+            booking.save()
+
+            # Логируем данные для отладки
+            print(f"Доход добавлен: Бронирование ID={booking_id}, Сумма={amount_decimal}")
+            return JsonResponse({'success': True, 'message': 'Доход успешно добавлен.'})
+        except Booking.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Бронирование не найдено.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Недопустимый метод запроса.'})
+
+@csrf_exempt
+@login_required
+@role_required('Admin', 'Manager')
+def edit_income_and_prepayment(request):
+    if request.method == 'POST':
+        try:
+            booking_id = request.POST.get('booking_id')
+            amount = request.POST.get('amount')
+            prepayment = request.POST.get('prepayment')
+            is_paid_at_cashier = request.POST.get('is_paid_at_cashier') == 'on'  # Чекбокс для оплаты на кассе
+            cashier_payment = request.POST.get('cashier_payment')  # Сумма, оплаченная на кассе
+            is_prepayment = request.POST.get('is_prepayment') == 'on'  # Чекбокс для предоплаты
+
+            if not booking_id or not amount:
+                return JsonResponse({'success': False, 'error': 'Необходимо указать ID бронирования и сумму.'})
+
+            try:
+                amount_decimal = Decimal(amount)  # Преобразуем сумму в Decimal
+                prepayment_decimal = Decimal(prepayment) if prepayment else Decimal(0)  # Преобразуем предоплату в Decimal
+                cashier_payment_decimal = Decimal(cashier_payment) if cashier_payment else Decimal(0)  # Преобразуем оплату на кассе в Decimal
+            except (ValueError, TypeError):
+                return JsonResponse({'success': False, 'error': 'Сумма, предоплата и оплата на кассе должны быть числами.'})
+
+            booking = Booking.objects.get(id=booking_id)
+            booking.amount = amount_decimal  # Обновляем сумму
+            booking.prepayment = prepayment_decimal if is_prepayment else Decimal(0)  # Обновляем предоплату, если чекбокс активен
+            booking.cashier_payment = cashier_payment_decimal if is_paid_at_cashier else Decimal(0)  # Обновляем оплату на кассе, если чекбокс активен
+            booking.save()
+
+            return JsonResponse({
+                'success': True,
+                'new_amount': booking.amount,  # Возвращаем новую сумму
+                'new_prepayment': booking.prepayment,  # Возвращаем новую предоплату
+                'new_cashier_payment': booking.cashier_payment,  # Возвращаем новую оплату на кассе
+                'message': 'Доход, предоплата и оплата на кассе успешно обновлены.',
+            })
+        except Booking.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Бронирование не найдено.'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Недопустимый метод запроса.'})

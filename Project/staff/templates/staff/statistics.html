@@ -207,64 +207,46 @@
         });
 
         // Функция для обновления данных через AJAX
-function updateStatistics(dateRange = null) {
-    const url = new URL("{% url 'statistics' %}", window.location.origin);
-    if (dateRange) {
-        // Используем правильный разделитель
-        const [startDate, endDate] = dateRange.split(" — "); // Разделитель " — "
-        console.log('Start Date:', startDate); // Отладка
-        console.log('End Date:', endDate); // Отладка
+        function updateStatistics(dateRange = null) {
+            const url = new URL("{% url 'statistics' %}", window.location.origin);
+            if (dateRange) {
+                const [startDate, endDate] = dateRange.split(" — ");
+                url.searchParams.set('start_date', startDate);
+                url.searchParams.set('end_date', endDate);
+            }
 
-        // Преобразуем даты из DD.MM.YY в YYYY-MM-DD
-        const formattedStartDate = `20${startDate.split('.').reverse().join('-')}`;
-        const formattedEndDate = `20${endDate.split('.').reverse().join('-')}`;
-        console.log('Formatted Start Date:', formattedStartDate); // Отладка
-        console.log('Formatted End Date:', formattedEndDate); // Отладка
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Обновляем графики
+                usersChart.data.labels = data.users_by_month.map(item => item.month);
+                usersChart.data.datasets[0].data = data.users_by_month.map(item => item.count);
+                usersChart.update();
 
-        url.searchParams.set('start_date', formattedStartDate);
-        url.searchParams.set('end_date', formattedEndDate);
-    }
+                bookingsChart.data.labels = data.bookings_by_status.map(item => item.status);
+                bookingsChart.data.datasets[0].data = data.bookings_by_status.map(item => item.count);
+                bookingsChart.update();
 
-    fetch(url, {
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
+                earningsChart.data.labels = data.earnings_by_month.map(item => item.month);
+                earningsChart.data.datasets[0].data = data.earnings_by_month.map(item => item.total);
+                earningsChart.update();
+
+                // Обновляем текстовые данные
+                document.getElementById('onlineBookingsCount').textContent = data.online_bookings_count;
+                document.getElementById('totalEarnings').textContent = `${data.total_earnings} руб.`;
+            })
+            .catch(error => {
+                console.error('Ошибка при загрузке данных:', error);
+            });
         }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Ошибка сети или сервера');
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log(data); // Отладка
-        // Обновляем графики
-        usersChart.data.labels = data.users_by_month.map(item => item.month);
-        usersChart.data.datasets[0].data = data.users_by_month.map(item => item.count);
-        usersChart.update();
-
-        bookingsChart.data.labels = data.bookings_by_status.map(item => item.status);
-        bookingsChart.data.datasets[0].data = data.bookings_by_status.map(item => item.count);
-        bookingsChart.update();
-
-        earningsChart.data.labels = data.earnings_by_month.map(item => item.month);
-        earningsChart.data.datasets[0].data = data.earnings_by_month.map(item => item.total);
-        earningsChart.update();
-
-        // Обновляем текстовые данные
-        document.getElementById('onlineBookingsCount').textContent = data.online_bookings_count;
-        document.getElementById('totalEarnings').textContent = `${data.total_earnings} руб.`;
-    })
-    .catch(error => {
-        console.error('Ошибка при загрузке данных:', error);
-        alert('Произошла ошибка при загрузке данных. Проверьте консоль для подробностей.');
-    });
-}
 
         // Обработчик для кнопки "Применить"
         document.getElementById('applyFilter').addEventListener('click', () => {
             const dateRange = document.getElementById('dateRange').value;
-            console.log('Выбранный диапазон дат:', dateRange); // Отладка
             if (!dateRange) {
                 console.error('Диапазон дат не выбран');
                 return;

@@ -25,5 +25,6 @@ urlpatterns = [
 
     path('income-management/', views.income_management, name='income_management'),
     path('add-income/', views.add_income, name='add_income'),  # Маршрут для добавления дохода
-    path('add-prepayment/', views.add_prepayment, name='add_prepayment'),  # Новый маршрут для добавления предоплаты
+    path('add-prepayment/', views.add_prepayment, name='add_prepayment'),  # Маршрут для добавления предоплаты
+    path('edit-income-and-prepayment/', views.edit_income_and_prepayment, name='edit_income_and_prepayment'),  # Новый маршрут для редактирования дохода и предоплаты
 ]
