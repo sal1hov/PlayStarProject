@@ -5,13 +5,19 @@ from decimal import Decimal
 
 
 class Booking(models.Model):
-    # Статусы бронирования
     STATUS_CHOICES = [
-        ('pending', 'На модерации'),
+        ('pending', 'На модерации'),  # Перевод статуса
         ('approved', 'Подтверждено'),
         ('rejected', 'Отклонено'),
         ('completed', 'Завершено')
     ]
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        verbose_name='Статус'
+    )
 
     # Типы бронирования
     BOOKING_TYPES = [

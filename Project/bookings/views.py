@@ -9,6 +9,10 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date
 # Импортируем модель Event из приложения staff
 from staff.models import Event
+import traceback
+from django.views.decorators.csrf import csrf_exempt
+import logging
+logger = logging.getLogger(__name__)
 
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
@@ -88,40 +92,39 @@ def delete_booking(request, booking_id):
         return redirect('admin_dashboard')
     return redirect('profile')
 
+
+@csrf_exempt
 @login_required
 def create_booking(request):
     if request.method == 'POST':
-        # Передаём exclude_status=True, чтобы пользователю не показывалось поле status
-        form = BookingForm(request.POST, exclude_status=True)
-        if form.is_valid():
-            booking = form.save(commit=False)
-            booking.user = request.user
-            # Устанавливаем автоматический статус для нового бронирования
-            booking.status = 'active'  # 'active' будет отображаться как "На модерации"
-            booking.save()
+        try:
+            form = BookingForm(request.POST, enforce_future_date=True, exclude_status=True)
 
-            # Создаем мероприятие и сохраняем связь с бронированием
-            Event.objects.create(
-                name=booking.event_name,
-                description=booking.comment or 'Событие создано по бронированию.',
-                date=booking.event_date,
-                location='Не указано',  # Можно заменить на нужное значение
-                event_type='birthday',  # Фиксированное значение для бронирований
-                moderation_status='pending',  # По умолчанию мероприятие на модерации
-                booking=booking  # Привязываем бронирование
-            )
+            if form.is_valid():
+                booking = form.save(commit=False)
+                booking.user = request.user
+                booking.status = 'pending'
+                booking.booking_type = 'online'
+                booking.save()
 
-            return JsonResponse({
-                'success': True,
-                'message': 'Бронирование успешно создано! Ожидайте звонка от менеджера или подтверждения на сайте.'
-            })
-        else:
-            return JsonResponse({
-                'success': False,
-                'message': 'Ошибка при создании бронирования. Проверьте данные.',
-                'errors': form.errors
-            })
-    return JsonResponse({
-        'success': False,
-        'message': 'Недопустимый метод запроса.'
-    })
+                Event.objects.create(
+                    name=booking.event_name,
+                    description=booking.comment or f"Бронирование от {booking.user.username}",
+                    date=booking.event_date,
+                    location='main',
+                    event_type='birthday',
+                    max_participants=10,  # Добавляем обязательное поле
+                    moderation_status='pending',
+                    booking=booking
+                )
+
+                return JsonResponse({'success': True, 'message': 'Бронирование успешно создано!'})
+
+            logger.error("Ошибки формы: %s", form.errors)
+            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+
+        except Exception as e:
+            logger.exception("Server error:")
+            return JsonResponse({'success': False, 'message': f'Ошибка сервера: {str(e)}'}, status=500)
+
+    return JsonResponse({'success': False, 'message': 'Метод не разрешен'}, status=405)

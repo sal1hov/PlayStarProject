@@ -105,3 +105,23 @@ AUTH_USER_MODEL = 'main.CustomUser'
 # Настройки перенаправления после входа и выхода
 LOGIN_REDIRECT_URL = '/profile/'  # Перенаправление на страницу профиля после входа
 LOGOUT_REDIRECT_URL = '/'  # Перенаправление на главную страницу после выхода
+
+
+# Обработка ошибок для AJAX
+def bad_request(request, exception=None):
+    return JsonResponse({'error': 'Bad Request'}, status=400)
+
+def permission_denied(request, exception=None):
+    return JsonResponse({'error': 'Permission Denied'}, status=403)
+
+def page_not_found(request, exception=None):
+    return JsonResponse({'error': 'Page Not Found'}, status=404)
+
+def server_error(request):
+    return JsonResponse({'error': 'Server Error'}, status=500)
+
+# Добавьте в конец файла:
+handler400 = 'your_project_name.views.bad_request'
+handler403 = 'your_project_name.views.permission_denied'
+handler404 = 'your_project_name.views.page_not_found'
+handler500 = 'your_project_name.views.server_error'

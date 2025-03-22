@@ -147,7 +147,6 @@
         loadInitialData();
     });
 
-    // Инициализация Flatpickr
     function initializeDatePicker() {
         const dateInput = document.getElementById('dateRange');
         if (!dateInput) return;
@@ -162,7 +161,6 @@
         });
     }
 
-    // Инициализация графика
     function initializeChart() {
         const ctx = document.getElementById('incomeChart').getContext('2d');
         const initialData = JSON.parse(document.getElementById('earnings-data').textContent);
@@ -199,7 +197,6 @@
         });
     }
 
-    // Загрузка данных
     async function loadInitialData() {
         try {
             const response = await fetch("{% url 'income_management_data' %}");
@@ -210,19 +207,15 @@
         }
     }
 
-    // Обновление интерфейса
     function updateUI(data) {
-        // Карточки
         document.getElementById('totalIncome').textContent = `${parseFloat(data.total_income).toFixed(2)} руб.`;
         document.getElementById('averageIncome').textContent = `${parseFloat(data.average_income).toFixed(2)} руб.`;
         document.getElementById('totalPrepayments').textContent = `${parseFloat(data.total_prepayments).toFixed(2)} руб.`;
 
-        // График
         incomeChart.data.labels = data.chart_data.labels;
         incomeChart.data.datasets[0].data = data.chart_data.data;
         incomeChart.update();
 
-        // Таблица
         const tbody = document.getElementById('bookingsBody');
         tbody.innerHTML = data.bookings.map(booking => `
             <tr class="border-b hover:bg-gray-50" id="booking-${booking.id}">
@@ -236,7 +229,7 @@
                 })}</td>
                 <td class="py-2" id="paidAmount-${booking.id}">${parseFloat(booking.paid_amount).toFixed(2)} руб.</td>
                 <td class="py-2" id="prepayment-${booking.id}">${booking.prepayment ? 'Да' : 'Нет'}</td>
-                <td class="py-2">${booking.status_display}</td>
+                <td class="py-2">{{ booking.get_status_display }}</td>
                 <td class="py-2">
                     <button onclick="openEditModal('${booking.id}', '${booking.paid_amount}', '${booking.prepayment}')"
                         class="bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600">
@@ -247,7 +240,6 @@
         `).join('');
     }
 
-    // Обработка формы
     async function handleFormSubmit(e) {
         e.preventDefault();
 
@@ -269,13 +261,11 @@
             if (result.success) {
                 showToast(result.message);
 
-                // Обновляем только измененные элементы
                 document.getElementById(`paidAmount-${bookingId}`).textContent =
                     `${parseFloat(result.new_paid_amount).toFixed(2)} руб.`;
                 document.getElementById(`prepayment-${bookingId}`).textContent =
                     result.new_prepayment ? 'Да' : 'Нет';
 
-                // Перезагружаем основные метрики
                 document.getElementById('totalIncome').textContent =
                     `${parseFloat(result.total_income).toFixed(2)} руб.`;
                 document.getElementById('averageIncome').textContent =
@@ -292,7 +282,6 @@
         }
     }
 
-    // Остальные функции
     function openEditModal(id, amount, prepayment) {
         document.getElementById('editBookingId').value = id;
         document.getElementById('editPaidAmount').value = parseFloat(amount) || 0;

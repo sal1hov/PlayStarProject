@@ -36,14 +36,36 @@ MODERATION_STATUS = (
     ('pending', 'На модерации'),
 )
 
+
 class Event(models.Model):
-    name = models.CharField(max_length=255, verbose_name="Название мероприятия")
-    description = models.TextField(verbose_name="Описание мероприятия")
-    date = models.DateTimeField(verbose_name="Дата и время мероприятия")
-    image = models.ImageField(upload_to='events/', null=True, blank=True, verbose_name="Изображение мероприятия")
-    event_type = models.CharField(max_length=50, choices=EVENT_TYPES, default='другое', verbose_name="Тип мероприятия")
-    moderation_status = models.CharField(max_length=50, choices=MODERATION_STATUS, default='pending', verbose_name="Статус модерации")
-    max_participants = models.PositiveIntegerField(verbose_name="Максимальное количество участников", default=0)
+    LOCATION_CHOICES = [
+        ('main', 'Основная площадка'),
+        ('secondary', 'Дополнительная площадка')
+    ]
+
+    # Существующие поля
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    date = models.DateTimeField()
+    location = models.CharField(
+        max_length=100,
+        choices=LOCATION_CHOICES,
+        default='main'  # Важно!
+    )
+    event_type = models.CharField(max_length=50)
+    moderation_status = models.CharField(max_length=20, default='pending')
+    booking = models.OneToOneField(
+        'bookings.Booking',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True
+    )
+
+    # Добавьте эти поля
+    image = models.ImageField(upload_to='events/', null=True, blank=True)
+    max_participants = models.PositiveIntegerField(
+        default=10,  # Добавляем значение по умолчанию
+        verbose_name='Максимальное количество участников')
 
     def __str__(self):
         return self.name
