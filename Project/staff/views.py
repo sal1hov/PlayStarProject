@@ -458,7 +458,6 @@ def income_management_data(request):
         date_range = request.GET.get('date_range', '')
         start_date = end_date = None
 
-        # Парсинг дат из формата dd.mm.yyyy
         if date_range:
             try:
                 dates = date_range.split(' to ')
@@ -467,7 +466,6 @@ def income_management_data(request):
             except Exception as e:
                 return JsonResponse({'success': False, 'error': f'Неверный формат даты: {e}'})
 
-        # Базовый запрос с фильтрацией
         bookings = Booking.objects.all()
         if start_date and end_date:
             bookings = bookings.filter(
@@ -475,19 +473,16 @@ def income_management_data(request):
                 booking_date__date__lte=end_date
             )
 
-        # Расчет показателей
         total_income = bookings.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
         avg_income = bookings.aggregate(avg=Avg('paid_amount'))['avg'] or Decimal('0.00')
         total_prepayments = bookings.filter(prepayment=True).aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
 
-        # Данные для графика (группировка по месяцам)
         earnings_by_month = bookings.annotate(
             month=TruncMonth('booking_date')
         ).values('month').annotate(
             total=Sum('paid_amount')
         ).order_by('month')
 
-        # Форматирование для графика
         chart_data = {
             'labels': [],
             'data': []
@@ -510,7 +505,7 @@ def income_management_data(request):
                 'paid_amount',
                 'prepayment',
                 'status'
-            ).annotate(status_display=Count('status')))
+            ).annotate(status_display=F('status')))  # Ключевое исправление
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
