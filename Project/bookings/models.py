@@ -1,3 +1,4 @@
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.conf import settings
 
@@ -25,12 +26,20 @@ class Booking(models.Model):
     edited_by = models.CharField(max_length=50, blank=True, null=True, verbose_name='Отредактировано')
     booking_type = models.CharField(max_length=10, choices=BOOKING_TYPES, default=ONLINE, verbose_name='Тип бронирования')
     amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name='Сумма')
-    prepayment = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name='Предоплата')
-    cashier_payment = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name='Оплата на кассе')  # Новое поле
-
+    prepayment = models.BooleanField(default=False, verbose_name='Предоплата')
+    cashier_payment = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, verbose_name='Оплата на кассе')
+    paid_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00,
+        verbose_name='Оплаченная сумма',
+        validators=[MinValueValidator(0)]  # Валидатор для отрицательных значений
+    )
     def __str__(self):
         return f"{self.event_name} - {self.event_date}"
 
     class Meta:
         verbose_name = 'Бронирование'
         verbose_name_plural = 'Бронирования'
+
+

@@ -13,7 +13,10 @@ urlpatterns = [
     # Управление бронированиями
     path('booking/<int:booking_id>/<str:action>/', views.manage_booking, name='manage_booking'),
 
+    # Статистика и отчеты
     path('statistics/', views.statistics_view, name='statistics'),
+
+    # Управление мероприятиями
     path('events/', views.events_view, name='events'),
     path('events/create/', views.create_event, name='create_event'),
     path('events/<int:event_id>/edit/', views.edit_event, name='edit_event'),
@@ -23,8 +26,8 @@ urlpatterns = [
     path('events/<int:event_id>/view/', views.event_view, name='event_view'),
     path('events/<int:event_id>/view_booking/', views.view_booking, name='view_booking'),
 
+    # Управление доходами
     path('income-management/', views.income_management, name='income_management'),
-    path('add-income/', views.add_income, name='add_income'),  # Маршрут для добавления дохода
-    path('add-prepayment/', views.add_prepayment, name='add_prepayment'),  # Маршрут для добавления предоплаты
-    path('edit-income-and-prepayment/', views.edit_income_and_prepayment, name='edit_income_and_prepayment'),  # Новый маршрут для редактирования дохода и предоплаты
+    path('income-management/data/', views.income_management_data, name='income_management_data'),
+    path('edit-income-and-prepayment/', views.edit_income_and_prepayment, name='edit_income_and_prepayment'),
 ]

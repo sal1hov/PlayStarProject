@@ -36,82 +36,80 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <div class="bg-white p-6 rounded-lg shadow">
                 <p class="text-gray-600">Общий доход</p>
-                <p class="text-2xl font-bold text-gray-800" id="totalIncome">{{ total_income }} руб.</p>
+                <p class="text-2xl font-bold text-gray-800" id="totalIncome">{{ total_income|default:"0.00" }} руб.</p>
             </div>
             <div class="bg-white p-6 rounded-lg shadow">
-                <p class="text-gray-600">Онлайн бронирования</p>
-                <p class="text-2xl font-bold text-gray-800" id="onlineBookingsCount">{{ online_bookings_count }}</p>
+                <p class="text-gray-600">Средний доход за месяц</p>
+                <p class="text-2xl font-bold text-gray-800" id="averageIncome">{{ average_income|default:"0.00" }} руб.</p>
             </div>
             <div class="bg-white p-6 rounded-lg shadow">
-                <p class="text-gray-600">Оплата на кассе</p>
-                <p class="text-2xl font-bold text-gray-800" id="cashierPaymentsCount">{{ cashier_payments_count }}</p>
+                <p class="text-gray-600">Общая сумма предоплат</p>
+                <p class="text-2xl font-bold text-gray-800" id="totalPrepayments">{{ total_prepayments|default:"0.00" }} руб.</p>
             </div>
         </div>
 
         <!-- График доходов по месяцам -->
         <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
             <h2 class="text-xl font-bold mb-4">Доходы по месяцам</h2>
-            <canvas id="incomeChart" class="w-full h-64"></canvas>
+            <div class="relative h-96">
+                <canvas id="incomeChart"></canvas>
+            </div>
         </div>
 
         <!-- Список бронирований -->
         <div class="bg-white p-6 rounded-lg shadow-lg">
             <h2 class="text-xl font-bold mb-4">История бронирований</h2>
-            <table class="w-full text-left">
-                <thead>
-                    <tr class="border-b">
-                        <th class="py-2">Мероприятие</th>
-                        <th class="py-2">Дата бронирования</th>
-                        <th class="py-2">Оплачено</th>
-                        <th class="py-2">Предоплата</th>
-                        <th class="py-2">Чек</th>
-                        <th class="py-2">Статус</th>
-                        <th class="py-2">Действия</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for booking in bookings %}
-                    <tr class="border-b hover:bg-gray-50 transition duration-300" id="booking-{{ booking.id }}">
-                        <td class="py-2">{{ booking.event_name }}</td>
-                        <td class="py-2">{{ booking.booking_date|date:"d.m.Y H:i" }}</td>
-                        <td class="py-2" id="paidAmount-{{ booking.id }}">{{ booking.paid_amount }} руб.</td>
-                        <td class="py-2" id="prepayment-{{ booking.id }}">{{ booking.prepayment|yesno:"Да,Нет" }}</td>
-                        <td class="py-2" id="receiptLink-{{ booking.id }}">
-                            {% if booking.receipt_link %}
-                                <a href="{{ booking.receipt_link }}" target="_blank" class="text-blue-500 hover:underline">Ссылка на чек</a>
-                            {% else %}
-                                Нет
-                            {% endif %}
-                        </td>
-                        <td class="py-2">{{ booking.get_status_display }}</td>
-                        <td class="py-2">
-                            <button onclick="openEditModal('{{ booking.id }}', '{{ booking.paid_amount }}', '{{ booking.prepayment }}', '{{ booking.receipt_link }}')" class="bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600 transition duration-300">
-                                Редактировать
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="overflow-x-auto">
+                <div class="min-w-full" style="max-height: 600px; overflow-y: auto;">
+                    <table class="w-full text-left relative">
+                        <thead class="sticky top-0 bg-white shadow-sm">
+                            <tr class="border-b">
+                                <th class="py-2 bg-white">Мероприятие</th>
+                                <th class="py-2 bg-white">Дата бронирования</th>
+                                <th class="py-2 bg-white">Оплачено</th>
+                                <th class="py-2 bg-white">Предоплата</th>
+                                <th class="py-2 bg-white">Статус</th>
+                                <th class="py-2 bg-white">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookingsBody">
+                            {% for booking in bookings %}
+                            <tr class="border-b hover:bg-gray-50 transition duration-300" id="booking-{{ booking.id }}">
+                                <td class="py-2">{{ booking.event_name }}</td>
+                                <td class="py-2">{{ booking.booking_date|date:"d.m.Y H:i" }}</td>
+                                <td class="py-2" id="paidAmount-{{ booking.id }}">{{ booking.paid_amount|default:"0.00" }} руб.</td>
+                                <td class="py-2" id="prepayment-{{ booking.id }}">{{ booking.prepayment|yesno:"Да,Нет" }}</td>
+                                <td class="py-2">{{ booking.get_status_display }}</td>
+                                <td class="py-2">
+                                    <button onclick="openEditModal('{{ booking.id }}', '{{ booking.paid_amount|default:"0.00" }}', '{{ booking.prepayment }}')" class="bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600 transition duration-300">
+                                        Редактировать
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </main>
 </div>
 
-<!-- Модальное окно для редактирования дохода и предоплаты -->
+<!-- Модальное окно для редактирования -->
 <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center">
     <div class="bg-white p-6 rounded-lg w-11/12 sm:w-2/3 md:w-1/2 lg:w-1/3">
-        <h2 class="text-xl font-bold mb-4">Редактировать доход и оплату</h2>
-        <form id="editForm" method="post" action="{% url 'edit_income_and_prepayment' %}">
+        <h2 class="text-xl font-bold mb-4">Редактировать оплату</h2>
+        <form id="editForm" method="post">
             {% csrf_token %}
             <input type="hidden" id="editBookingId" name="booking_id">
 
-            <!-- Поле для суммы, которую оплатил клиент -->
             <div class="mb-4">
                 <label for="editPaidAmount" class="block text-sm font-medium text-gray-700">Оплачено</label>
-                <input type="number" id="editPaidAmount" name="paid_amount" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition duration-300" required>
+                <input type="number" id="editPaidAmount" name="paid_amount"
+                       class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition duration-300"
+                       required step="0.01">
             </div>
 
-            <!-- Чекбокс для предоплаты -->
             <div class="mb-4">
                 <label class="flex items-center space-x-2">
                     <input type="checkbox" id="isPrepayment" name="is_prepayment" class="form-checkbox">
@@ -119,178 +117,229 @@
                 </label>
             </div>
 
-            <!-- Поле для ссылки на чек -->
-            <div class="mb-4">
-                <label for="editReceiptLink" class="block text-sm font-medium text-gray-700">Ссылка на чек</label>
-                <input type="url" id="editReceiptLink" name="receipt_link" class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition duration-300" placeholder="Вставьте ссылку на чек">
-            </div>
-
-            <div class="flex justify-end">
-                <button type="button" onclick="closeEditModal()" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">Отмена</button>
-                <button type="submit" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300 ml-2">Сохранить</button>
+            <div class="flex justify-end space-x-2">
+                <button type="button" onclick="closeEditModal()"
+                        class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
+                    Отмена
+                </button>
+                <button type="submit"
+                        class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
+                    Сохранить
+                </button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Toast-уведомления -->
-<div id="toast" class="toast hidden fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg"></div>
+<!-- Уведомления -->
+<div id="toast" class="hidden fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white"></div>
 
-<!-- Передача данных в JavaScript -->
 {{ earnings_by_month|json_script:"earnings-data" }}
 
 <script>
-    let incomeChart; // Глобальная переменная для хранения объекта графика
+    let incomeChart = null;
+    let flatpickrInstance = null;
 
-    // Функция для отображения toast-уведомлений
-    function showToast(message, type = 'success') {
-        const toast = document.getElementById('toast');
-        if (toast) {
-            toast.textContent = message;
-            toast.className = `toast fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`;
-            toast.classList.remove('hidden');
-
-            // Скрываем toast через 3 секунды
-            setTimeout(() => {
-                toast.classList.add('hidden');
-            }, 3000);
-        }
-    }
-
-    // Функции для управления модальными окнами
-    function openEditModal(bookingId, currentPaidAmount, currentPrepayment, currentReceiptLink) {
-        const editModal = document.getElementById('editModal');
-        if (editModal) {
-            document.getElementById('editBookingId').value = bookingId;
-            document.getElementById('editPaidAmount').value = currentPaidAmount;
-            document.getElementById('isPrepayment').checked = currentPrepayment > 0;
-            document.getElementById('editReceiptLink').value = currentReceiptLink || '';
-            editModal.classList.remove('hidden');
-        }
-    }
-
-    function closeEditModal() {
-        const editModal = document.getElementById('editModal');
-        if (editModal) {
-            editModal.classList.add('hidden');
-        }
-    }
-
-    // Обработка отправки формы редактирования дохода и предоплаты через AJAX
-    document.getElementById('editForm').addEventListener('submit', function (e) {
-        e.preventDefault(); // Предотвращаем стандартную отправку формы
-
-        const formData = new FormData(this); // Собираем данные формы
-        const bookingId = document.getElementById('editBookingId').value;
-
-        fetch("{% url 'edit_income_and_prepayment' %}", {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,  // Получаем CSRF-токен из формы
-            },
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Обновляем данные на странице
-                const paidAmountElement = document.getElementById(`paidAmount-${bookingId}`);
-                const prepaymentElement = document.getElementById(`prepayment-${bookingId}`);
-                const receiptLinkElement = document.getElementById(`receiptLink-${bookingId}`);
-                if (paidAmountElement && prepaymentElement && receiptLinkElement) {
-                    paidAmountElement.textContent = `${data.new_paid_amount} руб.`;
-                    prepaymentElement.textContent = data.new_prepayment > 0 ? "Да" : "Нет";
-                    receiptLinkElement.innerHTML = data.new_receipt_link ?
-                        `<a href="${data.new_receipt_link}" target="_blank" class="text-blue-500 hover:underline">Ссылка на чек</a>` :
-                        "Нет";
-                }
-                showToast('Данные успешно обновлены!', 'success');
-                closeEditModal();
-            } else {
-                showToast('Ошибка при обновлении: ' + data.error, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Ошибка:', error);
-            showToast('Произошла ошибка при отправке запроса.', 'error');
-        });
+    document.addEventListener("DOMContentLoaded", () => {
+        initializeDatePicker();
+        initializeChart();
+        setupEventListeners();
+        loadInitialData();
     });
 
-    // Инициализация Flatpickr для выбора диапазона дат
-    document.addEventListener("DOMContentLoaded", function() {
-        flatpickr("#dateRange", {
+    // Инициализация Flatpickr
+    function initializeDatePicker() {
+        const dateInput = document.getElementById('dateRange');
+        if (!dateInput) return;
+
+        flatpickrInstance = flatpickr(dateInput, {
             mode: "range",
             dateFormat: "d.m.Y",
             locale: "ru",
-            static: false,
-            inline: false,
+            onChange: (dates) => {
+                if (dates.length === 2) loadFilteredData();
+            }
         });
-
-        // Инициализация графика доходов по месяцам
-        const earningsData = JSON.parse(document.getElementById('earnings-data').textContent);
-        initChart(earningsData);
-
-        // Пример обновления данных графика при нажатии на кнопку "Применить"
-        document.getElementById('applyFilter').addEventListener('click', function() {
-            const dateRange = document.getElementById('dateRange').value;
-            fetch(`/api/income-distribution/?date_range=${dateRange}`)
-                .then(response => response.json())
-                .then(data => {
-                    updateIncomeChart(data); // Обновляем график
-                })
-                .catch(error => {
-                    console.error('Ошибка при загрузке данных:', error);
-                });
-        });
-    });
-
-    // Функция для создания градиента
-    function createGradient(ctx, color1, color2) {
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, color1);
-        gradient.addColorStop(1, color2);
-        return gradient;
     }
 
-    // Функция для инициализации графика доходов по месяцам
-    function initChart(earningsData) {
-        const earningsLabels = earningsData.length > 0 ? earningsData.map(item => item.month) : ['Нет данных'];
-        const earningsTotals = earningsData.length > 0 ? earningsData.map(item => item.total) : [0];
+    // Инициализация графика
+    function initializeChart() {
+        const ctx = document.getElementById('incomeChart').getContext('2d');
+        const initialData = JSON.parse(document.getElementById('earnings-data').textContent);
 
-        // График доходов по месяцам (линейный график с градиентной заливкой)
-        const incomeCtx = document.getElementById('incomeChart').getContext('2d');
-        incomeChart = new Chart(incomeCtx, {
+        incomeChart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: earningsLabels,
+                labels: initialData.map(item => item.month),
                 datasets: [{
                     label: 'Доходы',
-                    data: earningsTotals,
-                    borderColor: 'rgba(75, 192, 192, 1)',
+                    data: initialData.map(item => item.total),
+                    borderColor: '#4BC0C0',
                     borderWidth: 2,
                     fill: true,
-                    backgroundColor: createGradient(incomeCtx, 'rgba(75, 192, 192, 0.3)', 'rgba(75, 192, 192, 0.05)'),
-                    tension: 0.4, // Плавность линий
+                    backgroundColor: createGradient(ctx),
+                    tension: 0.4
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 plugins: { legend: { display: false } },
                 scales: {
-                    y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-                    x: { grid: { display: false } },
-                },
-            },
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return value + ' руб.';
+                            }
+                        }
+                    }
+                }
+            }
         });
     }
 
-    // Функция для обновления данных графика доходов по месяцам
-    function updateIncomeChart(newData) {
-        if (incomeChart) {
-            incomeChart.data.labels = newData.map(item => item.month);
-            incomeChart.data.datasets[0].data = newData.map(item => item.total);
-            incomeChart.update(); // Перерисовываем график
+    // Загрузка данных
+    async function loadInitialData() {
+        try {
+            const response = await fetch("{% url 'income_management_data' %}");
+            const data = await response.json();
+            if (data.success) updateUI(data);
+        } catch (error) {
+            showToast('Ошибка загрузки данных', 'error');
+        }
+    }
+
+    // Обновление интерфейса
+    function updateUI(data) {
+        // Карточки
+        document.getElementById('totalIncome').textContent = `${parseFloat(data.total_income).toFixed(2)} руб.`;
+        document.getElementById('averageIncome').textContent = `${parseFloat(data.average_income).toFixed(2)} руб.`;
+        document.getElementById('totalPrepayments').textContent = `${parseFloat(data.total_prepayments).toFixed(2)} руб.`;
+
+        // График
+        incomeChart.data.labels = data.chart_data.labels;
+        incomeChart.data.datasets[0].data = data.chart_data.data;
+        incomeChart.update();
+
+        // Таблица
+        const tbody = document.getElementById('bookingsBody');
+        tbody.innerHTML = data.bookings.map(booking => `
+            <tr class="border-b hover:bg-gray-50" id="booking-${booking.id}">
+                <td class="py-2">${booking.event_name}</td>
+                <td class="py-2">${new Date(booking.booking_date).toLocaleDateString('ru-RU', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })}</td>
+                <td class="py-2" id="paidAmount-${booking.id}">${parseFloat(booking.paid_amount).toFixed(2)} руб.</td>
+                <td class="py-2" id="prepayment-${booking.id}">${booking.prepayment ? 'Да' : 'Нет'}</td>
+                <td class="py-2">${booking.status_display}</td>
+                <td class="py-2">
+                    <button onclick="openEditModal('${booking.id}', '${booking.paid_amount}', '${booking.prepayment}')"
+                        class="bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600">
+                        Редактировать
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Обработка формы
+    async function handleFormSubmit(e) {
+        e.preventDefault();
+
+        const formData = new FormData(e.target);
+        const bookingId = formData.get('booking_id');
+
+        try {
+            const response = await fetch("{% url 'edit_income_and_prepayment' %}", {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                showToast(result.message);
+
+                // Обновляем только измененные элементы
+                document.getElementById(`paidAmount-${bookingId}`).textContent =
+                    `${parseFloat(result.new_paid_amount).toFixed(2)} руб.`;
+                document.getElementById(`prepayment-${bookingId}`).textContent =
+                    result.new_prepayment ? 'Да' : 'Нет';
+
+                // Перезагружаем основные метрики
+                document.getElementById('totalIncome').textContent =
+                    `${parseFloat(result.total_income).toFixed(2)} руб.`;
+                document.getElementById('averageIncome').textContent =
+                    `${parseFloat(result.average_income).toFixed(2)} руб.`;
+                document.getElementById('totalPrepayments').textContent =
+                    `${parseFloat(result.total_prepayments).toFixed(2)} руб.`;
+
+                closeEditModal();
+            } else {
+                showToast(result.error, 'error');
+            }
+        } catch (error) {
+            showToast('Ошибка сети', 'error');
+        }
+    }
+
+    // Остальные функции
+    function openEditModal(id, amount, prepayment) {
+        document.getElementById('editBookingId').value = id;
+        document.getElementById('editPaidAmount').value = parseFloat(amount) || 0;
+        document.getElementById('isPrepayment').checked = prepayment === 'True';
+        document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+    }
+
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg ${
+            type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        } text-white`;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+
+    function createGradient(ctx) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(75, 192, 192, 0.3)');
+        gradient.addColorStop(1, 'rgba(75, 192, 192, 0.05)');
+        return gradient;
+    }
+
+    function setupEventListeners() {
+        document.getElementById('applyFilter').addEventListener('click', loadFilteredData);
+        document.getElementById('resetFilter').addEventListener('click', () => {
+            flatpickrInstance.clear();
+            loadInitialData();
+        });
+        document.getElementById('editForm').addEventListener('submit', handleFormSubmit);
+    }
+
+    async function loadFilteredData() {
+        try {
+            const dateRange = document.getElementById('dateRange').value;
+            const response = await fetch(
+                `{% url 'income_management_data' %}?date_range=${encodeURIComponent(dateRange)}`
+            );
+            const data = await response.json();
+            if (data.success) updateUI(data);
+        } catch (error) {
+            showToast('Ошибка загрузки данных', 'error');
         }
     }
 </script>
