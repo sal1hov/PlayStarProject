@@ -81,7 +81,8 @@
                                 <td class="py-2" id="prepayment-{{ booking.id }}">{{ booking.prepayment|yesno:"Да,Нет" }}</td>
                                 <td class="py-2">{{ booking.get_status_display }}</td>
                                 <td class="py-2">
-                                    <button onclick="openEditModal('{{ booking.id }}', '{{ booking.paid_amount|default:"0.00" }}', '{{ booking.prepayment }}')" class="bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600 transition duration-300">
+                                    <button onclick="openEditModal({{ booking.id }}, '{{ booking.paid_amount|default:0 }}', '{{ booking.prepayment }}')"
+                                            class="bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600 transition duration-300">
                                         Редактировать
                                     </button>
                                 </td>
@@ -99,21 +100,29 @@
 <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center">
     <div class="bg-white p-6 rounded-lg w-11/12 sm:w-2/3 md:w-1/2 lg:w-1/3">
         <h2 class="text-xl font-bold mb-4">Редактировать оплату</h2>
+        <div id="prepaymentError" class="text-red-500 text-sm mb-2 hidden"></div>
         <form id="editForm" method="post">
             {% csrf_token %}
             <input type="hidden" id="editBookingId" name="booking_id">
 
             <div class="mb-4">
-                <label for="editPaidAmount" class="block text-sm font-medium text-gray-700">Оплачено</label>
+                <label for="editPrepayment" class="block text-sm font-medium text-gray-700">Предоплата</label>
+                <input type="number" id="editPrepayment"
+                       class="w-full p-2 border rounded-lg bg-gray-100 cursor-not-allowed"
+                       value="1000.00" readonly>
+            </div>
+
+            <div class="mb-4">
+                <label for="editPaidAmount" class="block text-sm font-medium text-gray-700">Доплата</label>
                 <input type="number" id="editPaidAmount" name="paid_amount"
                        class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition duration-300"
-                       required step="0.01">
+                       required step="0.01" min="0">
             </div>
 
             <div class="mb-4">
                 <label class="flex items-center space-x-2">
                     <input type="checkbox" id="isPrepayment" name="is_prepayment" class="form-checkbox">
-                    <span class="text-sm font-medium text-gray-700">Была предоплата</span>
+                    <span class="text-sm font-medium text-gray-700">Активировать предоплату</span>
                 </label>
             </div>
 
@@ -147,6 +156,7 @@
         loadInitialData();
     });
 
+    // Инициализация datepicker
     function initializeDatePicker() {
         const dateInput = document.getElementById('dateRange');
         if (!dateInput) return;
@@ -161,6 +171,7 @@
         });
     }
 
+    // Инициализация графика
     function initializeChart() {
         const ctx = document.getElementById('incomeChart').getContext('2d');
         const initialData = JSON.parse(document.getElementById('earnings-data').textContent);
@@ -197,6 +208,7 @@
         });
     }
 
+    // Загрузка данных
     async function loadInitialData() {
         try {
             const response = await fetch("{% url 'income_management_data' %}");
@@ -207,6 +219,7 @@
         }
     }
 
+    // Обновление интерфейса
     function updateUI(data) {
         document.getElementById('totalIncome').textContent = `${parseFloat(data.total_income).toFixed(2)} руб.`;
         document.getElementById('averageIncome').textContent = `${parseFloat(data.average_income).toFixed(2)} руб.`;
@@ -229,9 +242,9 @@
                 })}</td>
                 <td class="py-2" id="paidAmount-${booking.id}">${parseFloat(booking.paid_amount).toFixed(2)} руб.</td>
                 <td class="py-2" id="prepayment-${booking.id}">${booking.prepayment ? 'Да' : 'Нет'}</td>
-                <td class="py-2">{{ booking.get_status_display }}</td>
+                <td class="py-2">${booking.status_display}</td>
                 <td class="py-2">
-                    <button onclick="openEditModal('${booking.id}', '${booking.paid_amount}', '${booking.prepayment}')"
+                    <button onclick="openEditModal(${booking.id}, '${booking.paid_amount}', '${booking.prepayment}')"
                         class="bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600">
                         Редактировать
                     </button>
@@ -240,11 +253,77 @@
         `).join('');
     }
 
+    // Открытие модального окна
+    function openEditModal(id, amount, prepayment) {
+        if (!id || isNaN(id)) {
+            showToast('Ошибка: Некорректный ID бронирования', 'error');
+            return;
+        }
+
+        const paidAmountInput = document.getElementById('editPaidAmount');
+        const prepaymentCheckbox = document.getElementById('isPrepayment');
+        const errorBlock = document.getElementById('prepaymentError');
+
+        errorBlock.classList.add('hidden');
+        document.getElementById('editBookingId').value = id;
+
+        prepaymentCheckbox.checked = prepayment === 'True';
+        if (prepaymentCheckbox.checked) {
+            paidAmountInput.min = 0;
+            paidAmountInput.value = parseFloat(amount) || 0;
+        } else {
+            paidAmountInput.value = parseFloat(amount) || 0;
+        }
+
+        prepaymentCheckbox.addEventListener('change', function() {
+            paidAmountInput.min = this.checked ? 0 : 0;
+        });
+
+        document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    // Закрытие модального окна
+    function closeEditModal() {
+        document.getElementById('editModal').classList.add('hidden');
+    }
+
+    // Уведомления
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg ${
+            type === 'success' ? 'bg-green-500' : 'bg-red-500'
+        } text-white`;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+
+    // Градиент для графика
+    function createGradient(ctx) {
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(75, 192, 192, 0.3)');
+        gradient.addColorStop(1, 'rgba(75, 192, 192, 0.05)');
+        return gradient;
+    }
+
+    // Обработчики событий
+    function setupEventListeners() {
+        document.getElementById('applyFilter').addEventListener('click', loadFilteredData);
+        document.getElementById('resetFilter').addEventListener('click', () => {
+            flatpickrInstance.clear();
+            loadInitialData();
+        });
+        document.getElementById('editForm').addEventListener('submit', handleFormSubmit);
+    }
+
+    // Обработка формы
     async function handleFormSubmit(e) {
         e.preventDefault();
 
         const formData = new FormData(e.target);
         const bookingId = formData.get('booking_id');
+        const isPrepayment = formData.get('is_prepayment') === 'on';
+        const paidAmount = parseFloat(formData.get('paid_amount')) || 0;
 
         try {
             const response = await fetch("{% url 'edit_income_and_prepayment' %}", {
@@ -260,20 +339,8 @@
 
             if (result.success) {
                 showToast(result.message);
-
-                document.getElementById(`paidAmount-${bookingId}`).textContent =
-                    `${parseFloat(result.new_paid_amount).toFixed(2)} руб.`;
-                document.getElementById(`prepayment-${bookingId}`).textContent =
-                    result.new_prepayment ? 'Да' : 'Нет';
-
-                document.getElementById('totalIncome').textContent =
-                    `${parseFloat(result.total_income).toFixed(2)} руб.`;
-                document.getElementById('averageIncome').textContent =
-                    `${parseFloat(result.average_income).toFixed(2)} руб.`;
-                document.getElementById('totalPrepayments').textContent =
-                    `${parseFloat(result.total_prepayments).toFixed(2)} руб.`;
-
                 closeEditModal();
+                loadInitialData();
             } else {
                 showToast(result.error, 'error');
             }
@@ -282,43 +349,7 @@
         }
     }
 
-    function openEditModal(id, amount, prepayment) {
-        document.getElementById('editBookingId').value = id;
-        document.getElementById('editPaidAmount').value = parseFloat(amount) || 0;
-        document.getElementById('isPrepayment').checked = prepayment === 'True';
-        document.getElementById('editModal').classList.remove('hidden');
-    }
-
-    function closeEditModal() {
-        document.getElementById('editModal').classList.add('hidden');
-    }
-
-    function showToast(message, type = 'success') {
-        const toast = document.getElementById('toast');
-        toast.textContent = message;
-        toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg ${
-            type === 'success' ? 'bg-green-500' : 'bg-red-500'
-        } text-white`;
-        toast.classList.remove('hidden');
-        setTimeout(() => toast.classList.add('hidden'), 3000);
-    }
-
-    function createGradient(ctx) {
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(75, 192, 192, 0.3)');
-        gradient.addColorStop(1, 'rgba(75, 192, 192, 0.05)');
-        return gradient;
-    }
-
-    function setupEventListeners() {
-        document.getElementById('applyFilter').addEventListener('click', loadFilteredData);
-        document.getElementById('resetFilter').addEventListener('click', () => {
-            flatpickrInstance.clear();
-            loadInitialData();
-        });
-        document.getElementById('editForm').addEventListener('submit', handleFormSubmit);
-    }
-
+    // Фильтрация данных
     async function loadFilteredData() {
         try {
             const dateRange = document.getElementById('dateRange').value;

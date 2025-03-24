@@ -160,7 +160,7 @@ def statistics_view(request):
             item['status'] = status_translation.get(item['status'], item['status'])
 
         online_bookings_count = bookings.filter(booking_type='online').count()
-        total_earnings = bookings.aggregate(total=Sum('amount'))['total'] or 0
+        total_earnings = bookings.aggregate(total=Sum('paid_amount'))['total'] or 0
 
         earnings_by_month = bookings.annotate(
             month=TruncMonth('booking_date')
@@ -337,48 +337,50 @@ def view_booking(request, event_id):
 @role_required('Admin', 'Manager')
 def income_management(request):
     try:
-        # Общий доход
-        total_income = Booking.objects.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
+        # Общий доход (предоплаты + доплаты)
+        total_income = Booking.objects.aggregate(
+            total=Sum(F('prepayment_amount') + F('paid_amount'))
+        )['total'] or Decimal('0.00')
 
-        # Средний доход за последние 30 дней
+        # Средний доход за месяц
         thirty_days_ago = timezone.now() - timedelta(days=30)
-        average_income = Booking.objects.filter(booking_date__gte=thirty_days_ago).aggregate(avg=Avg('paid_amount'))['avg'] or Decimal('0.00')
-        average_income = round(average_income, 2)
+        average_income = Booking.objects.filter(
+            booking_date__gte=thirty_days_ago
+        ).aggregate(
+            avg=Avg(F('prepayment_amount') + F('paid_amount'))
+        )['avg'] or Decimal('0.00')
 
-        # Общая сумма предоплат
-        total_prepayments = Booking.objects.filter(prepayment=True).aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
+        # Сумма только предоплат
+        total_prepayments = Booking.objects.filter(
+            prepayment=True
+        ).aggregate(
+            total=Sum('prepayment_amount')
+        )['total'] or Decimal('0.00')
 
-        # Получаем все бронирования, сортируем по дате бронирования
-        bookings = Booking.objects.all().order_by('-booking_date')
-
-        # Данные для графиков
-        earnings_by_month = bookings.annotate(
+        # Данные для графика
+        earnings_by_month = Booking.objects.annotate(
             month=TruncMonth('booking_date')
-        ).values('month').annotate(total=Sum('paid_amount')).order_by('month')
-
-        # Преобразуем данные для передачи в шаблон
-        earnings_by_month = list(earnings_by_month)
-        for item in earnings_by_month:
-            if item['month']:
-                item['month'] = item['month'].strftime('%Y-%m')
+        ).values('month').annotate(
+            total=Sum(F('prepayment_amount') + F('paid_amount'))
+        ).order_by('month')
 
         return render(request, 'staff/income_management.html', {
             'total_income': total_income,
             'average_income': average_income,
             'total_prepayments': total_prepayments,
-            'bookings': bookings,
             'earnings_by_month': earnings_by_month,
+            'bookings': Booking.objects.all().order_by('-booking_date')
         })
+
     except Exception as e:
         logger.error(f"Ошибка в income_management: {e}")
         return render(request, 'staff/income_management.html', {
             'total_income': Decimal('0.00'),
             'average_income': Decimal('0.00'),
             'total_prepayments': Decimal('0.00'),
-            'bookings': [],
             'earnings_by_month': [],
+            'bookings': []
         })
-
 
 @csrf_exempt
 @login_required
@@ -410,44 +412,37 @@ def add_income(request):
             return JsonResponse({'success': False, 'error': str(e)})
     return JsonResponse({'success': False, 'error': 'Недопустимый метод запроса.'})
 
-
 @csrf_exempt
 @login_required
-@role_required('Admin', 'Manager')
 def edit_income_and_prepayment(request):
-    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+    if request.method == 'POST':
         try:
-            booking_id = request.POST.get('booking_id')
-            paid_amount = request.POST.get('paid_amount', '0')
-            is_prepayment = request.POST.get('is_prepayment', 'false') == 'true'
+            booking = Booking.objects.get(id=request.POST.get('booking_id'))
+            is_prepayment = request.POST.get('is_prepayment') == 'on'
 
-            if not booking_id or not paid_amount:
-                return JsonResponse({'success': False, 'error': 'Недостаточно данных'})
-
-            booking = Booking.objects.get(id=booking_id)
-            booking.paid_amount = Decimal(paid_amount)
+            # Обновление данных
             booking.prepayment = is_prepayment
+            paid_amount = Decimal(request.POST.get('paid_amount', 0))
+
+            if is_prepayment:
+                booking.paid_amount = max(paid_amount, Decimal('0'))  # Доплата не может быть отрицательной
+            else:
+                booking.paid_amount = paid_amount
+
             booking.save()
 
-            # Расчет обновленных показателей
-            total_income = Booking.objects.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
-            average_income = Booking.objects.aggregate(avg=Avg('paid_amount'))['avg'] or Decimal('0.00')
+            # Расчет общей суммы предоплат
             total_prepayments = Booking.objects.filter(prepayment=True).aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
 
             return JsonResponse({
                 'success': True,
-                'message': 'Данные успешно обновлены!',
                 'new_paid_amount': float(booking.paid_amount),
                 'new_prepayment': booking.prepayment,
-                'total_income': float(total_income),
-                'average_income': float(average_income),
                 'total_prepayments': float(total_prepayments)
             })
-        except Booking.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Бронирование не найдено'})
+
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
-    return JsonResponse({'success': False, 'error': 'Недопустимый запрос'}, status=400)
 
 @login_required
 @role_required('Admin', 'Manager')
@@ -474,6 +469,7 @@ def income_management_data(request):
         total_income = bookings.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
         avg_income = bookings.aggregate(avg=Avg('paid_amount'))['avg'] or Decimal('0.00')
         total_prepayments = bookings.filter(prepayment=True).aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
+        total_earnings = bookings.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
 
         earnings_by_month = bookings.annotate(
             month=TruncMonth('booking_date')
@@ -490,20 +486,25 @@ def income_management_data(request):
                 chart_data['labels'].append(item['month'].strftime('%Y-%m'))
                 chart_data['data'].append(float(item['total']))
 
+        # Добавляем переведенный статус в JSON-ответ
+        bookings_data = list(bookings.order_by('-booking_date').values(
+            'id',
+            'event_name',
+            'booking_date',
+            'paid_amount',
+            'prepayment',
+            'status'
+        ))
+        for booking in bookings_data:
+            booking['status_display'] = dict(Booking.STATUS_CHOICES).get(booking['status'], booking['status'])
+
         return JsonResponse({
             'success': True,
             'total_income': float(total_income),
             'average_income': float(avg_income),
             'total_prepayments': float(total_prepayments),
             'chart_data': chart_data,
-            'bookings': list(bookings.order_by('-booking_date').values(
-                'id',
-                'event_name',
-                'booking_date',
-                'paid_amount',
-                'prepayment',
-                'status'
-            ).annotate(status_display=F('status')))  # Ключевое исправление
+            'bookings': bookings_data,
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})

@@ -70,4 +70,4 @@ class EventForm(forms.ModelForm):
 class IncomeForm(forms.ModelForm):
     class Meta:
         model = Booking
-        fields = ['event_name', 'amount', 'status']  # Исключили booking_date
+        fields = ['event_name', 'paid_amount', 'status']  # Исправлено amount → paid_amount
