@@ -16,6 +16,12 @@ class Booking(models.Model):
     event_name = models.CharField(max_length=255)
     booking_date = models.DateTimeField(auto_now_add=True)
     event_date = models.DateTimeField()
+    children_count = models.PositiveIntegerField(
+        'Количество детей',
+        default=1,
+        validators=[MinValueValidator(1)]
+    )
+    comment = models.TextField('Комментарий', blank=True, null=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     prepayment = models.BooleanField(default=False)
     prepayment_amount = models.DecimalField(

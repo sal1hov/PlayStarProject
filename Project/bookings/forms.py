@@ -3,7 +3,6 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from .models import Booking
 
-
 class BookingForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.enforce_future_date = kwargs.pop('enforce_future_date', True)
@@ -15,7 +14,7 @@ class BookingForm(forms.ModelForm):
 
     class Meta:
         model = Booking
-        fields = ['event_name', 'event_date', 'status']  # Убедитесь, что здесь только существующие поля
+        fields = ['event_name', 'event_date', 'children_count', 'comment', 'status']
 
         widgets = {
             'event_name': forms.TextInput(attrs={
@@ -28,12 +27,18 @@ class BookingForm(forms.ModelForm):
             'status': forms.Select(attrs={
                 'class': 'w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
             }),
+            'children_count': forms.NumberInput(attrs={
+                'class': 'w-full pl-10 pr-4 py-2 border rounded-lg',
+                'min': 1
+            }),
+            'comment': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'w-full border rounded-lg p-2'
+            })
         }
 
     def clean(self):
         cleaned_data = super().clean()
-        if self.instance._state.adding:
-            cleaned_data['booking_type'] = 'online'
         return cleaned_data
 
     def clean_event_date(self):

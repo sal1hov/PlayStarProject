@@ -104,7 +104,6 @@ def create_booking(request):
                 booking = form.save(commit=False)
                 booking.user = request.user
                 booking.status = 'pending'
-                booking.booking_type = 'online'
                 booking.save()
 
                 Event.objects.create(
@@ -113,12 +112,12 @@ def create_booking(request):
                     date=booking.event_date,
                     location='main',
                     event_type='birthday',
-                    max_participants=10,  # Добавляем обязательное поле
+                    max_participants=10,
                     moderation_status='pending',
                     booking=booking
                 )
 
-                return JsonResponse({'success': True, 'message': 'Бронирование успешно создано!'})
+                return JsonResponse({'success': True, 'message': 'Бронирование успешно создано! Ожидайте звонка от менеджера.'})
 
             logger.error("Ошибки формы: %s", form.errors)
             return JsonResponse({'success': False, 'errors': form.errors}, status=400)
