@@ -15,6 +15,10 @@ from .forms import EventForm
 from datetime import datetime, timedelta
 from django.utils import timezone
 from decimal import Decimal
+from django.views.generic import ListView, CreateView, UpdateView
+from django.urls import reverse_lazy
+from .models import Shift, ShiftRequest
+from .forms import ShiftRequestForm
 
 # Настройка логгера
 logger = logging.getLogger(__name__)
@@ -525,3 +529,68 @@ def income_management_data(request):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+class ShiftListView(ListView):
+    model = Shift
+    template_name = 'staff/shift_list.html'
+    context_object_name = 'shifts'
+    paginate_by = 10
+
+    def get_queryset(self):
+        return Shift.objects.filter(date__gte=timezone.now().date()).order_by('date')
+
+
+class MyShiftRequestsView(ListView):
+    model = ShiftRequest
+    template_name = 'staff/my_shift_requests.html'
+    context_object_name = 'requests'
+
+    def get_queryset(self):
+        return ShiftRequest.objects.filter(employee=self.request.user).order_by('-created_at')
+
+
+class CreateShiftRequestView(CreateView):
+    model = ShiftRequest
+    form_class = ShiftRequestForm
+    template_name = 'staff/shift_request_form.html'
+    success_url = reverse_lazy('my_shift_requests')
+
+    def form_valid(self, form):
+        form.instance.employee = self.request.user
+        return super().form_valid(form)
+
+
+class AdminShiftApprovalView(ListView):
+    model = ShiftRequest
+    template_name = 'staff/admin_shift_approval.html'
+    context_object_name = 'requests'
+    paginate_by = 20
+
+    def get_queryset(self):
+        return ShiftRequest.objects.filter(status='pending').order_by('shift__date')
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_staff:
+            return redirect('employee_dashboard')
+        return super().dispatch(request, *args, **kwargs)
+
+
+@login_required
+def approve_shift_request(request, pk):
+    shift_request = get_object_or_404(ShiftRequest, pk=pk)
+    if request.user.is_staff:
+        shift_request.status = 'approved'
+        shift_request.save()
+        messages.success(request, 'Заявка утверждена')
+    return redirect('admin_shift_approval')
+
+
+@login_required
+def reject_shift_request(request, pk):
+    shift_request = get_object_or_404(ShiftRequest, pk=pk)
+    if request.user.is_staff:
+        shift_request.status = 'rejected'
+        shift_request.save()
+        messages.success(request, 'Заявка отклонена')
+    return redirect('admin_shift_approval')

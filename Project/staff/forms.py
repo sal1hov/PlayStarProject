@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from main.models import Profile, Child
 from .models import SiteSettings, Event, EVENT_TYPES, MODERATION_STATUS
 from bookings.models import Booking
+from .models import ShiftRequest
 
 # Форма для обновления данных пользователя
 class UserUpdateForm(forms.ModelForm):
@@ -71,3 +72,13 @@ class IncomeForm(forms.ModelForm):
     class Meta:
         model = Booking
         fields = ['event_name', 'paid_amount', 'status']  # Исправлено amount → paid_amount
+
+
+class ShiftRequestForm(forms.ModelForm):
+    class Meta:
+        model = ShiftRequest
+        fields = ['shift']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['shift'].queryset = Shift.objects.filter(date__gte=timezone.now().date())

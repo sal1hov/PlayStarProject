@@ -69,3 +69,44 @@ class Event(models.Model):
 
     def __str__(self):
         return self.name
+
+
+# Добавляем после существующих моделей
+class Shift(models.Model):
+    SHIFT_TYPES = (
+        ('morning', 'Утро (9:00-15:00)'),
+        ('afternoon', 'День (15:00-21:00)'),
+        ('night', 'Ночь (21:00-9:00)'),
+        ('full', 'Полный день (9:00-21:00)'),
+    )
+
+    shift_type = models.CharField(max_length=20, choices=SHIFT_TYPES)
+    date = models.DateField()
+    max_staff = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.get_shift_type_display()} - {self.date.strftime('%d.%m.%Y')}"
+
+
+class ShiftRequest(models.Model):
+    STATUS_CHOICES = (
+        ('pending', 'На рассмотрении'),
+        ('approved', 'Утверждено'),
+        ('rejected', 'Отклонено'),
+        ('modified', 'Изменено администратором'),
+    )
+
+    employee = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name='shift_requests')
+    shift = models.ForeignKey(Shift, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    admin_comment = models.TextField(blank=True, null=True)
+
+    class Meta:
+        unique_together = ('employee', 'shift')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.employee.username} - {self.shift} ({self.get_status_display()})"
+

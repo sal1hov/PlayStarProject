@@ -2,21 +2,28 @@
 {% block title %}Панель администратора{% endblock %}
 {% block content %}
 <div class="flex min-h-screen">
-    <!-- Боковое меню -->
-    <aside class="w-64 bg-gray-800 text-white p-6 flex flex-col justify-between">
-        <div>
-            <h2 class="text-2xl font-bold mb-8">Админ-панель</h2>
-            <nav class="space-y-4">
-                <a href="{% url 'admin_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Главная</a>
-                <a href="{% url 'statistics' %}" class="block py-2 px-4 hover:bg-gray-700 rounded-lg transition duration-300">Статистика</a>
-                <a href="{% url 'income_management' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Управление доходами</a>
-                <a href="{% url 'events' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Мероприятия</a>
-            </nav>
-        </div>
-        <div class="space-y-4">
-            <a href="{% url 'admin:index' %}" class="block py-2 px-4 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition duration-300">Django-админка</a>
-        </div>
-    </aside>
+<!-- Боковое меню -->
+<aside class="w-64 bg-gray-800 text-white p-6 flex flex-col justify-between">
+    <div>
+        <h2 class="text-2xl font-bold mb-8">Админ-панель</h2>
+        <nav class="space-y-4">
+            <a href="{% url 'admin_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Главная</a>
+            <a href="{% url 'statistics' %}" class="block py-2 px-4 hover:bg-gray-700 rounded-lg transition duration-300">Статистика</a>
+            <a href="{% url 'income_management' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Управление доходами</a>
+            <a href="{% url 'events' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Мероприятия</a>
+            <!-- Новая кнопка для управления графиком -->
+            <a href="{% url 'admin_shift_approval' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                </svg>
+                График сотрудников
+            </a>
+        </nav>
+    </div>
+    <div class="space-y-4">
+        <a href="{% url 'admin:index' %}" class="block py-2 px-4 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition duration-300">Django-админка</a>
+    </div>
+</aside>
 
     <!-- Основной контент -->
     <main class="flex-1 p-8 bg-gray-100">

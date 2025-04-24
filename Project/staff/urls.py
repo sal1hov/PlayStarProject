@@ -30,4 +30,11 @@ urlpatterns = [
     path('income-management/', views.income_management, name='income_management'),
     path('income-management/data/', views.income_management_data, name='income_management_data'),
     path('edit-income-and-prepayment/', views.edit_income_and_prepayment, name='edit_income_and_prepayment'),
+    # Управление графиком
+    path('shifts/', views.ShiftListView.as_view(), name='shift_list'),
+    path('my-shifts/', views.MyShiftRequestsView.as_view(), name='my_shift_requests'),
+    path('shift-request/create/', views.CreateShiftRequestView.as_view(), name='create_shift_request'),
+    path('admin/shift-approval/', views.AdminShiftApprovalView.as_view(), name='admin_shift_approval'),
+    path('admin/shift-approval/<int:pk>/approve/', views.approve_shift_request, name='approve_shift_request'),
+    path('admin/shift-approval/<int:pk>/reject/', views.reject_shift_request, name='reject_shift_request'),
 ]
