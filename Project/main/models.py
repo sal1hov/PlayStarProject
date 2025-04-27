@@ -21,6 +21,14 @@ class CustomUser(AbstractUser):
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
 
+    def is_staff_member(self):
+        """Проверяет, является ли пользователь сотрудником (staff или выше)"""
+        return self.role in ['STAFF', 'MANAGER', 'ADMIN']
+
+    def is_manager_or_higher(self):
+        """Проверяет, является ли пользователь менеджером или администратором"""
+        return self.role in ['MANAGER', 'ADMIN']
+
 # Модель профиля, связанная с кастомным пользователем
 class Profile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)  # Используйте CustomUser

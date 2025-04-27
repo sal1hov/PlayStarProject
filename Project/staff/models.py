@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.db.models.signals import post_migrate
+from django.dispatch import receiver
+from django.contrib.auth.models import Group
 
 class StaffProfile(models.Model):
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE)
@@ -119,3 +122,11 @@ class ShiftRequest(models.Model):
             'created_at': self.created_at.strftime("%d.%m.%Y %H:%M"),
             'admin_comment': self.admin_comment or 'Нет комментария'
         }
+
+@receiver(post_migrate)
+def verify_groups_exist(sender, **kwargs):
+    """Проверяет существование необходимых групп (выводит предупреждение если нет)"""
+    required_groups = ['Admin', 'Manager', 'Staff']
+    for group_name in required_groups:
+        if not Group.objects.filter(name=group_name).exists():
+            print(f'Внимание: требуемая группа "{group_name}" не найдена! Создайте её в админке.')
