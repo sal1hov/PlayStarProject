@@ -9,6 +9,8 @@ from django.contrib.auth.models import Group
 from main.models import CustomUser  # Импортируем кастомную модель пользователя
 from bookings.models import Booking  # Предполагается, что модель бронирований находится в приложении bookings
 from bookings.forms import BookingForm  # Импортируем форму для бронирований
+from django.shortcuts import render
+from staff.models import Event
 
 def role_required(*group_names):
     """Декоратор для проверки групп."""
@@ -131,3 +133,9 @@ def employee_dashboard(request):
 def logout_view(request):
     logout(request)
     return redirect('index')  # Перенаправление на главную страницу после выхода
+
+
+def events_list(request):
+    # Получаем только подтвержденные мероприятия, отсортированные по дате
+    events = Event.objects.filter(moderation_status='approved').order_by('date')
+    return render(request, 'main/events.html', {'events': events})

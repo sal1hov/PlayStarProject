@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from main.models import CustomUser
+from main.models import CustomUser, Profile, Child
 from bookings.models import Booking
 from django.core.paginator import Paginator
 from django.db.models import Count, Sum, Avg, F
@@ -78,9 +78,11 @@ def admin_dashboard(request):
 
 
 @login_required
-@role_required('Admin')
+@role_required('Admin', 'Manager')
 def edit_user(request, user_id):
     user_to_edit = get_object_or_404(CustomUser, id=user_id)
+    profile, created = Profile.objects.get_or_create(user=user_to_edit)
+    children = Child.objects.filter(profile=profile)
 
     if request.method == 'POST':
         try:
@@ -108,8 +110,11 @@ def edit_user(request, user_id):
 
     return render(request, 'staff/edit_user.html', {
         'user': user_to_edit,
+        'profile': profile,
+        'children': children,
         'role_choices': CustomUser.ROLE_CHOICES
     })
+
 
 @login_required
 @role_required('Admin')
@@ -653,14 +658,41 @@ class AdminShiftApprovalView(ListView):
 @role_required('Admin', 'Manager')
 def manage_user_children(request, user_id):
     user = get_object_or_404(CustomUser, id=user_id)
-    profile, created = Profile.objects.get_or_create(user=user)
-    children = profile.children.all()
+    profile = Profile.objects.get_or_create(user=user)[0]
+    children = Child.objects.filter(profile=profile)
 
     if request.method == 'POST':
-        # Логика добавления/удаления детей
-        pass
+        # Логика добавления ребенка
+        if 'add_child' in request.POST:
+            name = request.POST.get('child_name')
+            age = request.POST.get('child_age')
+            birthdate = request.POST.get('child_birthdate')
+            gender = request.POST.get('child_gender')
 
-    return render(request, 'staff/user_children.html', {
+            if name and age:
+                Child.objects.create(
+                    profile=profile,
+                    name=name,
+                    age=age,
+                    birthdate=birthdate if birthdate else None,
+                    gender=gender if gender else None
+                )
+                messages.success(request, 'Ребенок успешно добавлен')
+                return redirect('manage_user_children', user_id=user_id)
+            else:
+                messages.error(request, 'Имя и возраст обязательны для заполнения')
+
+        # Логика удаления ребенка
+        elif 'delete_child' in request.POST:
+            child_id = request.POST.get('child_id')
+            if child_id:
+                child = get_object_or_404(Child, id=child_id, profile=profile)
+                child.delete()
+                messages.success(request, 'Ребенок успешно удален')
+                return redirect('manage_user_children', user_id=user_id)
+
+    return render(request, 'staff/manage_user_children.html', {
         'user': user,
+        'profile': profile,
         'children': children
     })

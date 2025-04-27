@@ -46,35 +46,61 @@ class Event(models.Model):
         ('secondary', 'Дополнительная площадка')
     ]
 
-    # Существующие поля
-    name = models.CharField(max_length=255)
-    description = models.TextField()
-    date = models.DateTimeField()
+    name = models.CharField(max_length=255, verbose_name="Название")
+    description = models.TextField(verbose_name="Описание")
+    date = models.DateTimeField(verbose_name="Дата и время")
     location = models.CharField(
         max_length=100,
         choices=LOCATION_CHOICES,
-        default='main'  # Важно!
+        default='main',
+        verbose_name="Место проведения"
     )
-    event_type = models.CharField(max_length=50)
-    moderation_status = models.CharField(max_length=20, default='pending')
+    event_type = models.CharField(
+        max_length=50,
+        choices=EVENT_TYPES,
+        verbose_name="Тип мероприятия"
+    )
+    moderation_status = models.CharField(
+        max_length=20,
+        choices=MODERATION_STATUS,
+        default='pending',
+        verbose_name="Статус модерации"
+    )
     booking = models.OneToOneField(
         'bookings.Booking',
         on_delete=models.CASCADE,
         null=True,
-        blank=True
+        blank=True,
+        verbose_name="Бронирование"
     )
-
-    # Добавьте эти поля
-    image = models.ImageField(upload_to='events/', null=True, blank=True)
+    image = models.ImageField(
+        upload_to='events/',
+        null=True,
+        blank=True,
+        verbose_name="Изображение"
+    )
     max_participants = models.PositiveIntegerField(
-        default=10,  # Добавляем значение по умолчанию
-        verbose_name='Максимальное количество участников')
+        default=10,
+        verbose_name='Максимальное количество участников'
+    )
 
     def __str__(self):
         return self.name
 
+    def get_event_type_display(self):
+        """Возвращает читаемое название типа мероприятия"""
+        return dict(EVENT_TYPES).get(self.event_type, self.event_type)
 
-# Добавляем после существующих моделей
+    def get_moderation_status_display(self):
+        """Возвращает читаемое название статуса модерации"""
+        return dict(MODERATION_STATUS).get(self.moderation_status, self.moderation_status)
+
+    class Meta:
+        verbose_name = "Мероприятие"
+        verbose_name_plural = "Мероприятия"
+        ordering = ['date']  # Сортировка по дате (от ближайших к дальним)
+
+
 class Shift(models.Model):
     SHIFT_TYPES = (
         ('morning', 'Утро (9:00-15:00)'),
