@@ -19,6 +19,8 @@ from django.views.generic import ListView, CreateView, UpdateView
 from django.urls import reverse_lazy
 from .models import Shift, ShiftRequest
 from .forms import ShiftRequestForm
+from django.contrib.auth import update_session_auth_hash
+
 
 # Настройка логгера
 logger = logging.getLogger(__name__)
@@ -79,20 +81,35 @@ def admin_dashboard(request):
 @role_required('Admin')
 def edit_user(request, user_id):
     user_to_edit = get_object_or_404(CustomUser, id=user_id)
+
     if request.method == 'POST':
-        user_to_edit.username = request.POST.get('username')
-        user_to_edit.first_name = request.POST.get('first_name')
-        user_to_edit.last_name = request.POST.get('last_name')
-        user_to_edit.children = request.POST.get('children')
-        user_to_edit.phone = request.POST.get('phone')
-        password = request.POST.get('password')
-        if password:
-            user_to_edit.set_password(password)
-            update_session_auth_hash(request, user_to_edit)
-        user_to_edit.save()
-        messages.success(request, 'Пользователь успешно обновлен.')
-        return redirect('admin_dashboard')
-    return render(request, 'staff/edit_user.html', {'user': user_to_edit})
+        try:
+            # Обновляем основные поля
+            user_to_edit.username = request.POST.get('username', user_to_edit.username)
+            user_to_edit.email = request.POST.get('email', user_to_edit.email)
+            user_to_edit.first_name = request.POST.get('first_name', user_to_edit.first_name)
+            user_to_edit.last_name = request.POST.get('last_name', user_to_edit.last_name)
+            user_to_edit.phone_number = request.POST.get('phone_number', user_to_edit.phone_number)
+            user_to_edit.role = request.POST.get('role', user_to_edit.role)
+
+            # Обработка пароля (если указан)
+            password = request.POST.get('password')
+            if password:
+                user_to_edit.set_password(password)
+                update_session_auth_hash(request, user_to_edit)
+
+            user_to_edit.save()
+            messages.success(request, 'Данные пользователя успешно обновлены.')
+            return redirect('admin_dashboard')
+
+        except Exception as e:
+            messages.error(request, f'Ошибка при обновлении пользователя: {str(e)}')
+            logger.error(f"Error updating user {user_id}: {str(e)}")
+
+    return render(request, 'staff/edit_user.html', {
+        'user': user_to_edit,
+        'role_choices': CustomUser.ROLE_CHOICES
+    })
 
 @login_required
 @role_required('Admin')
@@ -594,3 +611,56 @@ def reject_shift_request(request, pk):
         shift_request.save()
         messages.success(request, 'Заявка отклонена')
     return redirect('admin_shift_approval')
+
+# Добавляем в конец файла
+@login_required
+@user_passes_test(role_required('Admin', 'Manager'))
+def shift_request_details(request, pk):
+    shift_request = get_object_or_404(ShiftRequest, pk=pk)
+    return render(request, 'staff/partials/shift_request_details.html', {
+        'request': shift_request
+    })
+
+
+class AdminShiftApprovalView(ListView):
+    model = ShiftRequest
+    template_name = 'staff/admin_shift_approval.html'
+    context_object_name = 'requests'
+    paginate_by = 10
+
+    def get_queryset(self):
+        queryset = ShiftRequest.objects.all().order_by('shift__date')
+
+        # Фильтрация по статусу
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+
+        # Фильтрация по дате
+        date = self.request.GET.get('date')
+        if date:
+            queryset = queryset.filter(shift__date=date)
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['approved_requests_count'] = ShiftRequest.objects.filter(status='approved').count()
+        return context
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def manage_user_children(request, user_id):
+    user = get_object_or_404(CustomUser, id=user_id)
+    profile, created = Profile.objects.get_or_create(user=user)
+    children = profile.children.all()
+
+    if request.method == 'POST':
+        # Логика добавления/удаления детей
+        pass
+
+    return render(request, 'staff/user_children.html', {
+        'user': user,
+        'children': children
+    })

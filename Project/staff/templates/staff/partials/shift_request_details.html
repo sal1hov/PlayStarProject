@@ -1,0 +1,94 @@
+<div class="space-y-4">
+    <div>
+        <h4 class="text-sm font-medium text-gray-500">Сотрудник</h4>
+        <div class="mt-1 flex items-center">
+            <div class="flex-shrink-0 h-10 w-10">
+                <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                    {{ request.employee.first_name|first }}{{ request.employee.last_name|first }}
+                </div>
+            </div>
+            <div class="ml-4">
+                <div class="text-lg font-medium text-gray-900">{{ request.employee.get_full_name }}</div>
+                <div class="text-sm text-gray-500">{{ request.employee.email }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+        <div>
+            <h4 class="text-sm font-medium text-gray-500">Тип смены</h4>
+            <p class="mt-1 text-sm text-gray-900">{{ request.shift.get_shift_type_display }}</p>
+        </div>
+        <div>
+            <h4 class="text-sm font-medium text-gray-500">Дата смены</h4>
+            <p class="mt-1 text-sm text-gray-900">{{ request.shift.date|date:"d.m.Y" }}</p>
+        </div>
+    </div>
+
+    <div>
+        <h4 class="text-sm font-medium text-gray-500">Статус</h4>
+        <p class="mt-1">
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                {% if request.status == 'approved' %}bg-green-100 text-green-800
+                {% elif request.status == 'rejected' %}bg-red-100 text-red-800
+                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                {{ request.get_status_display }}
+            </span>
+        </p>
+    </div>
+
+    <div>
+        <h4 class="text-sm font-medium text-gray-500">Дата подачи</h4>
+        <p class="mt-1 text-sm text-gray-900">{{ request.created_at|date:"d.m.Y H:i" }}</p>
+    </div>
+
+    {% if request.admin_comment %}
+    <div>
+        <h4 class="text-sm font-medium text-gray-500">Комментарий администратора</h4>
+        <p class="mt-1 text-sm text-gray-900">{{ request.admin_comment }}</p>
+    </div>
+    {% endif %}
+</div>
+
+{% if request.status == 'pending' %}
+<div class="mt-6 pt-6 border-t border-gray-200 flex justify-center space-x-4">
+    <a href="{% url 'approve_shift_request' request.pk %}"
+       class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+        Утвердить
+    </a>
+    <a href="{% url 'reject_shift_request' request.pk %}"
+       class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+        Отклонить
+    </a>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработка формы фильтрации
+    const filterForm = document.querySelector('form[method="get"]');
+    if (filterForm) {
+        filterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new URLSearchParams(new FormData(this));
+            const url = `${window.location.pathname}?${formData.toString()}`;
+
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newContent = doc.querySelector('.bg-white.rounded-lg.shadow.overflow-x-auto');
+                if (newContent) {
+                    document.querySelector('.bg-white.rounded-lg.shadow.overflow-x-auto').innerHTML = newContent.innerHTML;
+                }
+            });
+        });
+    }
+});
+</script>

@@ -110,3 +110,12 @@ class ShiftRequest(models.Model):
     def __str__(self):
         return f"{self.employee.username} - {self.shift} ({self.get_status_display()})"
 
+    def get_details(self):
+        return {
+            'employee': self.employee.get_full_name(),
+            'shift_type': self.shift.get_shift_type_display(),
+            'date': self.shift.date.strftime("%d.%m.%Y"),
+            'status': self.get_status_display(),
+            'created_at': self.created_at.strftime("%d.%m.%Y %H:%M"),
+            'admin_comment': self.admin_comment or 'Нет комментария'
+        }

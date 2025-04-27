@@ -37,4 +37,6 @@ urlpatterns = [
     path('admin/shift-approval/', views.AdminShiftApprovalView.as_view(), name='admin_shift_approval'),
     path('admin/shift-approval/<int:pk>/approve/', views.approve_shift_request, name='approve_shift_request'),
     path('admin/shift-approval/<int:pk>/reject/', views.reject_shift_request, name='reject_shift_request'),
+    path('shift-request/<int:pk>/details/', views.shift_request_details, name='shift_request_details'),
+    path('user/<int:user_id>/children/', views.manage_user_children, name='manage_user_children'),
 ]
