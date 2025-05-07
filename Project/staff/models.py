@@ -95,6 +95,10 @@ class Event(models.Model):
         """Возвращает читаемое название статуса модерации"""
         return dict(MODERATION_STATUS).get(self.moderation_status, self.moderation_status)
 
+    def get_location_display(self):
+        """Возвращает читаемое название места проведения"""
+        return dict(self.LOCATION_CHOICES).get(self.location, self.location)
+
     class Meta:
         verbose_name = "Мероприятие"
         verbose_name_plural = "Мероприятия"

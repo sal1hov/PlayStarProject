@@ -1,9 +1,7 @@
-# main/models.py
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 class CustomUser(AbstractUser):
-    # Роли пользователей
     ROLE_CHOICES = [
         ('CLIENT', 'Клиент'),
         ('STAFF', 'Сотрудник'),
@@ -14,33 +12,50 @@ class CustomUser(AbstractUser):
     role = models.CharField(
         max_length=10,
         choices=ROLE_CHOICES,
-        default='CLIENT',  # По умолчанию роль "Клиент"
+        default='CLIENT',
         verbose_name='Роль'
     )
+    email = models.EmailField(unique=True, verbose_name="Email")
 
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
 
     def is_staff_member(self):
-        """Проверяет, является ли пользователь сотрудником (staff или выше)"""
         return self.role in ['STAFF', 'MANAGER', 'ADMIN']
 
     def is_manager_or_higher(self):
-        """Проверяет, является ли пользователь менеджером или администратором"""
         return self.role in ['MANAGER', 'ADMIN']
 
-# Модель профиля, связанная с кастомным пользователем
+
 class Profile(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)  # Используйте CustomUser
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='profile')
     phone_number = models.CharField(max_length=15, blank=True, null=True)
 
-# Модель для ребенка, связанная с профилем
+    def __str__(self):
+        return f"Профиль {self.user.username}"
+
+
 class Child(models.Model):
+    GENDER_CHOICES = [
+        ('M', 'Мальчик'),
+        ('F', 'Девочка'),
+    ]
+
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name='children')
     name = models.CharField(max_length=100, verbose_name="Имя ребенка")
     age = models.PositiveIntegerField(verbose_name="Возраст ребенка")
-    birthdate = models.DateField(verbose_name="Дата рождения", blank=True, null=True)  # Добавлено поле birthdate
-    gender = models.CharField(max_length=10, choices=[('M', 'Male'), ('F', 'Female')], verbose_name="Пол", blank=True, null=True)  # Добавлено поле gender
+    birthdate = models.DateField(verbose_name="Дата рождения", blank=True, null=True)
+    gender = models.CharField(
+        max_length=1,
+        choices=GENDER_CHOICES,
+        verbose_name="Пол",
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
         return f"{self.name} ({self.age} лет)"
+
+    class Meta:
+        verbose_name = "Ребенок"
+        verbose_name_plural = "Дети"

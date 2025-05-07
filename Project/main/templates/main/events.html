@@ -43,7 +43,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        {{ event.location }}
+                        {{ event.get_location_display }}
                     </div>
 
                     <div class="flex items-center text-gray-500 text-sm mb-4">
@@ -53,12 +53,13 @@
                         {{ event.date|date:"d.m.Y H:i" }}
                     </div>
 
-                    <a href="#" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    <button onclick="openBookingModal('{{ event.id }}', '{{ event.name }}', '{{ event.date|date:"Y-m-d H:i" }}')"
+                            class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                         Забронировать
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                         </svg>
-                    </a>
+                    </button>
                 </div>
             </div>
             {% empty %}
@@ -69,4 +70,181 @@
         </div>
     </div>
 </div>
+
+<!-- Модальное окно для бронирования -->
+<div id="bookingModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeModal()"></div>
+
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6" id="modal-title">
+                            Бронирование мероприятия
+                        </h3>
+                        <form id="bookingForm" method="post" action="{% url 'create_booking' %}">
+                            {% csrf_token %}
+                            <input type="hidden" id="event_id" name="event_id">
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="id_event_name" class="block text-sm font-medium text-gray-700">Мероприятие</label>
+                                    <input type="text" id="id_event_name" name="event_name" readonly
+                                           class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-gray-100 rounded-md">
+                                </div>
+
+                                <div>
+                                    <label for="id_event_date" class="block text-sm font-medium text-gray-700">Дата</label>
+                                    <input type="text" id="id_event_date" name="event_date" readonly
+                                           class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 bg-gray-100 rounded-md">
+                                </div>
+
+                                <div>
+                                    <label for="id_children_count" class="block text-sm font-medium text-gray-700">Количество детей</label>
+                                    <select id="id_children_count" name="children_count" required
+                                            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                        <option value="1">1 ребенок</option>
+                                        <option value="2">2 ребенка</option>
+                                        <option value="3">3 ребенка</option>
+                                        <option value="4">4 ребенка</option>
+                                        <option value="5">5+ детей</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="id_comment" class="block text-sm font-medium text-gray-700">Комментарий</label>
+                                    <textarea id="id_comment" name="comment" rows="3"
+                                              class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                                              placeholder="Особые пожелания, аллергии и т.д."></textarea>
+                                </div>
+                            </div>
+
+                            <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                                <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2 sm:text-sm">
+                                    Забронировать
+                                </button>
+                                <button type="button" onclick="closeModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:col-start-1 sm:text-sm">
+                                    Отмена
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Функция для открытия модального окна
+    function openBookingModal(eventId, eventName, eventDate) {
+        document.getElementById('event_id').value = eventId;
+        document.getElementById('id_event_name').value = eventName;
+        document.getElementById('id_event_date').value = eventDate;
+        document.getElementById('bookingModal').classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    // Функция для закрытия модального окна
+    function closeModal() {
+        document.getElementById('bookingModal').classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    // Обработка отправки формы через AJAX
+    document.getElementById('bookingForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const submitButton = this.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton.textContent;
+
+        // Показываем индикатор загрузки
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Обработка...';
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Показываем уведомление об успехе
+                const messagesContainer = document.createElement('div');
+                messagesContainer.innerHTML = `
+                    <div class="fixed top-4 right-4 z-50">
+                        <div class="rounded-md bg-green-50 p-4 shadow-lg">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-green-800">${data.message}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(messagesContainer);
+
+                // Закрываем модальное окно и обновляем страницу
+                closeModal();
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            } else {
+                // Показываем ошибки валидации
+                let errorMessage = data.message || 'Произошла ошибка';
+                if (data.errors) {
+                    errorMessage += '\n\n';
+                    for (const field in data.errors) {
+                        errorMessage += `${field}: ${data.errors[field].join(', ')}\n`;
+                    }
+                }
+
+                // Показываем уведомление об ошибке
+                const messagesContainer = document.createElement('div');
+                messagesContainer.innerHTML = `
+                    <div class="fixed top-4 right-4 z-50">
+                        <div class="rounded-md bg-red-50 p-4 shadow-lg">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-red-800">${errorMessage}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(messagesContainer);
+
+                // Удаляем уведомление через 5 секунд
+                setTimeout(() => {
+                    messagesContainer.remove();
+                }, 5000);
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка:', error);
+            alert('Произошла ошибка при отправке формы.');
+        })
+        .finally(() => {
+            // Восстанавливаем кнопку
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+        });
+    });
+</script>
 {% endblock %}

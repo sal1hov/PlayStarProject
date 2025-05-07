@@ -6,151 +6,94 @@ from core.views import get_user_role_redirect
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from .forms import UserUpdateForm, ProfileUpdateForm, ChildForm
+from .forms import UserUpdateForm, ProfileUpdateForm, ChildForm, EmailChangeForm, CustomPasswordChangeForm
 from main.models import Profile, Child
-from bookings.models import Booking  # Импортируем модель Booking
-from bookings.forms import BookingForm  # Импортируем форму для бронирований
+from bookings.models import Booking
+from bookings.forms import BookingForm
+from staff.models import Event  # Добавляем импорт модели Event
+from main.models import Child
+from django.utils.translation import gettext_lazy as _
+from django.views.decorators.http import require_POST, require_http_methods
+
 
 @login_required
 def profile(request):
     user = request.user
-
-    # Создаем профиль, если его нет
-    if not hasattr(user, 'profile'):
-        Profile.objects.create(user=user)
-
-    # Получаем последние 5 бронирований пользователя
-    bookings = Booking.objects.filter(user=user).order_by('-booking_date')[:5]
-
-    # Обработка формы создания нового бронирования
-    if request.method == 'POST' and 'create_booking' in request.POST:
-        booking_form = BookingForm(request.POST)
-        if booking_form.is_valid():
-            booking = booking_form.save(commit=False)
-            booking.user = user  # Привязываем бронирование к текущему пользователю
-            booking.save()
-            messages.success(request, 'Бронирование успешно создано.')
-            return redirect('profile')
-        else:
-            messages.error(request, 'Ошибка при создании бронирования.')
-    else:
-        booking_form = BookingForm()
+    Profile.objects.get_or_create(user=user)
 
     context = {
         'user': user,
-        'bookings': bookings,
-        'booking_form': booking_form,  # Передаем форму для создания бронирования
+        'bookings': Booking.objects.filter(user=user).order_by('-booking_date')[:5],
+        'user_events': Event.objects.filter(booking__user=user)
+                       .select_related('booking')
+                       .order_by('-date')[:5],
     }
     return render(request, 'accounts/profile.html', context)
 
 @login_required
 def profile_edit(request):
     user = request.user
-    if not hasattr(user, 'profile'):
-        Profile.objects.create(user=user)
+    profile, created = Profile.objects.get_or_create(user=user)
+    children = profile.children.all()
 
     if request.method == 'POST':
         user_form = UserUpdateForm(request.POST, instance=user)
-        profile_form = ProfileUpdateForm(request.POST, instance=user.profile)
-        child_form = ChildForm(request.POST)
+        profile_form = ProfileUpdateForm(request.POST, instance=profile)
 
         if user_form.is_valid() and profile_form.is_valid():
             user_form.save()
             profile_form.save()
-            messages.success(request, 'Ваш профиль успешно обновлен!')
-            return redirect('profile')
-
-        if child_form.is_valid():
-            child = child_form.save(commit=False)
-            child.profile = user.profile
-            child.save()
-            messages.success(request, 'Ребенок успешно добавлен!')
+            messages.success(request, _('Профиль успешно обновлен!'))
             return redirect('profile_edit')
     else:
         user_form = UserUpdateForm(instance=user)
-        profile_form = ProfileUpdateForm(instance=user.profile)
-        child_form = ChildForm()
-
-    # Добавляем форму смены пароля в контекст
-    password_form = PasswordChangeForm(user=request.user)
+        profile_form = ProfileUpdateForm(instance=profile)
 
     context = {
         'user_form': user_form,
         'profile_form': profile_form,
-        'child_form': child_form,
-        'password_form': password_form,  # Добавлено
+        'child_form': ChildForm(),
+        'password_form': CustomPasswordChangeForm(user=request.user),
+        'children': children,
     }
-
     return render(request, 'accounts/profile_edit.html', context)
 
 @login_required
+@require_POST
 def add_child(request):
-    if request.method == 'POST':
-        child_form = ChildForm(request.POST)
-        if child_form.is_valid():
-            child = child_form.save(commit=False)
-            child.profile = request.user.profile
-            child.save()
-            messages.success(request, 'Ребенок успешно добавлен!')
-            return redirect('profile')
-    else:
-        child_form = ChildForm()
-
-    return render(request, 'accounts/profile_edit.html', {
-        'user_form': UserUpdateForm(instance=request.user),
-        'profile_form': ProfileUpdateForm(instance=request.user.profile),
-        'child_form': child_form,
-    })
+    form = ChildForm(request.POST)
+    if form.is_valid():
+        child = form.save(commit=False)
+        child.profile = request.user.profile
+        child.save()
+        messages.success(request, _('Ребенок успешно добавлен!'))
+        return JsonResponse({'success': True})
+    return JsonResponse({
+        'success': False,
+        'errors': form.errors.as_json()
+    }, status=400)
 
 @login_required
+@require_POST
 def delete_child(request, child_id):
     child = get_object_or_404(Child, id=child_id, profile=request.user.profile)
     child.delete()
-    messages.success(request, 'Ребенок успешно удален!')
-    return redirect('profile')
-
+    messages.success(request, _('Ребенок успешно удален!'))
+    return JsonResponse({'success': True})
 
 @login_required
+@require_POST
 def change_password(request):
-    if request.method == 'POST':
-        form = PasswordChangeForm(request.user, request.POST)
-        if form.is_valid():
-            old_password = form.cleaned_data.get('old_password')
-            new_password1 = form.cleaned_data.get('new_password1')
-            new_password2 = form.cleaned_data.get('new_password2')
-
-            # Проверка, что новый пароль не совпадает со старым
-            if old_password == new_password1:
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Новый пароль не должен совпадать со старым.',
-                })
-
-            # Проверка, что новый пароль и его подтверждение совпадают
-            if new_password1 != new_password2:
-                return JsonResponse({
-                    'success': False,
-                    'message': 'Новый пароль и его подтверждение не совпадают.',
-                })
-
-            # Если все проверки пройдены, сохраняем новый пароль
-            user = form.save()
-            update_session_auth_hash(request, user)  # Обновляем сессию, чтобы пользователь не вышел из системы
-            return JsonResponse({
-                'success': True,
-                'message': 'Пароль успешно изменен!',
-            })
-        else:
-            # Если форма не валидна, выводим первую ошибку
-            for field, errors in form.errors.items():
-                for error in errors:
-                    return JsonResponse({
-                        'success': False,
-                        'message': error,
-                    })
-    else:
-        form = PasswordChangeForm(request.user)
-    return render(request, 'accounts/change_password.html', {'form': form})
+    form = CustomPasswordChangeForm(request.user, request.POST)
+    if form.is_valid():
+        user = form.save()
+        update_session_auth_hash(request, user)
+        messages.success(request, _('Пароль успешно изменен!'))
+        return JsonResponse({'success': True})
+    return JsonResponse({
+        'success': False,
+        'errors': form.errors.as_json()
+    }, status=400)
 
 # Сотрудники
 
@@ -166,4 +109,16 @@ def login_view(request):
             return render(request, 'registration/login.html', {'error': 'Неверные данные'})
     return render(request, 'registration/login.html')
 
-
+@login_required
+@require_POST
+def change_email(request):
+    form = EmailChangeForm(request.user, request.POST)
+    if form.is_valid():
+        request.user.email = form.cleaned_data['new_email']
+        request.user.save()
+        messages.success(request, _('Email успешно изменен!'))
+        return JsonResponse({'success': True})
+    return JsonResponse({
+        'success': False,
+        'errors': form.errors.as_json()
+    }, status=400)

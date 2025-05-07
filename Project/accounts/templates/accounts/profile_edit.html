@@ -1,196 +1,426 @@
 {% extends 'base.html' %}
-
 {% load static %}
-
-{% block title %}Редактирование профиля и настройки{% endblock %}
+{% block title %}Редактирование профиля{% endblock %}
 
 {% block content %}
 <!-- Уведомления -->
 {% if messages %}
-    <div class="mb-6">
-        {% for message in messages %}
-            <div class="p-4 {% if message.tags == 'error' %}bg-red-100 border-red-400 text-red-700{% else %}bg-green-100 border-green-400 text-green-700{% endif %} border rounded-lg">
-                {{ message }}
-            </div>
-        {% endfor %}
+<div class="fixed top-4 right-4 z-50 space-y-2 w-96">
+    {% for message in messages %}
+    <div class="p-4 rounded-lg shadow-lg {% if message.tags == 'error' %}bg-red-100 border-red-400 text-red-700{% else %}bg-green-100 border-green-400 text-green-700{% endif %} border transform transition-all duration-300 ease-in-out hover:scale-105">
+        <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                {% if message.tags == 'error' %}
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                {% else %}
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                {% endif %}
+            </svg>
+            <span>{{ message }}</span>
+        </div>
     </div>
+    {% endfor %}
+</div>
 {% endif %}
 
-
-<div class="bg-white p-8 rounded-lg shadow-2xl text-center transform transition-all hover:scale-105 max-w-2xl mx-auto">
-    <h2 class="text-4xl font-bold text-gray-800 mb-6">Редактирование профиля</h2>
-
-    <!-- Форма редактирования профиля -->
-    <form method="post" class="space-y-6">
-        {% csrf_token %}
-
-        <!-- Поля формы пользователя -->
-        <div class="space-y-6">
-            {% for field in user_form %}
-                <div class="flex flex-col space-y-2">
-                    <label for="{{ field.id_for_label }}" class="text-gray-700 font-medium">
-                        {{ field.label }}
-                    </label>
-                    {{ field }}
-                    {% if field.errors %}
-                        <div class="text-red-500 text-sm mt-1">
-                            {{ field.errors|join:", " }}
-                        </div>
-                    {% endif %}
-                </div>
-            {% endfor %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <!-- Заголовок -->
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
+            <h1 class="text-2xl font-bold text-white">Редактирование профиля</h1>
         </div>
 
-        <!-- Кнопка сохранения -->
-        <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 transition duration-300">
-            Сохранить изменения
-        </button>
-    </form>
+        <div class="p-6">
+            <!-- Основная форма -->
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
 
-    <!-- Кнопки для дополнительных действий -->
-    <div class="mt-6 space-x-4">
-        <!-- Кнопка для открытия модального окна добавления ребенка -->
-        <button onclick="openModal('addChildModal')" class="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600 transition duration-300">
-            Добавить ребенка
-        </button>
+                <!-- Личная информация -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ user_form.first_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Имя</label>
+                        {{ user_form.first_name }}
+                    </div>
+                    <div>
+                        <label for="{{ user_form.last_name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Фамилия</label>
+                        {{ user_form.last_name }}
+                    </div>
+                    <div>
+                        <label for="{{ user_form.username.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Имя пользователя</label>
+                        {{ user_form.username }}
+                    </div>
+                    <div>
+                        <label for="{{ user_form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        {{ user_form.email }}
+                        {% if user_form.email.errors %}
+                            <div class="text-red-600 text-sm mt-1">{{ user_form.email.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="{{ user_form.phone_number.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">Телефон</label>
+                        <div class="relative">
+                            {{ user_form.phone_number }}
+                        </div>
+                    </div>
+                </div>
 
-        <!-- Кнопка для открытия модального окна смены пароля -->
-        <button onclick="openModal('changePasswordModal')" class="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition duration-300">
-            Сменить пароль
-        </button>
+                <!-- Кнопка сохранения -->
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                        Сохранить изменения
+                    </button>
+                </div>
+            </form>
 
-        <!-- Ссылка на профиль -->
-        <a href="{% url 'profile' %}" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
-            Вернуться к профилю
-        </a>
+            <!-- Разделитель -->
+            <div class="border-t border-gray-200 my-6"></div>
+
+            <!-- Дети -->
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                    Мои дети
+                </h2>
+
+                {% if children %}
+                <div class="space-y-3">
+                    {% for child in children %}
+                    <div class="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="bg-pink-100 text-pink-600 rounded-full p-2 mr-3">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-800">{{ child.name }}</h3>
+                                <p class="text-sm text-gray-500">{{ child.age }} лет {% if child.gender %}({{ child.get_gender_display }}){% endif %}</p>
+                                {% if child.birthdate %}
+                                <p class="text-xs text-gray-400">Дата рождения: {{ child.birthdate|date:"d.m.Y" }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <form action="{% url 'delete_child' child.id %}" method="post" class="delete-child-form">
+                            {% csrf_token %}
+                            <button type="submit" class="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="bg-blue-50 p-4 rounded-lg text-center">
+                    <p class="text-blue-800">Дети не добавлены</p>
+                </div>
+                {% endif %}
+
+                <!-- Кнопка добавления ребенка -->
+                <button onclick="openModal('addChildModal')" class="mt-4 w-full bg-pink-500 hover:bg-pink-600 text-white font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    Добавить ребенка
+                </button>
+            </div>
+
+            <!-- Разделитель -->
+            <div class="border-t border-gray-200 my-6"></div>
+
+            <!-- Смена пароля -->
+            <div>
+                <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Безопасность
+                </h2>
+                <button onclick="openModal('changePasswordModal')" class="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center">
+                    Сменить пароль
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Модальное окно для добавления ребенка -->
-<div id="addChildModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4">
-    <div class="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full mx-4 relative">
-        <!-- Кнопка закрытия (крестик) -->
-        <button onclick="closeModal('addChildModal')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-        </button>
+<!-- Модальное окно добавления ребенка -->
+<div id="addChildModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md transform transition-all">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Добавить ребенка</h3>
+                <button onclick="closeModal('addChildModal')" class="text-gray-400 hover:text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
 
-        <h3 class="text-2xl font-bold text-gray-800 mb-6">Добавить ребенка</h3>
-        <form method="post" action="{% url 'add_child' %}" class="space-y-4">
-            {% csrf_token %}
-            <div class="space-y-4">
-                {% for field in child_form %}
-                    <div class="flex flex-col space-y-2">
-                        <label for="{{ field.id_for_label }}" class="text-gray-700 font-medium">
+            <form method="post" action="{% url 'add_child' %}" id="addChildForm" class="space-y-4">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    {% for field in child_form %}
+                    <div>
+                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
                             {{ field.label }}
                         </label>
                         {{ field }}
                         {% if field.errors %}
-                            <div class="text-red-500 text-sm mt-1">
-                                {{ field.errors|join:", " }}
-                            </div>
+                        <div class="mt-1 text-sm text-red-600">
+                            {{ field.errors|join:", " }}
+                        </div>
                         {% endif %}
                     </div>
-                {% endfor %}
-            </div>
-            <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
-                Добавить
-            </button>
-        </form>
+                    {% endfor %}
+                </div>
+
+                <div class="pt-4 flex space-x-3">
+                    <button type="button" onclick="closeModal('addChildModal')" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition">
+                        Отмена
+                    </button>
+                    <button type="submit" class="flex-1 bg-pink-500 hover:bg-pink-600 text-white font-medium py-2 px-4 rounded-lg transition flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        Добавить
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
-<!-- Модальное окно для смены пароля -->
-<div id="changePasswordModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4">
-    <div class="bg-white p-8 rounded-lg shadow-2xl max-w-md w-full mx-4 relative">
-        <!-- Кнопка закрытия (крестик) -->
-        <button onclick="closeModal('changePasswordModal')" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-        </button>
-
-        <h3 class="text-2xl font-bold text-gray-800 mb-6">Смена пароля</h3>
-        <form id="changePasswordForm" method="post" action="{% url 'change_password' %}" class="space-y-4" data-profile-edit-url="{% url 'profile_edit' %}">
-            {% csrf_token %}
-            <div class="space-y-4">
-                <!-- Поле для старого пароля -->
-                <div class="flex flex-col space-y-2">
-                    <label for="id_old_password" class="text-gray-700 font-medium">
-                        Старый пароль
-                    </label>
-                    <div class="relative">
-                        <input type="password" name="old_password" id="id_old_password" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" required>
-                        <!-- Иконка для просмотра пароля -->
-                        <button type="button" onclick="togglePasswordVisibility('id_old_password')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Поле для нового пароля -->
-                <div class="flex flex-col space-y-2">
-                    <label for="id_new_password1" class="text-gray-700 font-medium">
-                        Новый пароль
-                    </label>
-                    <div class="relative">
-                        <input type="password" name="new_password1" id="id_new_password1" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" required>
-                        <!-- Иконка для просмотра пароля -->
-                        <button type="button" onclick="togglePasswordVisibility('id_new_password1')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Поле для подтверждения нового пароля -->
-                <div class="flex flex-col space-y-2">
-                    <label for="id_new_password2" class="text-gray-700 font-medium">
-                        Подтвердите новый пароль
-                    </label>
-                    <div class="relative">
-                        <input type="password" name="new_password2" id="id_new_password2" class="w-full p-3 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:outline-none transition-colors" required>
-                        <!-- Иконка для просмотра пароля -->
-                        <button type="button" onclick="togglePasswordVisibility('id_new_password2')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
+<!-- Модальное окно смены пароля -->
+<div id="changePasswordModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">
+    <div class="bg-white rounded-xl shadow-xl w-full max-w-md transform transition-all">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-800">Смена пароля</h3>
+                <button onclick="closeModal('changePasswordModal')" class="text-gray-400 hover:text-gray-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
-            <button type="submit" class="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
-                Сменить пароль
-            </button>
-        </form>
+
+            <form method="post" action="{% url 'change_password' %}" id="changePasswordForm" class="space-y-4">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <!-- Старый пароль -->
+                    <div>
+                        <label for="id_old_password" class="block text-sm font-medium text-gray-700 mb-1">
+                            Текущий пароль
+                        </label>
+                        <div class="relative">
+                            <input type="password" name="old_password" id="id_old_password" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                            <button type="button" onclick="togglePasswordVisibility('id_old_password')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Новый пароль -->
+                    <div>
+                        <label for="id_new_password1" class="block text-sm font-medium text-gray-700 mb-1">
+                            Новый пароль
+                        </label>
+                        <div class="relative">
+                            <input type="password" name="new_password1" id="id_new_password1" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                            <button type="button" onclick="togglePasswordVisibility('id_new_password1')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Подтверждение пароля -->
+                    <div>
+                        <label for="id_new_password2" class="block text-sm font-medium text-gray-700 mb-1">
+                            Подтвердите новый пароль
+                        </label>
+                        <div class="relative">
+                            <input type="password" name="new_password2" id="id_new_password2" class="w-full p-3 border border-gray-300 rounded-lg" required>
+                            <button type="button" onclick="togglePasswordVisibility('id_new_password2')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-4 flex space-x-3">
+                    <button type="button" onclick="closeModal('changePasswordModal')" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition">
+                        Отмена
+                    </button>
+                    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        Сменить пароль
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
 <style>
-    input[type="text"],
-    input[type="email"],
-    input[type="tel"],
-    input[type="number"],
-    textarea,
-    select,
-    .form-control {
-        width: 100% !important;
-        padding: 12px !important;
-        border: 2px solid #e2e8f0 !important;
-        border-radius: 8px !important;
-        font-size: 16px !important;
-        color: #4a5568 !important;
-        transition: border-color 0.3s ease, box-shadow 0.3s ease !important;
-        background-color: white !important;
+    input, select, textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        color: #374151;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .errorlist {
+        color: #ef4444;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .bg-pink-100 {
+        background-color: #fce7f3;
+    }
+    .text-pink-600 {
+        color: #db2777;
     }
 </style>
 
-<script src="{% static 'accounts/js/scripts.js' %}"></script>
+<script>
+    // Функции для работы с модальными окнами
+    function openModal(id) {
+        document.getElementById(id).classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    // Переключение видимости пароля
+    function togglePasswordVisibility(id) {
+        const input = document.getElementById(id);
+        if (input.type === 'password') {
+            input.type = 'text';
+        } else {
+            input.type = 'password';
+        }
+    }
+
+    // Закрытие уведомлений через 5 секунд
+    setTimeout(() => {
+        const notifications = document.querySelectorAll('.fixed.top-4.right-4 > div');
+        notifications.forEach(notification => {
+            notification.classList.add('opacity-0', 'translate-x-full');
+            setTimeout(() => notification.remove(), 300);
+        });
+    }, 5000);
+
+    // AJAX обработка форм
+    document.addEventListener('DOMContentLoaded', function() {
+        // Форма добавления ребенка
+        const addChildForm = document.getElementById('addChildForm');
+        if (addChildForm) {
+            addChildForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Ошибка: ' + Object.values(data.errors).join('\n'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            });
+        }
+
+        // Форма смены пароля
+        const changePasswordForm = document.getElementById('changePasswordForm');
+        if (changePasswordForm) {
+            changePasswordForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Ошибка: ' + Object.values(data.errors).join('\n'));
+                    }
+                });
+            });
+        }
+
+        // Формы удаления ребенка
+        document.querySelectorAll('.delete-child-form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                if (confirm('Вы уверены, что хотите удалить этого ребенка?')) {
+                    const formData = new FormData(this);
+
+                    fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            location.reload();
+                        }
+                    });
+                }
+            });
+        });
+    });
+</script>
 {% endblock %}

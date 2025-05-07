@@ -7,11 +7,11 @@ from staff.views import role_required
 from django.http import JsonResponse, HttpResponseNotAllowed
 from django.utils import timezone
 from django.utils.dateparse import parse_date
-# Импортируем модель Event из приложения staff
 from staff.models import Event
 import traceback
 from django.views.decorators.csrf import csrf_exempt
 import logging
+
 logger = logging.getLogger(__name__)
 
 @login_required
@@ -34,23 +34,38 @@ def manage_booking(request, booking_id, action):
 
 @login_required
 def edit_booking(request, booking_id):
-    if request.user.groups.filter(name__in=['Admin', 'Manager']).exists() or request.user.is_superuser:
-        booking = get_object_or_404(Booking, id=booking_id)
-        enforce = False  # Администратор/менеджер может редактировать даже с прошедшей датой
-    else:
-        booking = get_object_or_404(Booking, id=booking_id, user=request.user)
-        enforce = True   # Обычный пользователь – дата не должна быть в прошлом
+    booking = get_object_or_404(Booking, id=booking_id)
+
+    # Проверка прав доступа
+    if not (request.user == booking.user or
+            request.user.groups.filter(name__in=['Admin', 'Manager']).exists() or
+            request.user.is_superuser):
+        messages.error(request, 'У вас нет прав для редактирования этого бронирования.')
+        return redirect('profile')
+
+    # Проверка статуса бронирования
+    if booking.status == 'approved':
+        messages.error(request, 'Нельзя редактировать подтвержденное бронирование.')
+        return redirect('profile')
+
+    # Проверка даты мероприятия (для обычных пользователей)
+    enforce_future_date = not (request.user.groups.filter(name__in=['Admin', 'Manager']).exists() or
+                               request.user.is_superuser)
 
     if request.method == 'POST':
-        form = BookingForm(request.POST, instance=booking, enforce_future_date=enforce)
+        form = BookingForm(request.POST, instance=booking, enforce_future_date=enforce_future_date)
         if form.is_valid():
             form.save()
-            return JsonResponse({'success': True, 'message': 'Бронирование успешно обновлено!'})
-        else:
-            return JsonResponse({'success': False, 'message': 'Исправьте ошибки в форме.', 'errors': form.errors})
+            messages.success(request, 'Бронирование успешно обновлено!')
+            return redirect('profile')
     else:
-        form = BookingForm(instance=booking, enforce_future_date=enforce)
-    return render(request, 'bookings/edit_booking.html', {'form': form, 'booking': booking})
+        form = BookingForm(instance=booking, enforce_future_date=enforce_future_date)
+
+    return render(request, 'bookings/edit_booking.html', {
+        'form': form,
+        'booking': booking,
+        'today': timezone.now().strftime('%Y-%m-%dT%H:%M')
+    })
 
 @login_required
 @role_required('Admin', 'Manager')
@@ -64,34 +79,38 @@ def edit_booking_admin(request, booking_id):
                 booking.edited_by = "Администратор"
             elif request.user.groups.filter(name='Manager').exists():
                 booking.edited_by = "Менеджер"
-            else:
-                booking.edited_by = ""
             booking.save()
             messages.success(request, 'Бронирование успешно обновлено!')
             return redirect('admin_dashboard')
-        else:
-            messages.error(request, 'Ошибка при обновлении бронирования.')
     else:
         form = BookingForm(instance=booking)
-    return render(request, 'bookings/edit_booking_admin.html', {'form': form, 'booking': booking})
+    return render(request, 'bookings/edit_booking_admin.html', {
+        'form': form,
+        'booking': booking
+    })
 
 @login_required
 def delete_booking(request, booking_id):
     if request.method != 'POST':
         return HttpResponseNotAllowed(['POST'])
 
-    if request.user.is_superuser or request.user.is_staff:
-        booking = get_object_or_404(Booking, id=booking_id)
-    else:
-        booking = get_object_or_404(Booking, id=booking_id, user=request.user)
+    booking = get_object_or_404(Booking, id=booking_id)
+
+    # Проверка прав доступа
+    if not (request.user == booking.user or
+            request.user.is_superuser or
+            request.user.groups.filter(name__in=['Admin', 'Manager']).exists()):
+        messages.error(request, 'У вас нет прав для удаления этого бронирования.')
+        return redirect('profile')
+
+    # Проверка статуса бронирования
+    if booking.status == 'approved':
+        messages.error(request, 'Нельзя удалить подтвержденное бронирование.')
+        return redirect('profile')
 
     booking.delete()
     messages.success(request, 'Бронирование успешно удалено.')
-
-    if request.user.is_superuser or request.user.is_staff:
-        return redirect('admin_dashboard')
     return redirect('profile')
-
 
 @csrf_exempt
 @login_required
@@ -117,13 +136,21 @@ def create_booking(request):
                     booking=booking
                 )
 
-                return JsonResponse({'success': True, 'message': 'Бронирование успешно создано! Ожидайте звонка от менеджера.'})
-
-            logger.error("Ошибки формы: %s", form.errors)
-            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
-
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Бронирование успешно создано! Ожидайте звонка от менеджера.'
+                })
+            return JsonResponse({
+                'success': False,
+                'errors': form.errors
+            }, status=400)
         except Exception as e:
             logger.exception("Server error:")
-            return JsonResponse({'success': False, 'message': f'Ошибка сервера: {str(e)}'}, status=500)
-
-    return JsonResponse({'success': False, 'message': 'Метод не разрешен'}, status=405)
+            return JsonResponse({
+                'success': False,
+                'message': f'Ошибка сервера: {str(e)}'
+            }, status=500)
+    return JsonResponse({
+        'success': False,
+        'message': 'Метод не разрешен'
+    }, status=405)
