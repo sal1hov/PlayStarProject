@@ -11,14 +11,17 @@ from staff.models import Event
 import traceback
 from django.views.decorators.csrf import csrf_exempt
 import logging
+from django.views.decorators.http import require_http_methods
 
 logger = logging.getLogger(__name__)
+
 
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
 def manage_booking(request, booking_id, action):
     booking = get_object_or_404(Booking, id=booking_id)
-    if request.user.groups.filter(name='Admin').exists() or request.user.groups.filter(name='Manager').exists() or request.user.is_superuser:
+    if request.user.groups.filter(name='Admin').exists() or request.user.groups.filter(
+            name='Manager').exists() or request.user.is_superuser:
         if action == 'approve':
             booking.status = 'approved'
             booking.save()
@@ -31,6 +34,7 @@ def manage_booking(request, booking_id, action):
             messages.error(request, 'Неверное действие.')
         return redirect('admin_dashboard')
     return redirect('index')
+
 
 @login_required
 def edit_booking(request, booking_id):
@@ -67,6 +71,7 @@ def edit_booking(request, booking_id):
         'today': timezone.now().strftime('%Y-%m-%dT%H:%M')
     })
 
+
 @login_required
 @role_required('Admin', 'Manager')
 def edit_booking_admin(request, booking_id):
@@ -89,28 +94,40 @@ def edit_booking_admin(request, booking_id):
         'booking': booking
     })
 
-@login_required
-def delete_booking(request, booking_id):
-    if request.method != 'POST':
-        return HttpResponseNotAllowed(['POST'])
 
+@login_required
+@require_http_methods(["DELETE", "POST"])
+def delete_booking(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
 
     # Проверка прав доступа
     if not (request.user == booking.user or
             request.user.is_superuser or
             request.user.groups.filter(name__in=['Admin', 'Manager']).exists()):
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': 'У вас нет прав для удаления этого бронирования.'},
+                                status=403)
         messages.error(request, 'У вас нет прав для удаления этого бронирования.')
         return redirect('profile')
 
     # Проверка статуса бронирования
     if booking.status == 'approved':
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': 'Нельзя удалить подтвержденное бронирование.'},
+                                status=400)
         messages.error(request, 'Нельзя удалить подтвержденное бронирование.')
         return redirect('profile')
 
+    # Удаляем связанное мероприятие, если оно есть
+    Event.objects.filter(booking=booking).delete()
     booking.delete()
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({'success': True, 'message': 'Бронирование успешно удалено.'})
+
     messages.success(request, 'Бронирование успешно удалено.')
     return redirect('profile')
+
 
 @csrf_exempt
 @login_required
