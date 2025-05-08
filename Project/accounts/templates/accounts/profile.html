@@ -179,11 +179,8 @@
                                         <span class="font-medium">{{ booking.children_count }}</span> ребенок(а)
                                     </div>
                                     <div class="flex space-x-2">
-                                        {% if booking.status != 'approved' %}
-                                            <a href="{% url 'edit_booking' booking.id %}" class="text-blue-600 hover:text-blue-900 text-sm">
-                                                Редактировать
-                                            </a>
-                                            <form action="{% url 'delete_booking' booking.id %}" method="post">
+                                        {% if booking.status == 'pending' %}
+                                            <form action="{% url 'delete_booking' booking.id %}" method="post" class="delete-booking-form">
                                                 {% csrf_token %}
                                                 <button type="submit" class="text-red-600 hover:text-red-900 text-sm">
                                                     Удалить
@@ -233,9 +230,16 @@
                                     </div>
                                 </div>
                                 <div class="flex justify-end mt-2">
-                                    <a href="#" class="text-blue-600 hover:text-blue-900 text-sm">
-                                        Подробнее
-                                    </a>
+                                    {% if event.booking.status == 'pending' %}
+                                        <form action="{% url 'delete_booking' event.booking.id %}" method="post" class="delete-booking-form">
+                                            {% csrf_token %}
+                                            <button type="submit" class="text-red-600 hover:text-red-900 text-sm">
+                                                Удалить
+                                            </button>
+                                        </form>
+                                    {% else %}
+                                        <span class="text-gray-500 text-sm">Для изменений обратитесь к администратору</span>
+                                    {% endif %}
                                 </div>
                             </div>
                             {% endfor %}
@@ -451,6 +455,45 @@
             // Восстанавливаем кнопку
             submitButton.disabled = false;
             submitButton.textContent = originalButtonText;
+        });
+    });
+
+    // Обработка удаления бронирований
+    document.querySelectorAll('.delete-booking-form').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (confirm('Вы уверены, что хотите удалить эту запись?')) {
+                const formData = new FormData(this);
+                const submitButton = this.querySelector('button[type="submit"]');
+                const originalButtonText = submitButton.textContent;
+
+                submitButton.disabled = true;
+                submitButton.textContent = 'Удаление...';
+
+                fetch(this.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Ошибка при удалении: ' + (data.message || 'Неизвестная ошибка'));
+                        submitButton.disabled = false;
+                        submitButton.textContent = originalButtonText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error);
+                    alert('Произошла ошибка при удалении.');
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalButtonText;
+                });
+            }
         });
     });
 </script>
