@@ -168,14 +168,19 @@ def disconnect_social_account(request):
         account = form.cleaned_data['account_id']
         if account.provider == 'telegram':
             account.delete()
-            messages.success(request, "Telegram аккаунт успешно отвязан")
-        else:
-            messages.error(request, "Неизвестный провайдер аккаунта")
-
-        return redirect('accounts:profile_edit')  # Используем полное имя с namespace
-    else:
-        messages.error(request, "Ошибка при отвязке аккаунта")
-    return redirect('accounts:profile_edit')
+            return JsonResponse({
+                'success': True,
+                'message': 'Telegram аккаунт успешно отвязан',
+                'telegram_connected': False
+            })
+        return JsonResponse({
+            'success': False,
+            'error': 'Неизвестный провайдер аккаунта'
+        }, status=400)
+    return JsonResponse({
+        'success': False,
+        'error': 'Ошибка при отвязке аккаунта'
+    }, status=400)
 
 @login_required
 @require_POST

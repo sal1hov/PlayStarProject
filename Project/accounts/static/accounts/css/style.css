@@ -1,0 +1,44 @@
+    input, select, textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        color: #374151;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .errorlist {
+        color: #ef4444;
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .bg-pink-100 {
+        background-color: #fce7f3;
+    }
+    .text-pink-600 {
+        color: #db2777;
+    }
+    .bg-blue-100 {
+        background-color: #dbeafe;
+    }
+    .text-blue-600 {
+        color: #2563eb;
+    }
+    .bg-red-100 {
+        background-color: #fee2e2;
+    }
+    .text-red-600 {
+        color: #dc2626;
+    }
+    code {
+        font-family: monospace;
+        font-size: 0.9em;
+    }

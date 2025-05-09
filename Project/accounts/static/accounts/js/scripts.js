@@ -1,87 +1,167 @@
-// Скрипт для управления модальным окном в шаблоне profile_edit.html для добавления ребёнка
-    function openModal() {
-        document.getElementById('modal').classList.remove('hidden');
+// Общие функции для работы с модальными окнами
+function openModal(id) {
+    document.getElementById(id).classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+}
+
+function closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+}
+
+// Переключение видимости пароля
+function togglePasswordVisibility(id) {
+    const input = document.getElementById(id);
+    if (input.type === 'password') {
+        input.type = 'text';
+    } else {
+        input.type = 'password';
+    }
+}
+
+// Функция для показа уведомлений
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white ${
+        type === 'success' ? 'bg-green-500' : 'bg-red-500'
+    }`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-x-full');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Инициализация после загрузки DOM
+document.addEventListener('DOMContentLoaded', function() {
+    // Форма добавления ребенка
+    const addChildForm = document.getElementById('addChildForm');
+    if (addChildForm) {
+        addChildForm.addEventListener('submit', handleAddChildFormSubmit);
     }
 
-    function closeModal() {
-        document.getElementById('modal').classList.add('hidden');
+    // Форма смены пароля
+    const changePasswordForm = document.getElementById('changePasswordForm');
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', handleChangePasswordFormSubmit);
     }
 
-// скрипт для управления модальным окном в шаблоне profile_edit.html для смены пароля
-    // Функции для открытия и закрытия модальных окон
-    function openModal(modalId) {
-        document.getElementById(modalId).classList.remove('hidden');
+    // Форма подтверждения Telegram
+    const verifyTelegramForm = document.getElementById('verifyTelegramForm');
+    if (verifyTelegramForm) {
+        verifyTelegramForm.addEventListener('submit', handleVerifyTelegramFormSubmit);
     }
 
-    function closeModal(modalId) {
-        document.getElementById(modalId).classList.add('hidden');
-    }
+    // Формы удаления ребенка
+    document.querySelectorAll('.delete-child-form').forEach(form => {
+        form.addEventListener('submit', handleDeleteChildFormSubmit);
+    });
 
+    // Валидация полей формы
+    setupFormValidation();
+});
 
- // Функция для переключения видимости пароля в модальном окне для смены пароля
-    function togglePasswordVisibility(inputId) {
-        const input = document.getElementById(inputId);
-        if (input.type === 'password') {
-            input.type = 'text';
-        } else {
-            input.type = 'password';
-        }
-    }
+// Обработчики форм
+function handleAddChildFormSubmit(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
 
-// скрипт sweetalert2 на модальное окно на смену пароля
-document.getElementById('changePasswordForm').addEventListener('submit', function (event) {
-    event.preventDefault(); // Отменяем стандартную отправку формы
-
-    const form = event.target;
-    const formData = new FormData(form);
-    const profileEditUrl = form.getAttribute('data-profile-edit-url'); // Получаем URL из атрибута
-
-    fetch(form.action, {
+    fetch(this.action, {
         method: 'POST',
         body: formData,
         headers: {
-            'X-CSRFToken': formData.get('csrfmiddlewaretoken'), // Добавляем CSRF-токен
-            'Accept': 'application/json', // Указываем, что ожидаем JSON-ответ
-        },
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Ошибка сети или сервера');
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
         }
-        return response.json();
     })
+    .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Успешная смена пароля
-            Swal.fire({
-                icon: 'success',
-                title: 'Успех!',
-                text: data.message,
-            }).then(() => {
-                window.location.href = profileEditUrl; // Используем URL из атрибута
-            });
+            location.reload();
         } else {
-            // Ошибка валидации
-            Swal.fire({
-                icon: 'error',
-                title: 'Ошибка',
-                text: data.message,
-            });
+            alert('Ошибка: ' + Object.values(data.errors).join('\n'));
         }
     })
     .catch(error => {
-        console.error('Ошибка:', error);
-        Swal.fire({
-            icon: 'error',
-            title: 'Ошибка',
-            text: 'Произошла ошибка при отправке формы.',
-        });
+        console.error('Error:', error);
     });
-});
+}
 
-// AJAX
+function handleChangePasswordFormSubmit(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
 
-document.addEventListener('DOMContentLoaded', function() {
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Ошибка: ' + Object.values(data.errors).join('\n'));
+        }
+    });
+}
+
+function handleVerifyTelegramFormSubmit(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeModal('telegramModal');
+            showToast(data.message || 'Telegram аккаунт успешно привязан!', 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            showToast(data.error || 'Ошибка при привязке Telegram', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Произошла ошибка', 'error');
+    });
+}
+
+function handleDeleteChildFormSubmit(e) {
+    e.preventDefault();
+    if (confirm('Вы уверены, что хотите удалить этого ребенка?')) {
+        const formData = new FormData(this);
+
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            }
+        });
+    }
+}
+
+function setupFormValidation() {
     const firstNameField = document.getElementById('id_first_name');
     const lastNameField = document.getElementById('id_last_name');
     const phoneField = document.getElementById('id_phone_number');
@@ -118,4 +198,4 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-});
+}
