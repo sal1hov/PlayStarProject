@@ -122,10 +122,10 @@ def server_error(request):
     return JsonResponse({'error': 'Server Error'}, status=500)
 
 # Добавьте в конец файла:
-handler400 = 'your_project_name.views.bad_request'
-handler403 = 'your_project_name.views.permission_denied'
-handler404 = 'your_project_name.views.page_not_found'
-handler500 = 'your_project_name.views.server_error'
+handler400 = 'project.views.bad_request'
+handler403 = 'project.views.permission_denied'
+handler404 = 'project.views.page_not_found'
+handler500 = 'project.views.server_error'
 
 # Telegram Bot Settings
 TELEGRAM_BOT_TOKEN = '7583679391:AAF2mlP0JLsli1SsCpmjZZ6b2_JnKSLuKOU'

@@ -28,8 +28,13 @@ from datetime import datetime
 import logging
 from social_django.models import UserSocialAuth
 import requests
+import hashlib
+import hmac
+from django.contrib.auth import get_user_model
 
 logger = logging.getLogger(__name__)
+User = get_user_model()
+
 
 @login_required
 def profile(request):
@@ -45,13 +50,13 @@ def profile(request):
     }
     return render(request, 'accounts/profile.html', context)
 
+
 @login_required
 def profile_edit(request):
     user = request.user
     profile, created = Profile.objects.get_or_create(user=user)
     children = profile.children.all()
 
-    # Оставляем только Telegram
     telegram_account = SocialAccount.objects.filter(user=user, provider='telegram').first()
 
     if request.method == 'POST':
@@ -78,6 +83,7 @@ def profile_edit(request):
     }
     return render(request, 'accounts/profile_edit.html', context)
 
+
 @login_required
 @require_POST
 def add_child(request):
@@ -93,6 +99,7 @@ def add_child(request):
         'errors': form.errors.as_json()
     }, status=400)
 
+
 @login_required
 @require_POST
 def delete_child(request, child_id):
@@ -100,6 +107,7 @@ def delete_child(request, child_id):
     child.delete()
     messages.success(request, _('Ребенок успешно удален!'))
     return JsonResponse({'success': True})
+
 
 @login_required
 @require_POST
@@ -115,6 +123,7 @@ def change_password(request):
         'errors': form.errors.as_json()
     }, status=400)
 
+
 def login_view(request):
     if request.method == 'POST':
         username = request.POST['username']
@@ -124,8 +133,12 @@ def login_view(request):
             login(request, user)
             return redirect(get_user_role_redirect(user))
         else:
+            messages.error(request, 'Неверные данные для входа')
             return render(request, 'registration/login.html', {'error': 'Неверные данные'})
-    return render(request, 'registration/login.html')
+    return render(request, 'registration/login.html', {
+        'telegram_bot_name': getattr(settings, 'TELEGRAM_BOT_NAME', '')
+    })
+
 
 @login_required
 @require_POST
@@ -141,9 +154,9 @@ def change_email(request):
         'errors': form.errors.as_json()
     }, status=400)
 
+
 @login_required
 def social_accounts(request):
-    # Оставляем только Telegram
     telegram_accounts = SocialAccount.objects.filter(user=request.user, provider='telegram')
 
     telegram_token = None
@@ -159,6 +172,7 @@ def social_accounts(request):
         'telegram_bot_name': getattr(settings, 'TELEGRAM_BOT_NAME', ''),
     }
     return render(request, 'accounts/social_accounts.html', context)
+
 
 @login_required
 @require_POST
@@ -181,6 +195,7 @@ def disconnect_social_account(request):
         'success': False,
         'error': 'Ошибка при отвязке аккаунта'
     }, status=400)
+
 
 @login_required
 @require_POST
@@ -234,3 +249,72 @@ def verify_telegram_code(request):
             'success': False,
             'error': 'Произошла ошибка при обработке кода'
         }, status=500)
+
+
+@csrf_exempt
+def telegram_login(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+
+            # Проверка подписи (security)
+            bot_token = settings.TELEGRAM_BOT_TOKEN
+            data_check_string = '\n'.join(
+                f"{key}={value}"
+                for key, value in sorted(data.items())
+                if key != 'hash'
+            )
+            secret_key = hashlib.sha256(bot_token.encode()).digest()
+            computed_hash = hmac.new(
+                secret_key,
+                data_check_string.encode(),
+                hashlib.sha256
+            ).hexdigest()
+
+            if computed_hash != data['hash']:
+                return JsonResponse({'status': 'error', 'message': 'Invalid hash'}, status=403)
+
+            # Поиск или создание пользователя
+            telegram_id = data['id']
+            username = data.get('username', f'tg_{telegram_id}')
+            first_name = data.get('first_name', '')
+            last_name = data.get('last_name', '')
+
+            user, created = User.objects.get_or_create(
+                username=username,
+                defaults={
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'password': User.objects.make_random_password()
+                }
+            )
+
+            # Авторизация пользователя
+            login(request, user)
+
+            # Создаем или обновляем SocialAccount
+            SocialAccount.objects.update_or_create(
+                provider='telegram',
+                uid=f"telegram_{telegram_id}",
+                user=user,
+                defaults={
+                    'extra_data': {
+                        'username': data.get('username'),
+                        'first_name': first_name,
+                        'last_name': last_name,
+                        'photo_url': data.get('photo_url'),
+                        'auth_date': data.get('auth_date')
+                    }
+                }
+            )
+
+            return JsonResponse({
+                'status': 'success',
+                'redirect_url': get_user_role_redirect(user)
+            })
+
+        except Exception as e:
+            logger.error(f"Telegram login error: {str(e)}", exc_info=True)
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)

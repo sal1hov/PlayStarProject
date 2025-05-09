@@ -5,7 +5,6 @@
 <div class="max-w-md w-full bg-white p-6 rounded-lg shadow-2xl transform transition-all hover:scale-105 mx-auto mt-44">
     <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Вход в систему</h2>
 
-    <!-- Отображение уведомлений -->
     {% if messages %}
         <div class="mb-4">
             {% for message in messages %}
@@ -19,7 +18,6 @@
         </div>
     {% endif %}
 
-    <!-- Если есть ошибки в форме, выводим сообщение об ошибке -->
     {% if form.errors %}
         <div class="mb-4">
             <div class="alert alert-danger p-4 rounded-lg text-center bg-red-100 text-red-700">
@@ -30,7 +28,6 @@
 
     <form method="post">
         {% csrf_token %}
-        <!-- Поле для имени пользователя -->
         <div class="mb-4">
             <label class="block text-gray-700 text-sm font-bold mb-2">Имя пользователя</label>
             <div class="relative">
@@ -42,7 +39,6 @@
                 <input type="text" name="username" class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Введите имя пользователя" required>
             </div>
         </div>
-        <!-- Поле для пароля -->
         <div class="mb-4">
             <label class="block text-gray-700 text-sm font-bold mb-2">Пароль</label>
             <div class="relative">
@@ -59,16 +55,30 @@
                 </span>
             </div>
         </div>
-        <!-- Кнопка входа -->
         <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
             Войти
         </button>
     </form>
-    <!-- Ссылка на регистрацию -->
     <p class="mt-4 text-center text-gray-600">
         Нет аккаунта?
         <a href="{% url 'register' %}" class="text-blue-600 hover:text-blue-700 font-semibold hover:underline">Зарегистрируйтесь</a>.
     </p>
+        <div class="flex items-center my-6">
+        <div class="flex-grow border-t border-gray-300"></div>
+        <span class="mx-4 text-gray-500">или</span>
+        <div class="flex-grow border-t border-gray-300"></div>
+    </div>
+        <!-- Кнопка входа через Telegram -->
+    <div class="mb-6 text-center">
+        <script async src="https://telegram.org/js/telegram-widget.js?22"
+                data-telegram-login="{{ telegram_bot_name }}"
+                data-size="large"
+                data-radius="10"
+                data-auth-url="{% url 'accounts:telegram_login' %}"
+                data-request-access="write"></script>
+        <p class="mt-2 text-sm text-gray-500">Быстрый и безопасный вход через Telegram</p>
+    </div>
 </div>
+
 <script src="{% static 'main/js/scripts.js' %}"></script>
 {% endblock %}

@@ -9,6 +9,7 @@ from accounts.views import (
     social_accounts,
     disconnect_social_account,
     verify_telegram_code,
+    telegram_login,
 )
 
 app_name = 'accounts'
@@ -23,4 +24,5 @@ urlpatterns = [
     path('profile/social/', social_accounts, name='social_accounts'),
     path('profile/social/disconnect/', disconnect_social_account, name='disconnect_social_account'),
     path('verify-telegram-code/', verify_telegram_code, name='verify_telegram_code'),
+    path('telegram-login/', telegram_login, name='telegram_login'),
 ]
