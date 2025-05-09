@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Управление социальными аккаунтами{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <!-- Заголовок -->
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
+            <h1 class="text-2xl font-bold text-white">Привязанные социальные аккаунты</h1>
+        </div>
+
+        <div class="p-6">
+            <!-- Привязанные аккаунты -->
+            <div class="space-y-6">
+                {% for account in accounts %}
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="{% if account.provider == 'telegram' %}bg-blue-100 text-blue-600{% elif account.provider == 'google' %}bg-red-100 text-red-600{% else %}bg-gray-100 text-gray-600{% endif %} rounded-full p-2 mr-3">
+                                {% if account.provider == 'telegram' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                                {% elif account.provider == 'google' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                </svg>
+                                {% else %}
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7" />
+                                </svg>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-gray-800">{{ account.get_provider_display }}</h3>
+                                <p class="text-sm text-gray-500">
+                                    {% if account.provider == 'telegram' %}
+                                    @{{ account.get_telegram_username }}
+                                    {% else %}
+                                    Привязан {{ account.created_at|date:"d.m.Y" }}
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                        <form method="post" action="{% url 'disconnect_social_account' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="account_id" value="{{ account.id }}">
+                            <button type="submit" class="text-red-600 hover:text-red-800 text-sm font-medium py-1.5 px-3 rounded-lg border border-red-200 hover:border-red-300 transition">
+                                Отвязать
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="bg-blue-50 p-4 rounded-lg text-center">
+                    <p class="text-blue-800">Нет привязанных социальных аккаунтов</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Telegram привязка -->
+            <div class="mt-8 border-t border-gray-200 pt-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Привязать Telegram</h2>
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="generate_telegram_token" value="1">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition">
+                        Сгенерировать код привязки
+                    </button>
+                </form>
+
+                {% if telegram_token %}
+                <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <p class="text-gray-700 mb-2">Ваш токен для привязки Telegram:</p>
+                    <code class="bg-gray-200 p-2 rounded">{{ telegram_token }}</code>
+                    <p class="text-sm text-gray-500 mt-2">Отправьте этот токен боту @{{ telegram_bot_name }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Кнопка возврата -->
+            <div class="mt-8">
+                <a href="{% url 'profile_edit' %}" class="inline-block bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition">
+                    ← Назад к редактированию профиля
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

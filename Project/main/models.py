@@ -26,6 +26,16 @@ class CustomUser(AbstractUser):
     def is_manager_or_higher(self):
         return self.role in ['MANAGER', 'ADMIN']
 
+    @property
+    def telegram_account(self):
+        """Получить привязанный Telegram аккаунт"""
+        return self.socialaccount_set.filter(provider='telegram').first()
+
+    @property
+    def has_telegram(self):
+        """Проверить наличие привязанного Telegram"""
+        return self.socialaccount_set.filter(provider='telegram').exists()
+
 
 class Profile(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='profile')

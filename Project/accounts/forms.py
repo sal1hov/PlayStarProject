@@ -5,6 +5,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from main.models import Child, Profile
+from .models import SocialAccount
 
 User = get_user_model()
 
@@ -161,9 +162,23 @@ class CustomPasswordChangeForm(PasswordChangeForm):
         for field in self.fields:
             self.fields[field].widget.attrs.update({'class': 'form-input'})
 
-
 def clean_email(self):
     email = self.cleaned_data.get('email')
     if User.objects.filter(email=email).exclude(pk=self.instance.pk).exists():
         raise ValidationError(_("Этот email уже используется другим пользователем"))
     return email
+
+class SocialAccountDisconnectForm(forms.Form):
+    account_id = forms.IntegerField(widget=forms.HiddenInput())
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_account_id(self):
+        account_id = self.cleaned_data['account_id']
+        try:
+            account = SocialAccount.objects.get(id=account_id, user=self.user)
+            return account
+        except SocialAccount.DoesNotExist:
+            raise forms.ValidationError(_("Социальный аккаунт не найден"))

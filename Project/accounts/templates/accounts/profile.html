@@ -9,16 +9,6 @@
     <div class="mb-8 text-center">
         <h1 class="text-4xl font-bold text-gray-900 mb-2">Добро пожаловать, {{ user.first_name }}!</h1>
         <p class="text-lg text-gray-600">Ваш личный кабинет</p>
-
-        {% if messages %}
-            <div class="mt-4 max-w-md mx-auto">
-                {% for message in messages %}
-                    <div class="p-4 bg-green-100 border-l-4 border-green-500 text-green-700 rounded">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
     </div>
 
     <div class="flex flex-col lg:flex-row gap-8">

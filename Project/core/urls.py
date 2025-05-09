@@ -1,4 +1,3 @@
-# core/urls.py
 from django.contrib import admin
 from django.urls import path, include
 from main.views import index, register, profile_view, logout_view
@@ -18,6 +17,6 @@ urlpatterns = [
     path('booking/<int:booking_id>/edit/', edit_booking, name='edit_booking'),
     path('booking/<int:booking_id>/delete/', delete_booking, name='delete_booking'),
     path('booking/<int:booking_id>/<str:action>/', manage_booking, name='manage_booking'),
-    # Добавьте эту строку для включения URL-паттернов из main.urls
     path('', include('main.urls')),
+
 ]

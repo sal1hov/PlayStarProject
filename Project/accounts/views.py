@@ -10,11 +10,26 @@ from .forms import UserUpdateForm, ProfileUpdateForm, ChildForm, EmailChangeForm
 from main.models import Profile, Child
 from bookings.models import Booking
 from bookings.forms import BookingForm
-from staff.models import Event  # Добавляем импорт модели Event
+from staff.models import Event
 from main.models import Child
 from django.utils.translation import gettext_lazy as _
 from django.views.decorators.http import require_POST, require_http_methods
+from django.urls import reverse
+from django.conf import settings
+from .models import SocialAccount
+from .forms import SocialAccountDisconnectForm
+import secrets
+import string
+import json
+from django.views.decorators.csrf import csrf_exempt
+from django.http import HttpResponse
+from django.utils import timezone
+from datetime import datetime
+import logging
+from social_django.models import UserSocialAuth
+import requests
 
+logger = logging.getLogger(__name__)
 
 @login_required
 def profile(request):
@@ -36,6 +51,9 @@ def profile_edit(request):
     profile, created = Profile.objects.get_or_create(user=user)
     children = profile.children.all()
 
+    # Оставляем только Telegram
+    telegram_account = SocialAccount.objects.filter(user=user, provider='telegram').first()
+
     if request.method == 'POST':
         user_form = UserUpdateForm(request.POST, instance=user)
         profile_form = ProfileUpdateForm(request.POST, instance=profile)
@@ -55,6 +73,8 @@ def profile_edit(request):
         'child_form': ChildForm(),
         'password_form': CustomPasswordChangeForm(user=request.user),
         'children': children,
+        'telegram_bot_name': getattr(settings, 'TELEGRAM_BOT_NAME', ''),
+        'telegram_account': telegram_account,
     }
     return render(request, 'accounts/profile_edit.html', context)
 
@@ -95,8 +115,6 @@ def change_password(request):
         'errors': form.errors.as_json()
     }, status=400)
 
-# Сотрудники
-
 def login_view(request):
     if request.method == 'POST':
         username = request.POST['username']
@@ -104,7 +122,7 @@ def login_view(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect(get_user_role_redirect(user))  # Перенаправление по роли
+            return redirect(get_user_role_redirect(user))
         else:
             return render(request, 'registration/login.html', {'error': 'Неверные данные'})
     return render(request, 'registration/login.html')
@@ -122,3 +140,92 @@ def change_email(request):
         'success': False,
         'errors': form.errors.as_json()
     }, status=400)
+
+@login_required
+def social_accounts(request):
+    # Оставляем только Telegram
+    telegram_accounts = SocialAccount.objects.filter(user=request.user, provider='telegram')
+
+    telegram_token = None
+    if request.method == 'POST' and 'generate_telegram_token' in request.POST:
+        alphabet = string.ascii_letters + string.digits
+        telegram_token = ''.join(secrets.choice(alphabet) for _ in range(32))
+        request.session['telegram_auth_token'] = telegram_token
+        messages.success(request, "Токен для привязки Telegram сгенерирован")
+
+    context = {
+        'telegram_accounts': telegram_accounts,
+        'telegram_token': telegram_token or request.session.get('telegram_auth_token'),
+        'telegram_bot_name': getattr(settings, 'TELEGRAM_BOT_NAME', ''),
+    }
+    return render(request, 'accounts/social_accounts.html', context)
+
+@login_required
+@require_POST
+def disconnect_social_account(request):
+    form = SocialAccountDisconnectForm(request.user, request.POST)
+    if form.is_valid():
+        account = form.cleaned_data['account_id']
+        if account.provider == 'telegram':
+            account.delete()
+            messages.success(request, "Telegram аккаунт успешно отвязан")
+        else:
+            messages.error(request, "Неизвестный провайдер аккаунта")
+
+        return redirect('accounts:profile_edit')  # Используем полное имя с namespace
+    else:
+        messages.error(request, "Ошибка при отвязке аккаунта")
+    return redirect('accounts:profile_edit')
+
+@login_required
+@require_POST
+def verify_telegram_code(request):
+    code = request.POST.get('code', '').strip()
+
+    try:
+        account = SocialAccount.objects.get(
+            provider='telegram_pending',
+            user__isnull=True,
+            extra_data__code=code
+        )
+
+        expires_at = datetime.fromisoformat(account.extra_data['expires_at'])
+        if timezone.now() > expires_at:
+            account.delete()
+            return JsonResponse({
+                'success': False,
+                'error': 'Срок действия кода истек'
+            }, status=400)
+
+        if SocialAccount.objects.filter(
+                provider='telegram',
+                uid=f"telegram_{account.extra_data['telegram_id']}"
+        ).exists():
+            account.delete()
+            return JsonResponse({
+                'success': False,
+                'error': 'Этот Telegram аккаунт уже привязан'
+            }, status=400)
+
+        account.user = request.user
+        account.provider = 'telegram'
+        account.uid = f"telegram_{account.extra_data['telegram_id']}"
+        account.extra_data['verified'] = True
+        account.save()
+
+        return JsonResponse({
+            'success': True,
+            'message': 'Telegram успешно привязан!'
+        })
+
+    except SocialAccount.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Неверный код подтверждения'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Ошибка при проверке кода: {str(e)}", exc_info=True)
+        return JsonResponse({
+            'success': False,
+            'error': 'Произошла ошибка при обработке кода'
+        }, status=500)

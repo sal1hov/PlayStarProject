@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'accounts',
     'bookings',
     'staff',
+    'telegram_bot',
 ]
 
 MIDDLEWARE = [
@@ -125,3 +126,13 @@ handler400 = 'your_project_name.views.bad_request'
 handler403 = 'your_project_name.views.permission_denied'
 handler404 = 'your_project_name.views.page_not_found'
 handler500 = 'your_project_name.views.server_error'
+
+# Telegram Bot Settings
+TELEGRAM_BOT_TOKEN = '7583679391:AAF2mlP0JLsli1SsCpmjZZ6b2_JnKSLuKOU'
+TELEGRAM_BOT_NAME = 'PlayStarAlmet_Bot'  # Без @
+TELEGRAM_AUTH_TIMEOUT = 300  # 5 минут в секундах
+
+# Authentication Backends
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
