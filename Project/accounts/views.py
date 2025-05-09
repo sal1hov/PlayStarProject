@@ -24,13 +24,15 @@ import json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.utils import timezone
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from social_django.models import UserSocialAuth
 import requests
 import hashlib
 import hmac
 from django.contrib.auth import get_user_model
+from .utils import generate_telegram_code, get_code_expiration
+
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -134,11 +136,14 @@ def login_view(request):
             return redirect(get_user_role_redirect(user))
         else:
             messages.error(request, 'Неверные данные для входа')
-            return render(request, 'registration/login.html', {'error': 'Неверные данные'})
-    return render(request, 'registration/login.html', {
-        'telegram_bot_name': getattr(settings, 'TELEGRAM_BOT_NAME', '')
-    })
+            return render(request, 'registration/login.html', {
+                'telegram_bot_name': settings.TELEGRAM_BOT_NAME,
+                'error': 'Неверные данные'
+            })
 
+    return render(request, 'registration/login.html', {
+        'telegram_bot_name': settings.TELEGRAM_BOT_NAME
+    })
 
 @login_required
 @require_POST
@@ -157,21 +162,18 @@ def change_email(request):
 
 @login_required
 def social_accounts(request):
-    telegram_accounts = SocialAccount.objects.filter(user=request.user, provider='telegram')
-
-    telegram_token = None
     if request.method == 'POST' and 'generate_telegram_token' in request.POST:
-        alphabet = string.ascii_letters + string.digits
-        telegram_token = ''.join(secrets.choice(alphabet) for _ in range(32))
-        request.session['telegram_auth_token'] = telegram_token
-        messages.success(request, "Токен для привязки Telegram сгенерирован")
+        code = generate_telegram_code()
+        expires_at = get_code_expiration()
 
-    context = {
-        'telegram_accounts': telegram_accounts,
-        'telegram_token': telegram_token or request.session.get('telegram_auth_token'),
-        'telegram_bot_name': getattr(settings, 'TELEGRAM_BOT_NAME', ''),
-    }
-    return render(request, 'accounts/social_accounts.html', context)
+        # Сохраняем в сессии
+        request.session['telegram_auth'] = {
+            'code': code,
+            'expires_at': expires_at.isoformat()
+        }
+
+        messages.success(request, f"Код для привязки: {code} (действителен до {expires_at.strftime('%H:%M')})")
+        return redirect('social_accounts')
 
 
 @login_required
@@ -251,70 +253,96 @@ def verify_telegram_code(request):
         }, status=500)
 
 
+def generate_telegram_code():
+    """Генерация 6-значного кода"""
+    return ''.join(secrets.choice(string.digits) for _ in range(6))
+
+
 @csrf_exempt
 def telegram_login(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            code = data.get('code')
 
-            # Проверка подписи (security)
-            bot_token = settings.TELEGRAM_BOT_TOKEN
-            data_check_string = '\n'.join(
-                f"{key}={value}"
-                for key, value in sorted(data.items())
-                if key != 'hash'
-            )
-            secret_key = hashlib.sha256(bot_token.encode()).digest()
-            computed_hash = hmac.new(
-                secret_key,
-                data_check_string.encode(),
-                hashlib.sha256
-            ).hexdigest()
+            # Ищем аккаунт по коду
+            try:
+                account = SocialAccount.objects.get(
+                    provider='telegram_pending',
+                    extra_data__code=code,
+                    extra_data__purpose='login'
+                )
+            except SocialAccount.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Неверный код подтверждения'
+                }, status=400)
 
-            if computed_hash != data['hash']:
-                return JsonResponse({'status': 'error', 'message': 'Invalid hash'}, status=403)
+            # Проверяем срок действия кода
+            expires_at = datetime.fromisoformat(account.extra_data['expires_at'])
+            if timezone.now() > expires_at:
+                account.delete()
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Срок действия кода истек'
+                }, status=400)
 
-            # Поиск или создание пользователя
-            telegram_id = data['id']
-            username = data.get('username', f'tg_{telegram_id}')
-            first_name = data.get('first_name', '')
-            last_name = data.get('last_name', '')
+            # Если аккаунт уже привязан к пользователю
+            if account.user:
+                user = account.user
+                login(request, user)
 
-            user, created = User.objects.get_or_create(
-                username=username,
-                defaults={
-                    'first_name': first_name,
-                    'last_name': last_name,
-                    'password': User.objects.make_random_password()
-                }
-            )
+                # Преобразуем временную запись в постоянную
+                telegram_id = account.extra_data['telegram_id']
+                account.provider = 'telegram'
+                account.uid = f"telegram_{telegram_id}"
+                account.extra_data['verified'] = True
+                account.save()
 
-            # Авторизация пользователя
-            login(request, user)
-
-            # Создаем или обновляем SocialAccount
-            SocialAccount.objects.update_or_create(
-                provider='telegram',
-                uid=f"telegram_{telegram_id}",
-                user=user,
-                defaults={
-                    'extra_data': {
-                        'username': data.get('username'),
-                        'first_name': first_name,
-                        'last_name': last_name,
-                        'photo_url': data.get('photo_url'),
-                        'auth_date': data.get('auth_date')
-                    }
-                }
-            )
-
-            return JsonResponse({
-                'status': 'success',
-                'redirect_url': get_user_role_redirect(user)
-            })
+                return JsonResponse({
+                    'success': True,
+                    'redirect': get_user_role_redirect(user)
+                })
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Аккаунт Telegram не привязан к пользователю'
+                }, status=400)
 
         except Exception as e:
-            logger.error(f"Telegram login error: {str(e)}", exc_info=True)
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+            logger.error(f"Ошибка при входе через Telegram: {str(e)}", exc_info=True)
+            return JsonResponse({
+                'success': False,
+                'error': 'Произошла ошибка'
+            }, status=500)
 
-    return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
+    return JsonResponse({'success': False, 'error': 'Неверный метод запроса'}, status=405)
+
+
+def start_telegram_login(request):
+    if request.method == 'POST':
+        try:
+            code = generate_telegram_code()
+            expires_at = timezone.now() + timedelta(minutes=5)
+
+            # Сохраняем в сессии
+            request.session['telegram_login'] = {
+                'code': code,
+                'expires_at': expires_at.isoformat()
+            }
+
+            return JsonResponse({
+                'success': True,
+                'code': code,
+                'expires_at': expires_at.isoformat()
+            })
+        except Exception as e:
+            logger.error(f"Ошибка при генерации кода: {str(e)}")
+            return JsonResponse({
+                'success': False,
+                'error': 'Произошла ошибка'
+            }, status=500)
+    return JsonResponse({'success': False, 'error': 'Неверный метод запроса'}, status=405)
+
+
+

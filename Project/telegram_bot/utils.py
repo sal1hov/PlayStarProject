@@ -1,10 +1,12 @@
-from django.conf import settings
-from asgiref.sync import sync_to_async
-from accounts.models import SocialAccount
+from django.utils import timezone
+from datetime import timedelta
+import secrets
+import string
 
-@sync_to_async
-def get_user_by_telegram_id(telegram_id):
-    try:
-        return SocialAccount.objects.get(provider='telegram', uid=str(telegram_id)).user
-    except SocialAccount.DoesNotExist:
-        return None
+def generate_telegram_code():
+    """Генерация 6-значного кода"""
+    return ''.join(secrets.choice(string.digits) for _ in range(6))
+
+def get_code_expiration():
+    """Получение времени истечения кода (текущее время + 5 минут)"""
+    return timezone.now() + timedelta(minutes=5)

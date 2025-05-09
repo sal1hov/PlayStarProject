@@ -1,16 +1,15 @@
-from django.db import models
+from django.utils import timezone
+from datetime import timedelta
 from django.conf import settings
+from django.db import models
 from django.contrib.auth import get_user_model
-from main.models import CustomUser
-import json
-from django import forms
 
 User = get_user_model()
 
 class SocialAccount(models.Model):
     PROVIDER_CHOICES = [
         ('telegram', 'Telegram'),
-        ('telegram_pending', 'Telegram (Pending)'),  # Добавлено для временных записей
+        ('telegram_pending', 'Telegram (Pending)'),
         ('google', 'Google'),
         ('vk', 'VKontakte'),
     ]
@@ -19,7 +18,7 @@ class SocialAccount(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='social_accounts',
-        null=True,  # Разрешаем NULL для временных записей
+        null=True,
         blank=True
     )
     provider = models.CharField(max_length=20, choices=PROVIDER_CHOICES)
@@ -44,17 +43,17 @@ class SocialAccount(models.Model):
     def get_telegram_username(self):
         return self.extra_data.get('username', '') if self.is_telegram else ''
 
-
-class SocialAccountDisconnectForm(forms.Form):
-    account_id = forms.IntegerField()
-
-    def __init__(self, user, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.user = user
-
-    def clean_account_id(self):
-        account_id = self.cleaned_data['account_id']
-        try:
-            return SocialAccount.objects.get(id=account_id, user=self.user)
-        except SocialAccount.DoesNotExist:
-            raise forms.ValidationError("Аккаунт не найден")
+    @classmethod
+    def create_pending_telegram_account(cls, telegram_id, code, purpose='login', user=None):
+        """Создает временную запись для входа/привязки Telegram"""
+        return cls.objects.create(
+            provider='telegram_pending',
+            uid=f"telegram_{telegram_id}",
+            user=user,
+            extra_data={
+                'code': code,
+                'telegram_id': telegram_id,
+                'expires_at': (timezone.now() + timedelta(minutes=5)).isoformat(),
+                'purpose': purpose
+            }
+        )

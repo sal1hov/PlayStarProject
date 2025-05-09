@@ -1,125 +1,86 @@
-// Функция для показа/скрытия пароля
-function togglePasswordVisibility(fieldId) {
-    const passwordField = document.getElementById(fieldId);
-    if (passwordField.type === "password") {
-        passwordField.type = "text";
-    } else {
-        passwordField.type = "password";
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('tgModal');
+    const openBtn = document.getElementById('tgLoginBtn');
+    const closeBtn = document.getElementById('closeModal');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const codeInput = document.getElementById('tgCode');
+
+    // Функция открытия модального окна
+    function openModal() {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        codeInput && codeInput.focus();
     }
-}
 
-// Функция для проверки, содержит ли строка только буквы и пробелы
-function validateName(input) {
-    const regex = /^[A-Za-zА-Яа-я\s]+$/;
-    return regex.test(input);
-}
+    // Функция закрытия модального окна
+    function closeModal() {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
 
-// Функция для проверки, содержит ли строка только цифры
-function validateNumber(input) {
-    const regex = /^\d+$/;
-    return regex.test(input);
-}
+    // Обработчики событий
+    if (openBtn) openBtn.addEventListener('click', openModal);
+    if (closeBtn) closeBtn.addEventListener('click', closeModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
-// Функция для проверки номера телефона в формате +7XXXXXXXXXX
-function validatePhoneNumber(input) {
-    const regex = /^\+7\d{10}$/;
-    return regex.test(input);
-}
-
-// Функция для отображения уведомления с использованием SweetAlert2
-function showNotification(message) {
-    Swal.fire({
-        icon: 'error',  // Тип иконки
-        title: 'Ошибка',  // Заголовок уведомления
-        text: message,  // Текст уведомления
-        confirmButtonText: 'OK',  // Текст кнопки
-        confirmButtonColor: '#3b82f6',  // Цвет кнопки (синий)
+    // Закрытие по клику вне окна
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) closeModal();
     });
-}
 
-// Валидация полей при отправке формы
-document.querySelector('form').addEventListener('submit', function (event) {
-    const firstName = document.getElementById('id_first_name').value;
-    const lastName = document.getElementById('id_last_name').value;
-    const childName = document.getElementById('id_child_name').value;
-    const childAge = document.getElementById('id_child_age').value;
-    const phoneNumber = document.getElementById('id_phone_number').value;
+    // Закрытие по ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && modal.style.display === 'flex') {
+            closeModal();
+        }
+    });
 
-    // Валидация имени
-    if (!validateName(firstName)) {
-        showNotification('Имя может содержать только буквы и пробелы.');
-        event.preventDefault();
-        return;
+    // Обработчик подтверждения кода
+    if (confirmBtn && codeInput) {
+        confirmBtn.addEventListener('click', async function() {
+            const code = codeInput.value.trim();
+
+            if (!/^\d{6}$/.test(code)) {
+                alert('Пожалуйста, введите 6-значный цифровой код');
+                codeInput.focus();
+                return;
+            }
+
+            try {
+                const response = await fetch('/accounts/telegram-login/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({ code: code })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    window.location.href = data.redirect || '/';
+                } else {
+                    throw new Error(data.error || 'Неверный код подтверждения');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message);
+                codeInput.focus();
+            }
+        });
     }
 
-    // Валидация фамилии
-    if (!validateName(lastName)) {
-        showNotification('Фамилия может содержать только буквы и пробелы.');
-        event.preventDefault();
-        return;
+    // Вспомогательная функция для получения CSRF токена
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
     }
 
-    // Валидация имени ребёнка
-    if (!validateName(childName)) {
-        showNotification('Имя ребёнка может содержать только буквы и пробелы.');
-        event.preventDefault();
-        return;
-    }
-
-    // Валидация возраста ребёнка
-    if (!validateNumber(childAge)) {
-        showNotification('Возраст ребёнка может содержать только цифры.');
-        event.preventDefault();
-        return;
-    }
-
-    // Валидация номера телефона
-    if (!validatePhoneNumber(phoneNumber)) {
-        showNotification('Номер телефона должен быть в формате +7XXXXXXXXXX.');
-        event.preventDefault();
-        return;
-    }
-});
-
-// Валидация в реальном времени для имени, фамилии и имени ребёнка
-document.getElementById('id_first_name').addEventListener('input', function () {
-    if (!validateName(this.value)) {
-        this.setCustomValidity('Имя может содержать только буквы и пробелы.');
-    } else {
-        this.setCustomValidity('');
-    }
-});
-
-document.getElementById('id_last_name').addEventListener('input', function () {
-    if (!validateName(this.value)) {
-        this.setCustomValidity('Фамилия может содержать только буквы и пробелы.');
-    } else {
-        this.setCustomValidity('');
-    }
-});
-
-document.getElementById('id_child_name').addEventListener('input', function () {
-    if (!validateName(this.value)) {
-        this.setCustomValidity('Имя ребёнка может содержать только буквы и пробелы.');
-    } else {
-        this.setCustomValidity('');
-    }
-});
-
-// Валидация в реальном времени для возраста ребёнка
-document.getElementById('id_child_age').addEventListener('input', function () {
-    if (!validateNumber(this.value)) {
-        this.setCustomValidity('Возраст ребёнка может содержать только цифры.');
-    } else {
-        this.setCustomValidity('');
-    }
-});
-
-// Валидация в реальном времени для номера телефона
-document.getElementById('id_phone_number').addEventListener('input', function () {
-    if (!validatePhoneNumber(this.value)) {
-        this.setCustomValidity('Номер телефона должен быть в формате +7XXXXXXXXXX.');
-    } else {
-        this.setCustomValidity('');
-    }
+    // Для отладки
+    window.debugModal = {
+        open: openModal,
+        close: closeModal
+    };
 });

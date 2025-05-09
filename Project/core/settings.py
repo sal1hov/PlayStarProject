@@ -1,6 +1,7 @@
 # settings.py
 import os
 from pathlib import Path
+from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -29,6 +30,7 @@ INSTALLED_APPS = [
     'bookings',
     'staff',
     'telegram_bot',
+    'social_django'
 ]
 
 MIDDLEWARE = [
@@ -39,6 +41,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'csp.middleware.CSPMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -136,3 +139,10 @@ TELEGRAM_AUTH_TIMEOUT = 300  # 5 минут в секундах
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+CELERY_BEAT_SCHEDULE = {
+    'cleanup_telegram_codes': {
+        'task': 'accounts.tasks.cleanup_expired_codes',
+        'schedule': timedelta(minutes=30),  # Запускать каждые 30 минут
+    },
+}
