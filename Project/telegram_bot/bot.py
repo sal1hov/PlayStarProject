@@ -1,4 +1,7 @@
 import logging
+import random
+from datetime import timedelta
+
 from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
@@ -11,24 +14,26 @@ from django.conf import settings
 from asgiref.sync import sync_to_async
 from accounts.models import SocialAccount
 from django.utils import timezone
-from datetime import timedelta
-import random
 
 logger = logging.getLogger(__name__)
+
 
 def run_bot():
     """Функция для прямого запуска бота"""
     application = setup_bot()
     application.run_polling()
 
+
 if __name__ == '__main__':
     run_bot()
+
 
 def check_settings():
     required_settings = ['TELEGRAM_BOT_TOKEN']
     for setting in required_settings:
         if not getattr(settings, setting, None):
             raise ValueError(f"Необходимо указать {setting} в настройках Django")
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
@@ -52,15 +57,15 @@ async def login_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
 
-        # Удаляем старые записи для этого пользователя
-        await sync_to_async(SocialAccount.objects.filter(
-            provider='telegram_pending',
-            uid=f"telegram_{user.id}",
-            extra_data__purpose='login'
-        ).delete)()
+        await sync_to_async(
+            SocialAccount.objects.filter(
+                provider='telegram_pending',
+                uid=f"telegram_{user.id}"
+            ).delete,
+            thread_sensitive=True
+        )()
 
-        # Создаем новую запись
-        await sync_to_async(SocialAccount.create_pending_telegram_account)(
+        await sync_to_async(SocialAccount.create_pending_telegram_account, thread_sensitive=True)(
             telegram_id=user.id,
             code=code,
             purpose='login'
@@ -87,13 +92,15 @@ async def bind_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         code = ''.join([str(random.randint(0, 9)) for _ in range(6)])
         expires_at = timezone.now() + timedelta(minutes=5)
 
-        await sync_to_async(SocialAccount.objects.filter(
-            provider='telegram_pending',
-            uid=f"telegram_{user.id}",
-            extra_data__purpose='bind'
-        ).delete)()
+        await sync_to_async(
+            SocialAccount.objects.filter(
+                provider='telegram_pending',
+                uid=f"telegram_{user.id}"
+            ).delete,
+            thread_sensitive=True
+        )()
 
-        await sync_to_async(SocialAccount.objects.create)(
+        await sync_to_async(SocialAccount.objects.create, thread_sensitive=True)(
             provider='telegram_pending',
             uid=f"telegram_{user.id}",
             extra_data={
