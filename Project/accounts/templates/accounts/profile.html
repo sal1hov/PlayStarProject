@@ -79,7 +79,7 @@
                                             <p class="text-sm text-gray-500">{{ child.age }} лет</p>
                                         </div>
                                     </div>
-                                    <form action="{% url 'delete_child' child.id %}" method="post">
+                                    <form action="{% url 'accounts:delete_child' child.id %}" method="post">
                                         {% csrf_token %}
                                         <button type="submit" class="text-red-400 hover:text-red-600">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
