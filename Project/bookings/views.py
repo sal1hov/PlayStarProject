@@ -134,15 +134,20 @@ def delete_booking(request, booking_id):
 def create_booking(request):
     if request.method == 'POST':
         try:
-            form = BookingForm(request.POST, enforce_future_date=True, exclude_status=True)
-
+            form = BookingForm(request.POST, enforce_future_date=True)
             if form.is_valid():
                 booking = form.save(commit=False)
                 booking.user = request.user
                 booking.status = 'pending'
-                booking.save()
 
-                # Убрано создание нового мероприятия
+                # Обработка специальных полей
+                booking_type = form.cleaned_data.get('booking_type')
+                if booking_type == 'other':
+                    booking.event_name = form.cleaned_data.get('custom_type')
+                else:
+                    booking.event_name = booking.get_booking_type_display()
+
+                booking.save()
                 return JsonResponse({
                     'success': True,
                     'message': 'Бронирование успешно создано! Ожидайте звонка от менеджера.'

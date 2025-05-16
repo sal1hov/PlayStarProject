@@ -71,7 +71,11 @@ class EventForm(forms.ModelForm):
 class IncomeForm(forms.ModelForm):
     class Meta:
         model = Booking
-        fields = ['event_name', 'paid_amount', 'status']  # Исправлено amount → paid_amount
+        fields = ['paid_amount', 'status']  # Удалено event_name
+        labels = {
+            'paid_amount': 'Сумма оплаты',
+            'status': 'Статус'
+        }
 
 
 class ShiftRequestForm(forms.ModelForm):

@@ -1,27 +1,29 @@
 {% extends 'base.html' %}
-{% load group_check %}
+{% load group_check static %}
 
 {% block title %}Профиль пользователя{% endblock %}
 
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'accounts/css/style.css' %}">
+{% endblock %}
+
 {% block content %}
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <!-- Заголовок и уведомления -->
+    <!-- Заголовок -->
     <div class="mb-8 text-center">
         <h1 class="text-4xl font-bold text-white mb-2">Добро пожаловать, {{ user.first_name }}!</h1>
         <p class="text-lg text-white">Ваш личный кабинет</p>
     </div>
 
     <div class="flex flex-col lg:flex-row gap-8">
-        <!-- Левая часть: Информация о профиле -->
+        <!-- Левая колонка - Профиль -->
         <div class="w-full lg:w-1/3 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <!-- Заголовок карточки -->
             <div class="bg-gradient-to-r from-blue-500 to-blue-600 px-6 py-4">
                 <h2 class="text-xl font-semibold text-white">Мой профиль</h2>
             </div>
 
-            <!-- Содержимое профиля -->
             <div class="p-6">
-                <!-- Аватар и основная информация -->
+                <!-- Аватар -->
                 <div class="flex items-center space-x-4 mb-6">
                     <div class="flex-shrink-0">
                         <div class="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-2xl font-bold">
@@ -34,12 +36,12 @@
                     </div>
                 </div>
 
-                <!-- Детали профиля -->
+                <!-- Контактная информация -->
                 <div class="space-y-4">
                     <div class="flex items-start">
                         <div class="flex-shrink-0 h-6 w-6 text-blue-500">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                             </svg>
                         </div>
                         <div class="ml-3">
@@ -51,7 +53,7 @@
                     <div class="flex items-start">
                         <div class="flex-shrink-0 h-6 w-6 text-blue-500">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                             </svg>
                         </div>
                         <div class="ml-3">
@@ -71,7 +73,7 @@
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-10 w-10 rounded-full bg-pink-100 flex items-center justify-center text-pink-600">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                                             </svg>
                                         </div>
                                         <div class="ml-3">
@@ -83,7 +85,7 @@
                                         {% csrf_token %}
                                         <button type="submit" class="text-red-400 hover:text-red-600">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                             </svg>
                                         </button>
                                     </form>
@@ -95,12 +97,10 @@
                     {% endif %}
                 </div>
 
-                <!-- История удаленных бронирований -->
+                <!-- История удалений -->
                 <div class="mt-8" id="deletedBookingsHistory" style="display: none;">
                     <h4 class="text-lg font-medium text-gray-900 mb-4">Последние действия</h4>
-                    <div id="deletedBookingsList" class="space-y-2">
-                        <!-- Здесь будут появляться удаленные бронирования -->
-                    </div>
+                    <div id="deletedBookingsList" class="space-y-2"></div>
                 </div>
 
                 <!-- Кнопки действий -->
@@ -108,7 +108,6 @@
                     <a href="{% url 'accounts:profile_edit' %}" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700">
                         Редактировать профиль
                     </a>
-
                     {% if user.is_authenticated %}
                         {% if user|has_group:'Admin' or user.is_superuser %}
                             <a href="{% url 'admin_dashboard' %}" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">
@@ -128,7 +127,7 @@
             </div>
         </div>
 
-        <!-- Правая часть: Объединенный список бронирований и мероприятий -->
+        <!-- Правая колонка - Бронирования -->
         <div class="w-full lg:w-2/3 space-y-6">
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div class="p-6">
@@ -136,7 +135,7 @@
                         <h3 class="text-lg font-medium text-gray-900">Мои записи</h3>
                         <button onclick="openBookingModal()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
                             <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                             </svg>
                             Новое бронирование
                         </button>
@@ -144,7 +143,6 @@
 
                     {% if bookings or user_events %}
                         <div class="space-y-4">
-                            <!-- Бронирования -->
                             {% for booking in bookings %}
                             <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                                 <div class="flex justify-between items-start">
@@ -153,11 +151,17 @@
                                             <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5 rounded mr-2">
                                                 Бронирование
                                             </span>
-                                            <h4 class="text-lg font-medium text-gray-900">{{ booking.event_name }}</h4>
+                                            <h4 class="text-lg font-medium text-gray-900">
+                                                {% if booking.booking_type == 'other' %}
+                                                    {{ booking.custom_type }}
+                                                {% else %}
+                                                    {{ booking.get_booking_type_display }}
+                                                {% endif %}
+                                            </h4>
                                         </div>
                                         <div class="text-sm text-gray-500 mb-2">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                             </svg>
                                             {{ booking.event_date|date:"d.m.Y H:i" }}
                                         </div>
@@ -176,6 +180,15 @@
                                     <div class="text-sm text-gray-500">
                                         <span class="font-medium">{{ booking.children_count }}</span> ребенок(а)
                                     </div>
+                                    {% if booking.location %}
+                                    <div class="text-sm text-gray-500">
+                                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                        </svg>
+                                        {{ booking.location|truncatechars:30 }}
+                                    </div>
+                                    {% endif %}
                                     <div class="flex space-x-2">
                                         {% if booking.status == 'pending' %}
                                             <form action="{% url 'delete_booking' booking.id %}" method="post" class="delete-booking-form">
@@ -192,7 +205,6 @@
                             </div>
                             {% endfor %}
 
-                            <!-- Мероприятия -->
                             {% for event in user_events %}
                             <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow bg-blue-50">
                                 <div class="flex justify-between items-start">
@@ -205,14 +217,14 @@
                                         </div>
                                         <div class="text-sm text-gray-500 mb-2">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                                             </svg>
                                             {{ event.get_location_display }}
                                         </div>
                                         <div class="text-sm text-gray-500">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="inline h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                             </svg>
                                             {{ event.date|date:"d.m.Y H:i" }}
                                         </div>
@@ -245,14 +257,14 @@
                     {% else %}
                         <div class="text-center py-12">
                             <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                             </svg>
                             <h3 class="mt-2 text-sm font-medium text-gray-900">Нет записей</h3>
                             <p class="mt-1 text-sm text-gray-500">Забронируйте мероприятие или запишитесь на событие.</p>
                             <div class="mt-6">
                                 <button onclick="openBookingModal()" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                                     </svg>
                                     Новое бронирование
                                 </button>
@@ -262,7 +274,7 @@
                 </div>
             </div>
 
-            <!-- Блок бонусной программы -->
+            <!-- Бонусная программа -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div class="p-6">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Программа лояльности</h3>
@@ -274,7 +286,7 @@
                         <a href="#" class="mt-3 inline-flex items-center text-blue-600 hover:text-blue-800">
                             Узнать больше
                             <svg xmlns="http://www.w3.org/2000/svg" class="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
                         </a>
                     </div>
@@ -284,72 +296,121 @@
     </div>
 </div>
 
-<!-- Модальное окно для создания бронирования -->
-<div id="bookingModal" class="fixed z-50 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeModal()"></div>
+<!-- Модальное окно бронирования -->
+<div id="bookingModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="flex items-end justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 transition-opacity bg-gray-900/60" aria-hidden="true" onclick="closeModal()"></div>
 
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div class="sm:flex sm:items-start">
-                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6" id="modal-title">
-                            Новое бронирование
-                        </h3>
-                        <form id="bookingForm" method="post" action="{% url 'create_booking' %}">
-                            {% csrf_token %}
-                            <div class="space-y-4">
-                                <div>
-                                    <label for="id_event_name" class="block text-sm font-medium text-gray-700">Тип мероприятия</label>
-                                    <select id="id_event_name" name="event_name" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                                        <option value="День рождения">День рождения</option>
-                                        <option value="Выездная анимация">Выездная анимация</option>
-                                        <option value="VR-арена">VR-арена</option>
-                                        <option value="Индивидуальное занятие">Индивидуальное занятие</option>
-                                        <option value="Другое">Другое</option>
-                                    </select>
-                                </div>
+        <div class="inline-block w-full overflow-hidden text-left align-bottom transition-all transform bg-white rounded-2xl shadow-xl sm:my-8 sm:align-middle sm:max-w-xl sm:w-full">
+            <!-- Шапка модалки -->
+            <div class="px-6 pt-6 pb-4 bg-gradient-to-r from-blue-500 to-purple-600">
+                <h3 class="text-2xl font-bold text-white">🎉 Новое бронирование</h3>
+                <p class="mt-1 text-blue-100">Заполните форму для создания новой записи</p>
+            </div>
 
-                                <div>
-                                    <label for="id_event_date" class="block text-sm font-medium text-gray-700">Дата</label>
-                                    <input type="date" id="id_event_date" name="event_date" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                                </div>
+            <!-- Тело формы -->
+            <form id="bookingForm" method="post" action="{% url 'create_booking' %}" class="px-6 py-4 space-y-6">
+                {% csrf_token %}
 
-                                <div>
-                                    <label for="id_children_count" class="block text-sm font-medium text-gray-700">Количество детей</label>
-                                    <select id="id_children_count" name="children_count" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                                        <option value="1">1 ребенок</option>
-                                        <option value="2">2 ребенка</option>
-                                        <option value="3">3 ребенка</option>
-                                        <option value="4">4 ребенка</option>
-                                        <option value="5">5+ детей</option>
-                                    </select>
-                                </div>
+                <div class="space-y-4">
+                    <!-- Тип мероприятия -->
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            <svg class="inline w-5 h-5 mr-1 -mt-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                            </svg>
+                            Тип мероприятия
+                        </label>
+                        <div class="relative">
+                            <select id="id_booking_type" name="booking_type" class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10">
+                                <option value="birthday">День рождения</option>
+                                <option value="animation">Выездная анимация</option>
+                                <option value="vr">VR-арена</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+                    </div>
 
-                                <div>
-                                    <label for="id_comment" class="block text-sm font-medium text-gray-700">Комментарий</label>
-                                    <textarea id="id_comment" name="comment" rows="3" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md" placeholder="Особые пожелания, аллергии и т.д."></textarea>
-                                </div>
-                            </div>
+                    <!-- Дата и время -->
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            <svg class="inline w-5 h-5 mr-1 -mt-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            Дата и время
+                        </label>
+                        <input type="datetime-local" id="id_event_date" name="event_date"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            min="{{ today }}" required>
+                    </div>
 
-                            <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                                <button type="submit" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2 sm:text-sm">
-                                    Забронировать
-                                </button>
-                                <button type="button" onclick="closeModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:col-start-1 sm:text-sm">
-                                    Отмена
-                                </button>
-                            </div>
-                        </form>
+                    <!-- Количество детей -->
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            <svg class="inline w-5 h-5 mr-1 -mt-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                            Количество детей
+                        </label>
+                        <input type="number" id="id_children_count" name="children_count" min="1"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
+                    </div>
+
+                    <!-- Дополнительные поля -->
+                    <div id="locationField" class="hidden animate-slideDown">
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            <svg class="inline w-5 h-5 mr-1 -mt-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            Адрес проведения
+                        </label>
+                        <input type="text" id="id_location" name="location"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <div id="customTypeField" class="hidden animate-slideDown">
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            <svg class="inline w-5 h-5 mr-1 -mt-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                            Укажите тип
+                        </label>
+                        <input type="text" id="id_custom_type" name="custom_type"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+
+                    <!-- Комментарий -->
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-gray-700">
+                            <svg class="inline w-5 h-5 mr-1 -mt-1 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+                            </svg>
+                            Комментарий
+                        </label>
+                        <textarea id="id_comment" name="comment" rows="3"
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            placeholder="Напишите особые пожелания, аллергии или другую важную информацию"></textarea>
                     </div>
                 </div>
-            </div>
+
+                <!-- Кнопки формы -->
+                <div class="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                    <button type="button" onclick="closeModal()"
+                        class="w-full px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 sm:w-auto">
+                        Отменить
+                    </button>
+                    <button type="submit"
+                        class="w-full px-6 py-3 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 sm:w-auto">
+                        Подтвердить бронирование
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
-
 <script>
     // Управление модальным окном
     function openBookingModal() {
@@ -362,6 +423,58 @@
         document.body.classList.remove('overflow-hidden');
     }
 
+    // Динамическое управление полями
+    document.addEventListener('DOMContentLoaded', function() {
+        const bookingType = document.getElementById('id_booking_type');
+        const locationField = document.getElementById('locationField');
+        const customTypeField = document.getElementById('customTypeField');
+        const childrenCount = document.getElementById('id_children_count');
+
+        function updateFormFields() {
+            locationField.classList.toggle('hidden', bookingType.value !== 'animation');
+            customTypeField.classList.toggle('hidden', bookingType.value !== 'other');
+
+            switch(bookingType.value) {
+                case 'birthday':
+                    childrenCount.max = 25;
+                    childrenCount.title = 'Максимум 25 детей';
+                    break;
+                case 'vr':
+                    childrenCount.max = 10;
+                    childrenCount.title = 'Максимум 10 участников';
+                    break;
+                default:
+                    childrenCount.removeAttribute('max');
+                    childrenCount.title = '';
+            }
+
+            if(bookingType.value !== 'animation') document.getElementById('id_location').value = '';
+            if(bookingType.value !== 'other') document.getElementById('id_custom_type').value = '';
+        }
+
+        bookingType.addEventListener('change', updateFormFields);
+        updateFormFields();
+    });
+
+    // Валидация при отправке формы
+    document.getElementById('bookingForm').addEventListener('submit', function(e) {
+        const bookingType = document.getElementById('id_booking_type').value;
+        const childrenCount = document.getElementById('id_children_count');
+        const childrenValue = parseInt(childrenCount.value);
+
+        if(bookingType === 'birthday' && childrenValue > 25) {
+            e.preventDefault();
+            showNotification('error', 'Для Дня рождения максимальное количество детей - 25');
+            childrenCount.focus();
+        }
+
+        if(bookingType === 'vr' && childrenValue > 10) {
+            e.preventDefault();
+            showNotification('error', 'Для VR-арены максимальное количество участников - 10');
+            childrenCount.focus();
+        }
+    });
+
     // Обработка отправки формы через AJAX
     document.getElementById('bookingForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -370,7 +483,6 @@
         const submitButton = this.querySelector('button[type="submit"]');
         const originalButtonText = submitButton.textContent;
 
-        // Показываем индикатор загрузки
         submitButton.disabled = true;
         submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Обработка...';
 
@@ -384,15 +496,10 @@
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Показываем уведомление об успехе
                 showNotification('success', data.message);
-                // Закрываем модальное окно и обновляем страницу
                 closeModal();
-                setTimeout(() => {
-                    location.reload();
-                }, 1500);
+                setTimeout(() => location.reload(), 1500);
             } else {
-                // Показываем ошибки валидации
                 let errorMessage = data.message || 'Произошла ошибка';
                 if (data.errors) {
                     errorMessage += '\n\n';
@@ -408,11 +515,36 @@
             showNotification('error', 'Произошла ошибка при отправке формы.');
         })
         .finally(() => {
-            // Восстанавливаем кнопку
             submitButton.disabled = false;
             submitButton.textContent = originalButtonText;
         });
     });
+
+    // Функция для показа уведомлений
+    function showNotification(type, message) {
+        const types = {
+            'success': { bg: 'bg-green-50', text: 'text-green-800', icon: 'text-green-400' },
+            'error': { bg: 'bg-red-50', text: 'text-red-800', icon: 'text-red-400' }
+        };
+
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 rounded-md ${types[type].bg} p-4 shadow-lg max-w-sm`;
+        notification.innerHTML = `
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 ${types[type].icon}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="${type === 'success' ? 'M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' : 'M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'}" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium ${types[type].text}">${message}</p>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 5000);
+    }
 
     // Обработка удаления бронирований
     document.querySelectorAll('.delete-booking-form').forEach(form => {
@@ -441,12 +573,8 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        // Добавляем запись об удалении в историю
                         addDeletedBookingToHistory(bookingName, bookingDate);
-
-                        // Показываем уведомление об успехе
                         showNotification('success', data.message);
-                        // Обновляем страницу через 1 секунду
                         setTimeout(() => location.reload(), 1000);
                     } else {
                         showNotification('error', data.message || 'Ошибка при удалении');
@@ -486,39 +614,11 @@
 
         historyList.prepend(deletedItem);
 
-        // Ограничиваем количество записей в истории (например, 5 последних)
         if (historyList.children.length > 5) {
             historyList.removeChild(historyList.lastChild);
         }
 
-        // Показываем блок истории, если он был скрыт
         document.getElementById('deletedBookingsHistory').style.display = 'block';
-    }
-
-    // Функция для показа уведомлений
-    function showNotification(type, message) {
-        const types = {
-            'success': { bg: 'bg-green-50', text: 'text-green-800', icon: 'text-green-400' },
-            'error': { bg: 'bg-red-50', text: 'text-red-800', icon: 'text-red-400' }
-        };
-
-        const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 z-50 rounded-md ${types[type].bg} p-4 shadow-lg max-w-sm`;
-        notification.innerHTML = `
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <svg class="h-5 w-5 ${types[type].icon}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd" d="${type === 'success' ? 'M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' : 'M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z'}" clip-rule="evenodd" />
-                    </svg>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm font-medium ${types[type].text}">${message}</p>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(notification);
-        setTimeout(() => notification.remove(), 5000);
     }
 </script>
 {% endblock %}

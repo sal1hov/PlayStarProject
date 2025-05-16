@@ -199,3 +199,28 @@ function setupFormValidation() {
         });
     }
 }
+
+// Валидация количества детей в реальном времени
+document.getElementById('id_children_count').addEventListener('input', function() {
+    const bookingType = document.getElementById('id_booking_type').value;
+    const value = parseInt(this.value);
+
+    if(bookingType === 'birthday' && value > 25) {
+        this.setCustomValidity('Максимум 25 детей для Дня рождения');
+    }
+    else if(bookingType === 'vr' && value > 10) {
+        this.setCustomValidity('Максимум 10 участников для VR-арены');
+    }
+    else {
+        this.setCustomValidity('');
+    }
+});
+
+// Динамическое обновление заголовка бронирования
+document.getElementById('id_booking_type').addEventListener('change', function() {
+    const eventNameField = document.querySelector('[data-event-name]');
+    if(eventNameField) {
+        const selectedOption = this.options[this.selectedIndex].text;
+        eventNameField.textContent = selectedOption;
+    }
+});

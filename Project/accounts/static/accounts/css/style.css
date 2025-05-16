@@ -1,44 +1,83 @@
-    input, select, textarea {
-        width: 100%;
-        padding: 0.75rem;
-        border: 1px solid #d1d5db;
-        border-radius: 0.5rem;
-        font-size: 1rem;
-        color: #374151;
-        transition: border-color 0.2s, box-shadow 0.2s;
-    }
+input, select, textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    font-size: 1rem;
+    color: #374151;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
 
-    input:focus, select:focus, textarea:focus {
-        outline: none;
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
 
-    .errorlist {
-        color: #ef4444;
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
-    }
+.errorlist {
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
 
-    .bg-pink-100 {
-        background-color: #fce7f3;
-    }
-    .text-pink-600 {
-        color: #db2777;
-    }
-    .bg-blue-100 {
-        background-color: #dbeafe;
-    }
-    .text-blue-600 {
-        color: #2563eb;
-    }
-    .bg-red-100 {
-        background-color: #fee2e2;
-    }
-    .text-red-600 {
-        color: #dc2626;
-    }
-    code {
-        font-family: monospace;
-        font-size: 0.9em;
-    }
+.bg-pink-100 {
+    background-color: #fce7f3;
+}
+.text-pink-600 {
+    color: #db2777;
+}
+.bg-blue-100 {
+    background-color: #dbeafe;
+}
+.text-blue-600 {
+    color: #2563eb;
+}
+.bg-red-100 {
+    background-color: #fee2e2;
+}
+.text-red-600 {
+    color: #dc2626;
+}
+code {
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.animate-slideDown {
+    animation: slideDown 0.3s ease-out;
+}
+
+/* Кастомизация элементов формы */
+select {
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3e%3cpath d='M6 9l6 6 6-6'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.25rem;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    padding-right: 2.5rem;
+}
+
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.5);
+    padding: 0.25rem;
+    cursor: pointer;
+}
+
+input[type="datetime-local"]::-webkit-inner-spin-button {
+    display: none;
+}
+
+/* Firefox */
+input[type="datetime-local"]::-moz-calendar-picker-indicator {
+    filter: invert(0.5);
+}
+
+input[type="datetime-local"]::-moz-clear {
+    display: none;
+}

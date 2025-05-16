@@ -1,15 +1,78 @@
 <div class="p-6 bg-white rounded-lg shadow-lg">
     <h2 class="text-2xl font-bold text-gray-800 mb-4">Просмотр бронирования</h2>
     {% if booking %}
-        <p class="text-gray-700"><strong>Имя клиента:</strong> {{ booking.user.first_name }} {{ booking.user.last_name }}</p>
-        <p class="text-gray-700"><strong>Логин:</strong> {{ booking.user.username }}</p>
-        <p class="text-gray-700"><strong>Количество детей:</strong> {{ booking.children_count }}</p>
-        <!-- При необходимости добавьте другие поля бронирования -->
+        <div class="space-y-3">
+            <p class="text-gray-700">
+                <strong>Тип бронирования:</strong>
+                {% if booking.booking_type == 'other' %}
+                    {{ booking.custom_type }}
+                {% else %}
+                    {{ booking.get_booking_type_display }}
+                {% endif %}
+            </p>
+
+            <p class="text-gray-700">
+                <strong>Дата и время:</strong>
+                {{ booking.event_date|date:"d.m.Y H:i" }}
+            </p>
+
+            <p class="text-gray-700">
+                <strong>Клиент:</strong>
+                {{ booking.user.get_full_name }} ({{ booking.user.username }})
+            </p>
+
+            <p class="text-gray-700">
+                <strong>Телефон:</strong>
+                {{ booking.user.phone_number }}
+            </p>
+
+            <p class="text-gray-700">
+                <strong>Количество детей:</strong>
+                {{ booking.children_count }}
+            </p>
+
+            {% if booking.location %}
+            <p class="text-gray-700">
+                <strong>Местоположение:</strong>
+                {{ booking.location }}
+            </p>
+            {% endif %}
+
+            {% if booking.comment %}
+            <p class="text-gray-700">
+                <strong>Комментарий:</strong>
+                {{ booking.comment }}
+            </p>
+            {% endif %}
+
+            <p class="text-gray-700">
+                <strong>Статус:</strong>
+                <span class="px-2 py-1 rounded
+                    {% if booking.status == 'approved' %}bg-green-100 text-green-800
+                    {% elif booking.status == 'pending' %}bg-yellow-100 text-yellow-800
+                    {% elif booking.status == 'rejected' %}bg-red-100 text-red-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ booking.get_status_display }}
+                </span>
+            </p>
+
+            <p class="text-gray-700">
+                <strong>Предоплата:</strong>
+                {% if booking.prepayment %}
+                    {{ booking.prepayment_amount }} руб.
+                {% else %}
+                    Нет
+                {% endif %}
+            </p>
+        </div>
     {% else %}
         <p class="text-gray-700">Бронирование не найдено.</p>
     {% endif %}
+
     <div class="mt-6 text-right">
-        <button type="button" onclick="closeViewBookingModal()" class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition duration-300">
+        <button type="button"
+                onclick="closeViewBookingModal()"
+                class="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition duration-300">
             Закрыть
         </button>
     </div>

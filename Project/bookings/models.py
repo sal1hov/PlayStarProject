@@ -4,6 +4,7 @@ from django.conf import settings
 from decimal import Decimal
 from django.core.exceptions import ValidationError
 
+
 class Booking(models.Model):
     STATUS_CHOICES = [
         ('pending', 'На модерации'),
@@ -12,8 +13,32 @@ class Booking(models.Model):
         ('completed', 'Завершено')
     ]
 
+    BOOKING_TYPES = (
+        ('birthday', 'День рождения'),
+        ('vr', 'VR-арена'),
+        ('animation', 'Выездная анимация'),
+        ('other', 'Другое'),
+    )
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    event_name = models.CharField(max_length=255)
+    booking_type = models.CharField(
+        'Тип бронирования',
+        max_length=20,
+        choices=BOOKING_TYPES,
+        default='birthday'
+    )
+    location = models.CharField(
+        'Местоположение',
+        max_length=255,
+        blank=True,
+        null=True
+    )
+    custom_type = models.CharField(
+        'Свой вариант',
+        max_length=255,
+        blank=True,
+        null=True
+    )
     booking_date = models.DateTimeField(auto_now_add=True)
     event_date = models.DateTimeField()
     children_count = models.PositiveIntegerField(
@@ -42,16 +67,25 @@ class Booking(models.Model):
         return self.prepayment_amount + self.paid_amount if self.prepayment else self.paid_amount
 
     def clean(self):
-        if self.prepayment and self.paid_amount < 0:
-            raise ValidationError("Доплата не может быть отрицательной при активной предоплате")
+        super().clean()
+        if self.booking_type == 'birthday' and self.children_count > 25:
+            raise ValidationError({'children_count': 'Для Дня рождения максимальное количество детей - 25'})
+
+        if self.booking_type == 'vr' and self.children_count > 10:
+            raise ValidationError({'children_count': 'Для VR-арены максимальное количество участников - 10'})
+
+        if self.booking_type == 'animation' and not self.location:
+            raise ValidationError({'location': 'Для выездной анимации необходимо указать адрес'})
+
+        if self.booking_type == 'other' and not self.custom_type:
+            raise ValidationError({'custom_type': 'Укажите тип мероприятия для варианта "Другое"'})
 
     def save(self, *args, **kwargs):
-        if self.prepayment and self.paid_amount < 0:
-            raise ValidationError("Доплата не может быть отрицательной")
+        self.full_clean()
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.event_name} - {self.event_date}"
+        return f"{self.get_booking_type_display()} - {self.event_date}"
 
     class Meta:
         verbose_name = 'Бронирование'
