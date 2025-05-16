@@ -142,17 +142,7 @@ def create_booking(request):
                 booking.status = 'pending'
                 booking.save()
 
-                Event.objects.create(
-                    name=booking.event_name,
-                    description=booking.comment or f"Бронирование от {booking.user.username}",
-                    date=booking.event_date,
-                    location='main',
-                    event_type='birthday',
-                    max_participants=10,
-                    moderation_status='pending',
-                    booking=booking
-                )
-
+                # Убрано создание нового мероприятия
                 return JsonResponse({
                     'success': True,
                     'message': 'Бронирование успешно создано! Ожидайте звонка от менеджера.'

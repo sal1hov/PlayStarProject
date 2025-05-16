@@ -17,8 +17,7 @@ ROLE_GROUPS_MAPPING = {
 
 @receiver(pre_save, sender=User)
 def track_role_change(sender, instance, **kwargs):
-    """Запоминает предыдущую роль перед сохранением"""
-    if instance.pk:  # Только для существующих пользователей
+    if instance.pk:
         try:
             original_user = User.objects.get(pk=instance.pk)
             instance._original_role = original_user.role
@@ -28,36 +27,25 @@ def track_role_change(sender, instance, **kwargs):
 
 @receiver(post_save, sender=User)
 def handle_user_roles_and_groups(sender, instance, created, **kwargs):
-    """Основной обработчик для синхронизации ролей и групп"""
-    # 1. Обработка групп
     role_changed = hasattr(instance, '_original_role') and instance._original_role != instance.role
 
     if created or role_changed:
-        # Удаляем пользователя из всех групп управления (Staff/Manager/Admin)
         for group in instance.groups.filter(name__in=['Admin', 'Manager', 'Staff']):
             instance.groups.remove(group)
 
-        # Добавляем в соответствующую группу (если есть соответствие)
         group_name = ROLE_GROUPS_MAPPING.get(instance.role)
         if group_name:
             try:
                 group = Group.objects.get(name=group_name)
                 instance.groups.add(group)
             except Group.DoesNotExist:
-                print(f'Группа {group_name} не найдена! Создайте её в админке.')
+                print(f'Группа {group_name} не найдена!')
 
-        # Для администраторов устанавливаем is_staff=True
-        if instance.role == 'ADMIN':
-            instance.is_staff = True
-            instance.save(update_fields=['is_staff'])
-
-    # 2. Обработка профиля
     if created:
-        Profile.objects.create(user=instance)
+        Profile.objects.get_or_create(user=instance)
     elif hasattr(instance, 'profile'):
         instance.profile.save()
 
-    # 3. Для сотрудников и выше создаем StaffProfile если не существует
     if instance.role in ['STAFF', 'MANAGER', 'ADMIN']:
         from staff.models import StaffProfile
         StaffProfile.objects.get_or_create(user=instance)

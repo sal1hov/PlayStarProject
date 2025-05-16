@@ -1,10 +1,10 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
-from .models import CustomUser, Child, Profile
+from django.core.exceptions import ValidationError
+from .models import CustomUser, Child
 
 class RegisterForm(UserCreationForm):
-    # Валидация имени, фамилии и имени ребёнка (только буквы и пробелы)
     name_validator = RegexValidator(
         regex=r'^[a-zA-Zа-яА-ЯёЁ\s]+$',
         message="Используйте только буквы и пробелы."
@@ -31,10 +31,9 @@ class RegisterForm(UserCreationForm):
     child_age = forms.IntegerField(
         required=True,
         label="Возраст ребёнка",
-        validators=[MinValueValidator(0), MaxValueValidator(18)]  # Возраст от 0 до 18 лет
+        validators=[MinValueValidator(0), MaxValueValidator(18)]
     )
 
-    # Валидация номера телефона (только цифры)
     phone_validator = RegexValidator(
         regex=r'^\+7\d{10}$',
         message="Номер телефона должен быть в формате +7XXXXXXXXXX."
@@ -46,22 +45,34 @@ class RegisterForm(UserCreationForm):
         validators=[phone_validator]
     )
 
+    email = forms.EmailField(
+        label="Email",
+        required=True,
+        widget=forms.EmailInput(attrs={'autocomplete': 'email', 'placeholder': 'example@mail.ru'})
+    )
+
     privacy_policy = forms.BooleanField(required=True, label="Я согласен на обработку персональных данных")
 
     class Meta:
         model = CustomUser
-        fields = ['username', 'first_name', 'last_name', 'child_name', 'child_age', 'phone_number', 'password1', 'password2', 'privacy_policy']
+        fields = ['username', 'email', 'first_name', 'last_name',
+                 'child_name', 'child_age', 'phone_number',
+                 'password1', 'password2', 'privacy_policy']
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if CustomUser.objects.filter(email=email).exists():
+            raise ValidationError("Пользователь с таким email уже существует.")
+        return email
 
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.role = 'CLIENT'  # Устанавливаем роль по умолчанию
+        user.email = self.cleaned_data['email']
+        user.role = 'CLIENT'
         if commit:
             user.save()
-            # Проверяем, существует ли профиль для пользователя
-            profile, created = Profile.objects.get_or_create(user=user)
-            # Создаем ребенка, если профиль был создан или уже существует
             Child.objects.create(
-                profile=profile,
+                profile=user.profile,
                 name=self.cleaned_data['child_name'],
                 age=self.cleaned_data['child_age']
             )

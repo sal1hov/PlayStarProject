@@ -119,6 +119,10 @@ class Shift(models.Model):
 
     def __str__(self):
         return f"{self.get_shift_type_display()} - {self.date.strftime('%d.%m.%Y')}"
+    @property
+    def is_manual_creation(self):
+        """Проверяет, создано ли мероприятие вручную через админку"""
+        return self.booking is None
 
 
 class ShiftRequest(models.Model):

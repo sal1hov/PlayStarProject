@@ -8,7 +8,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', index, name='index'),
     path('register/', register, name='register'),
-    path('accounts/', include('accounts.urls')),
+    path('accounts/', include(('accounts.urls', 'accounts'), namespace='accounts')),  # <-- Добавлен namespace
     path('accounts/logout/', logout_view, name='logout'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('bookings/', include('bookings.urls')),
@@ -18,5 +18,4 @@ urlpatterns = [
     path('booking/<int:booking_id>/delete/', delete_booking, name='delete_booking'),
     path('booking/<int:booking_id>/<str:action>/', manage_booking, name='manage_booking'),
     path('', include('main.urls')),
-
 ]

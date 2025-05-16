@@ -69,7 +69,8 @@ def profile_edit(request):
             user_form.save()
             profile_form.save()
             messages.success(request, _('Профиль успешно обновлен!'))
-            return redirect('profile_edit')
+            # Исправлен редирект на профиль вместо повторного вызова этой же view
+            return redirect('accounts:profile')  # <--- Основное исправление здесь
     else:
         user_form = UserUpdateForm(instance=user)
         profile_form = ProfileUpdateForm(instance=profile)

@@ -53,6 +53,7 @@
                         {{ event.date|date:"d.m.Y H:i" }}
                     </div>
 
+                    {% if user.is_authenticated %}
                     <button onclick="openBookingModal('{{ event.id }}', '{{ event.name }}', '{{ event.date|date:"Y-m-d H:i" }}')"
                             class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
                         Забронировать
@@ -60,6 +61,23 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                         </svg>
                     </button>
+                    {% else %}
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mt-4">
+                        <div class="flex items-center">
+                            <svg class="h-5 w-5 text-yellow-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                            </svg>
+                            <div>
+                                <p class="text-sm text-yellow-700">
+                                    Для бронирования необходимо
+                                    <a href="{% url 'login' %}?next={{ request.path }}" class="font-medium text-yellow-700 hover:text-yellow-600 underline">войти</a>
+                                    или
+                                    <a href="{% url 'register' %}?next={{ request.path }}" class="font-medium text-yellow-700 hover:text-yellow-600 underline">зарегистрироваться</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
             {% empty %}
@@ -140,6 +158,11 @@
 <script>
     // Функция для открытия модального окна
     function openBookingModal(eventId, eventName, eventDate) {
+        {% if not user.is_authenticated %}
+            showAuthAlert();
+            return;
+        {% endif %}
+
         document.getElementById('event_id').value = eventId;
         document.getElementById('id_event_name').value = eventName;
         document.getElementById('id_event_date').value = eventDate;
@@ -151,6 +174,37 @@
     function closeModal() {
         document.getElementById('bookingModal').classList.add('hidden');
         document.body.classList.remove('overflow-hidden');
+    }
+
+    // Показать уведомление для неавторизованных пользователей
+    function showAuthAlert() {
+        const alert = document.createElement('div');
+        alert.innerHTML = `
+            <div class="fixed top-4 right-4 z-50">
+                <div class="rounded-md bg-yellow-50 p-4 shadow-lg">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-yellow-800">
+                                Для бронирования необходимо
+                                <a href="{% url 'login' %}?next={{ request.path }}" class="underline hover:text-yellow-700">войти</a>
+                                или
+                                <a href="{% url 'register' %}?next={{ request.path }}" class="underline hover:text-yellow-700">зарегистрироваться</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(alert);
+
+        setTimeout(() => {
+            alert.remove();
+        }, 5000);
     }
 
     // Обработка отправки формы через AJAX

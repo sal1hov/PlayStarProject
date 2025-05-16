@@ -96,6 +96,11 @@ def register(request):
             user = form.save()
             messages.success(request, 'Вы успешно зарегистрированы!')
             return redirect('login')
+        else:
+            # Более аккуратный вывод ошибок
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Ошибка в поле '{form[field].label}': {error}")
     else:
         form = RegisterForm()
     return render(request, 'registration/register.html', {'form': form})
