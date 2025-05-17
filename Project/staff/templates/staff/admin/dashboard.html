@@ -1,0 +1,389 @@
+{% extends 'staff/base_admin.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="max-w-7xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Добро пожаловать, {{ user.username }}!</h1>
+
+    <!-- Статистические карточки -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-100 rounded-lg mr-4">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Пользователей</p>
+                    <p class="text-2xl font-semibold">{{ total_users }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-100 rounded-lg mr-4">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Бронирований</p>
+                    <p class="text-2xl font-semibold">{{ total_bookings }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Навигация по вкладкам -->
+    <div class="border-b border-gray-200 mb-6">
+        <nav class="-mb-px flex space-x-8">
+            <button @click="activeTab = 'users'" :class="{'border-blue-500 text-blue-600': activeTab === 'users'}"
+                    class="py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors">
+                Пользователи
+            </button>
+            <button @click="activeTab = 'bookings'" :class="{'border-blue-500 text-blue-600': activeTab === 'bookings'}"
+                    class="py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors">
+                Бронирования
+            </button>
+        </nav>
+    </div>
+
+    <!-- Контент вкладки: Пользователи -->
+    <div x-show="activeTab === 'users'" class="space-y-6">
+        <!-- Фильтр пользователей -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="text" name="search" placeholder="Поиск по имени" value="{{ request.GET.search }}"
+                       class="p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <select name="role" class="p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Все роли</option>
+                    <option value="ADMIN" {% if request.GET.role == "ADMIN" %}selected{% endif %}>Администратор</option>
+                    <option value="MANAGER" {% if request.GET.role == "MANAGER" %}selected{% endif %}>Менеджер</option>
+                    <option value="STAFF" {% if request.GET.role == "STAFF" %}selected{% endif %}>Сотрудник</option>
+                    <option value="CLIENT" {% if request.GET.role == "CLIENT" %}selected{% endif %}>Клиент</option>
+                </select>
+                <div class="flex space-x-2">
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex-1">
+                        Применить
+                    </button>
+                    <a href="{% url 'staff:admin-dashboard' %}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                        Сбросить
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Таблица пользователей -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            {% if users.object_list %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Роль</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for user in users %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ user.username }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ user.get_role_display }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                                <div class="flex items-center justify-center space-x-3">
+                                    <a href="{% url 'staff:edit-user' user.id %}"
+                                       class="text-blue-600 hover:text-blue-900 p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                                       title="Редактировать">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                                        </svg>
+                                    </a>
+                                    <form action="{% url 'staff:delete-user' user.id %}" method="post"
+                                          onsubmit="return confirm('Вы уверены, что хотите удалить этого пользователя?');"
+                                          class="inline-block">
+                                        {% csrf_token %}
+                                        <button type="submit"
+                                                class="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                                                title="Удалить">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-6 text-center text-gray-500">
+                Пользователи не найдены
+            </div>
+            {% endif %}
+
+            <!-- Пагинация -->
+            {% if users.paginator.num_pages > 1 %}
+            <div class="px-6 py-4 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-700">
+                        Страница {{ users.number }} из {{ users.paginator.num_pages }}
+                    </span>
+                    <div class="flex space-x-2">
+                        {% if users.has_previous %}
+                            <a href="?page={{ users.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}"
+                               class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+                                Назад
+                            </a>
+                        {% endif %}
+                        {% if users.has_next %}
+                            <a href="?page={{ users.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.role %}&role={{ request.GET.role }}{% endif %}"
+                               class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+                                Далее
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Контент вкладки: Бронирования -->
+    <div x-show="activeTab === 'bookings'" class="space-y-6" x-cloak>
+        <!-- Фильтр бронирований -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <form id="booking-search-form" method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input type="text" name="booking_search" placeholder="Поиск по мероприятию" value="{{ request.GET.booking_search }}"
+                       class="p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <select name="booking_status" class="p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Все статусы</option>
+                    <option value="Активно" {% if request.GET.booking_status == "Активно" %}selected{% endif %}>Активно</option>
+                    <option value="Одобрено" {% if request.GET.booking_status == "Одобрено" %}selected{% endif %}>Одобрено</option>
+                    <option value="Отклонено" {% if request.GET.booking_status == "Отклонено" %}selected{% endif %}>Отклонено</option>
+                </select>
+                <div class="flex space-x-2">
+                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex-1">
+                        Применить
+                    </button>
+                    <a href="{% url 'staff:admin-dashboard' %}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                        Сбросить
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Таблица бронирований -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            {% if bookings %}
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Мероприятие</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Пользователь</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата бронирования</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for booking in bookings %}
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ booking.event_name }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ booking.user.username }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ booking.booking_date|date:"d.m.Y" }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-sm rounded-full
+                                    {% if booking.status == 'Одобрено' %}bg-green-100 text-green-800
+                                    {% elif booking.status == 'Отклонено' %}bg-red-100 text-red-800
+                                    {% else %}bg-blue-100 text-blue-800{% endif %}">
+                                    {{ booking.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                                <div class="flex items-center justify-center space-x-3">
+                                    <button title="Редактировать бронирование"
+                                            onclick="openModal('{{ booking.id }}', '{{ booking.event_name }}', '{{ booking.booking_date|date:'Y-m-d' }}', '{{ booking.event_date|date:'Y-m-d' }}', '{{ booking.children_count }}', '{{ booking.comment|default:'' }}')"
+                                            class="text-blue-500 hover:text-blue-700 mr-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H19m-9 4h4"/>
+                                        </svg>
+                                    </button>
+                                    <a title="Одобрить бронирование"
+                                       href="{% url 'staff:manage-booking' booking.id 'approve' %}"
+                                       class="text-green-500 hover:text-green-700 mr-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </a>
+                                    <a title="Отклонить бронирование"
+                                       href="{% url 'staff:manage-booking' booking.id 'reject' %}"
+                                       class="text-red-500 hover:text-red-700 mr-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </a>
+                                    <form action="{% url 'bookings:delete-booking' booking.id %" method="post"
+                                          class="inline-block"
+                                          onsubmit="return confirm('Вы уверены, что хотите удалить бронирование?');">
+                                        {% csrf_token %}
+                                        <button title="Удалить бронирование"
+                                                type="submit"
+                                                class="text-red-500 hover:text-red-700">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-6 text-center text-gray-500">
+                Бронирования не найдены
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Модальное окно редактирования -->
+    <div id="bookingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center">
+        <div class="bg-white p-6 rounded-lg w-1/3">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Редактирование бронирования</h3>
+            <form id="bookingForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" name="booking_id" id="modalBookingId">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-gray-600">Название мероприятия:</label>
+                        <input type="text" name="event_name" id="modalEventName" class="w-full p-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="text-gray-600">Дата бронирования:</label>
+                        <input type="date" name="booking_date" id="modalBookingDate" class="w-full p-2 border rounded-lg" readonly>
+                    </div>
+                    <div>
+                        <label class="text-gray-600">Дата мероприятия:</label>
+                        <input type="date" name="event_date" id="modalEventDate" class="w-full p-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="text-gray-600">Количество детей:</label>
+                        <input type="number" name="children_count" id="modalChildrenCount" class="w-full p-2 border rounded-lg">
+                    </div>
+                    <div>
+                        <label class="text-gray-600">Комментарий:</label>
+                        <textarea name="comment" id="modalComment" class="w-full p-2 border rounded-lg"></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-4">
+                    <button type="button" onclick="closeModal()"
+                            class="bg-gray-500 text-white p-2 rounded-lg hover:bg-gray-600 transition duration-300">
+                        Отмена
+                    </button>
+                    <button type="submit"
+                            class="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition duration-300">
+                        Сохранить
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('tabManager', () => ({
+        activeTab: 'users',
+
+        init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tab = urlParams.get('tab');
+            if (tab && ['users', 'bookings'].includes(tab)) {
+                this.activeTab = tab;
+            }
+        },
+
+        updateUrl() {
+            const url = new URL(window.location);
+            url.searchParams.set('tab', this.activeTab);
+            window.history.replaceState(null, '', url.toString());
+        }
+    }));
+});
+
+function openModal(bookingId, eventName, bookingDate, eventDate, childrenCount, comment) {
+    document.getElementById('modalBookingId').value = bookingId;
+    document.getElementById('modalEventName').value = eventName;
+    document.getElementById('modalBookingDate').value = bookingDate;
+    document.getElementById('modalEventDate').value = eventDate;
+    document.getElementById('modalChildrenCount').value = childrenCount;
+    document.getElementById('modalComment').value = comment;
+    document.getElementById('bookingModal').classList.remove('hidden');
+}
+
+function closeModal() {
+    document.getElementById('bookingModal').classList.add('hidden');
+}
+
+document.getElementById('bookingForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const formData = new FormData(this);
+    const bookingId = document.getElementById('modalBookingId').value;
+
+    fetch(`/bookings/edit/${bookingId}/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeModal();
+            window.location.reload();
+        } else {
+            alert('Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка сети');
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const bookingForm = document.getElementById('booking-search-form');
+    if (bookingForm) {
+        bookingForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new URLSearchParams(new FormData(this));
+
+            fetch(this.action + '?' + formData.toString(), {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const newContent = doc.getElementById('bookings-tab');
+                document.getElementById('bookings-tab').innerHTML = newContent.innerHTML;
+            })
+            .catch(error => console.error('Error:', error));
+        });
+    }
+});
+</script>
+
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+{% endblock %}

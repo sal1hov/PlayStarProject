@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Админ-панель{% endblock %}</title>
+    <!-- Подключение Flatpickr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.11/24/outline/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.11/24/solid/index.min.js"></script>
+</head>
+{% block content %}
+<div class="min-h-screen bg-gray-50 flex">
+    <!-- Боковая панель -->
+    <aside class="w-64 bg-white shadow-lg fixed left-0 top-0 bottom-0 overflow-y-auto">
+        <div class="p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-8">Админ-панель</h2>
+            <nav class="space-y-2">
+                <a href="{% url 'staff:admin-dashboard' %}" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                    </svg>
+                    Главная
+                </a>
+                <a href="{% url 'staff:statistics' %}" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    Статистика
+                </a>
+                <a href="{% url 'staff:income-management' %}" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Доходы
+                </a>
+                <a href="{% url 'staff:events' %}" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    Мероприятия
+                </a>
+                <a href="{% url 'staff:admin_shift_approval' %}" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    График
+                </a>
+            </nav>
+        </div>
+        <div class="p-6 border-t mt-auto">
+            <a href="{% url 'admin:index' %}" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all">
+                <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                </svg>
+                Django Admin
+            </a>
+        </div>
+    </aside>
+
+    <!-- Основной контент -->
+    <div class="ml-64 flex-1">
+        <!-- Шапка -->
+        <header class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'accounts:profile' %}" class="text-gray-600 hover:text-gray-900 flex items-center">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        <span class="text-lg font-medium">{{ user.username }}</span>
+                    </a>
+                </div>
+                <form action="{% url 'accounts:logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="flex items-center text-gray-600 hover:text-gray-900">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                        </svg>
+                        Выход
+                    </button>
+                </form>
+            </div>
+        </header>
+
+        <!-- Контент страницы -->
+        <main class="p-8">
+            {% block admin_content %}{% endblock %}
+        </main>
+    </div>
+</div>
+{% endblock %}

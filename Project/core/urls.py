@@ -9,7 +9,6 @@ urlpatterns = [
     path('', index, name='index'),
     path('register/', register, name='register'),
     path('accounts/', include(('accounts.urls', 'accounts'), namespace='accounts')),  # <-- Добавлен namespace
-    path('accounts/logout/', logout_view, name='logout'),
     path('accounts/', include('django.contrib.auth.urls')),
     path('bookings/', include('bookings.urls')),
     path('staff/', include('staff.urls')),

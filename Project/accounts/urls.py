@@ -4,11 +4,13 @@ from accounts.views import (
     change_email, social_accounts, disconnect_social_account,
     verify_telegram_code, telegram_login, login_view, start_telegram_login
 )
+from django.contrib.auth.views import LogoutView
 
 app_name = 'accounts'
 
 urlpatterns = [
     path('login/', login_view, name='login'),
+    path('logout/', LogoutView.as_view(next_page='/'), name='logout'),
     path('profile/', profile, name='profile'),
     path('profile/edit/', profile_edit, name='profile_edit'),
     path('profile/add_child/', add_child, name='add_child'),
