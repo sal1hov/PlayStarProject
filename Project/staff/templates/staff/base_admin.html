@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Админ-панель{% endblock %}</title>
-    <!-- Подключение Flatpickr -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="{% static 'staff/css/admin.css' %}">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,10 +14,19 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.11/24/outline/index.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.11/24/solid/index.min.js"></script>
+    <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .fade-transition {
+            transition: opacity 0.3s ease;
+        }
+        .fade-enter, .fade-leave-to {
+            opacity: 0;
+        }
+    </style>
 </head>
-{% block content %}
-<div class="min-h-screen bg-gray-50 flex">
-    <!-- Боковая панель -->
+<body class="bg-gray-50">
+<div class="min-h-screen flex">
     <aside class="w-64 bg-white shadow-lg fixed left-0 top-0 bottom-0 overflow-y-auto">
         <div class="p-6">
             <h2 class="text-2xl font-bold text-gray-800 mb-8">Админ-панель</h2>
@@ -64,9 +73,7 @@
         </div>
     </aside>
 
-    <!-- Основной контент -->
     <div class="ml-64 flex-1">
-        <!-- Шапка -->
         <header class="bg-white shadow-sm">
             <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
                 <div class="flex items-center space-x-4">
@@ -89,10 +96,10 @@
             </div>
         </header>
 
-        <!-- Контент страницы -->
         <main class="p-8">
             {% block admin_content %}{% endblock %}
         </main>
     </div>
 </div>
-{% endblock %}
+</body>
+</html>

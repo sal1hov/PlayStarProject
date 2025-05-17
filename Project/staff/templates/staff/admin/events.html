@@ -1,448 +1,207 @@
-{% extends 'base.html' %}
-{% block title %}Мероприятия{% endblock %}
-{% block content %}
-<div class="flex min-h-screen">
-  <!-- Боковое меню -->
-  <aside class="w-64 bg-gray-800 text-white p-6 flex flex-col justify-between">
-    <div>
-      <h2 class="text-2xl font-bold mb-8">Админ-панель</h2>
-      <nav class="space-y-4">
-        <a href="{% url 'admin_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Главная</a>
-        <a href="{% url 'statistics' %}" class="block py-2 px-4 hover:bg-gray-700 rounded-lg transition duration-300">Статистика</a>
-        <a href="{% url 'income_management' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Управление доходами</a>
-        <a href="{% url 'events' %}" class="block py-2 px-4 rounded-lg bg-gray-700 transition duration-300">Мероприятия</a>
-      </nav>
-    </div>
-    <div class="space-y-4">
-      <a href="{% url 'admin:index' %}" class="block py-2 px-4 bg-blue-600 rounded-lg text-white hover:bg-blue-700 transition duration-300">Django-админка</a>
-    </div>
-  </aside>
+{% extends 'staff/base_admin.html' %}
+{% load static %}
 
-  <!-- Основной контент -->
-  <main class="flex-1 p-8 bg-gray-50">
+{% block admin_content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Заголовок и кнопка создания -->
     <div class="flex justify-between items-center mb-8">
-      <h1 class="text-3xl font-bold text-gray-800">Мероприятия</h1>
-      <button onclick="openCreateEventModal()" class="flex items-center gap-2 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Создать мероприятие
-      </button>
+        <h1 class="text-3xl font-bold text-gray-900">Управление мероприятиями</h1>
+        <button onclick="openModal('createEventModal')"
+                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Новое мероприятие
+        </button>
     </div>
 
-    <!-- Фильтрация -->
-    <div class="bg-white p-4 rounded-lg shadow mb-6">
-      <form method="GET" action="{% url 'events' %}" class="flex flex-col md:flex-row gap-4">
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Дата</label>
-          <input type="date" name="event_date" class="w-full p-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500" value="{{ event_date }}">
-        </div>
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Статус</label>
-          <select name="moderation_status" class="w-full p-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
-            <option value="">Все статусы</option>
-            <option value="pending" {% if moderation_status == "pending" %}selected{% endif %}>На модерации</option>
-            <option value="approved" {% if moderation_status == "approved" %}selected{% endif %}>Принято</option>
-            <option value="rejected" {% if moderation_status == "rejected" %}selected{% endif %}>Отказано</option>
-          </select>
-        </div>
-        <div class="flex-1">
-          <label class="block text-sm font-medium text-gray-700 mb-1">Сортировка</label>
-          <select name="sort_by" class="w-full p-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500">
-            <option value="date" {% if sort_by == 'date' %}selected{% endif %}>По дате</option>
-            <option value="name" {% if sort_by == 'name' %}selected{% endif %}>По названию</option>
-          </select>
-        </div>
-        <div class="flex items-end">
-          <button type="submit" class="h-[42px] bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300">
-            Применить
-          </button>
-        </div>
-      </form>
+    <!-- Фильтры -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Дата</label>
+                <input type="date" name="event_date"
+                       value="{{ request.GET.event_date }}"
+                       class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Статус</label>
+                <select name="moderation_status" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Все</option>
+                    <option value="pending" {% if request.GET.moderation_status == "pending" %}selected{% endif %}>На модерации</option>
+                    <option value="approved" {% if request.GET.moderation_status == "approved" %}selected{% endif %}>Одобрено</option>
+                    <option value="rejected" {% if request.GET.moderation_status == "rejected" %}selected{% endif %}>Отклонено</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Сортировка</label>
+                <select name="sort_by" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="date" {% if request.GET.sort_by == "date" %}selected{% endif %}>По дате</option>
+                    <option value="name" {% if request.GET.sort_by == "name" %}selected{% endif %}>По названию</option>
+                </select>
+            </div>
+
+            <div class="flex items-end">
+                <button type="submit" class="bg-blue-600 text-white w-full px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    Применить
+                </button>
+            </div>
+        </form>
     </div>
 
     <!-- Список мероприятий -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {% if no_events %}
-        <div class="col-span-full text-center py-10">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-          </svg>
-          <p class="mt-2 text-gray-500">Мероприятий не найдено</p>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for event in events %}
+            <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
+                <div class="flex justify-between items-start mb-4">
+                    <h3 class="text-xl font-semibold text-gray-800">{{ event.name }}</h3>
+                    <span class="px-2 py-1 text-xs rounded-full
+                        {% if event.moderation_status == 'approved' %}bg-green-100 text-green-800
+                        {% elif event.moderation_status == 'rejected' %}bg-red-100 text-red-800
+                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                        {{ event.get_moderation_status_display }}
+                    </span>
+                </div>
+
+                <div class="space-y-2 text-sm text-gray-600">
+                    <div class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span>{{ event.date|date:"d.m.Y H:i" }}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                        </svg>
+                        <span>Участников: {{ event.max_participants }}</span>
+                    </div>
+                </div>
+
+                <!-- Кнопки действий -->
+                <div class="flex justify-end mt-4 space-x-2">
+                    <a href="{% url 'staff:edit-event' event.id %}"
+                       class="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                        </svg>
+                    </a>
+
+                    <form action="{% url 'staff:delete-event' event.id %}" method="post"
+                          onsubmit="return confirm('Удалить мероприятие?')">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full text-center py-10">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+                <p class="mt-2 text-gray-500">Мероприятий не найдено</p>
+            </div>
+            {% endfor %}
         </div>
-      {% else %}
-        {% for event in events %}
-          <div class="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-            <div class="flex justify-between items-start mb-4">
-              <h2 class="text-xl font-bold text-gray-800">{{ event.name }}</h2>
-              <span class="px-2 py-1 text-xs rounded-full
-                {% if event.moderation_status == "approved" %}bg-green-100 text-green-800
-                {% elif event.moderation_status == "rejected" %}bg-red-100 text-red-800
-                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                {{ event.get_moderation_status_display }}
-              </span>
-            </div>
-
-            <p class="text-gray-600 mb-3">{{ event.description|truncatechars:100 }}</p>
-
-            <div class="space-y-2 text-sm text-gray-500">
-              <div class="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span>{{ event.date|date:"d.m.Y H:i" }}</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-                <span>Макс. участников: {{ event.max_participants }}</span>
-              </div>
-            </div>
-
-            <!-- Кнопки действий -->
-            <div class="flex justify-end mt-4 space-x-2">
-              <!-- Просмотр -->
-              <button onclick="openViewEventModal({{ event.id }})"
-                      class="p-2 text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
-                      title="Просмотр">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              </button>
-
-              <!-- Редактирование -->
-              {% if event.moderation_status == "pending" %}
-                <button onclick="openEditEventModal({{ event.id }})"
-                        class="p-2 text-yellow-500 hover:bg-yellow-50 rounded-full transition-colors"
-                        title="Редактировать">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                </button>
-              {% endif %}
-
-              <!-- Удаление -->
-              <a href="{% url 'delete_event' event.id %}"
-                 class="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                 title="Удалить"
-                 onclick="return confirm('Удалить мероприятие?')">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </a>
-
-              {% if event.moderation_status == "pending" %}
-                <!-- Одобрить -->
-                <a href="{% url 'approve_event' event.id %}"
-                   class="p-2 text-green-500 hover:bg-green-50 rounded-full transition-colors"
-                   title="Одобрить"
-                   onclick="return confirm('Одобрить мероприятие?')">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                </a>
-
-                <!-- Отклонить -->
-                <a href="{% url 'reject_event' event.id %}"
-                   class="p-2 text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                   title="Отклонить"
-                   onclick="return confirm('Отклонить мероприятие?')">
-                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </a>
-              {% endif %}
-            </div>
-          </div>
-        {% endfor %}
-      {% endif %}
     </div>
-  </main>
 </div>
 
-<!-- Модальное окно создания мероприятия -->
+<!-- Модальное окно создания -->
 <div id="createEventModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto">
-    <!-- Заголовок с кликабельной иконкой закрытия -->
-    <div class="sticky top-0 bg-white p-6 border-b border-gray-200 flex justify-between items-center z-10">
-      <h2 class="text-2xl font-bold text-gray-800">Создать мероприятие</h2>
-      <button onclick="closeCreateEventModal()"
-              class="p-2 rounded-full transition-colors hover:bg-gray-100 group"
-              aria-label="Закрыть окно">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500 group-hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white p-6 border-b border-gray-200 flex justify-between items-center">
+            <h3 class="text-2xl font-bold text-gray-800">Создать мероприятие</h3>
+            <button onclick="closeModal('createEventModal')"
+                    class="p-2 rounded-full hover:bg-gray-100 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <form method="post" action="{% url 'staff:create-event' %}" class="p-6 space-y-4" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Название</label>
+                <input type="text" name="name" required
+                       class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Дата и время</label>
+                    <input type="datetime-local" name="date" required
+                           class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Тип</label>
+                    <select name="event_type" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="birthday">День рождения</option>
+                        <option value="animation">Анимация</option>
+                        <option value="other">Другое</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Описание</label>
+                <textarea name="description" rows="3"
+                          class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
+            </div>
+
+            <div class="flex justify-end space-x-3 pt-4">
+                <button type="button" onclick="closeModal('createEventModal')"
+                        class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                    Отмена
+                </button>
+                <button type="submit"
+                        class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    Создать
+                </button>
+            </div>
+        </form>
     </div>
-
-    <form id="createEventForm" method="post" enctype="multipart/form-data" action="{% url 'create_event' %}" class="p-6 space-y-5">
-      {% csrf_token %}
-
-      <!-- Название -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Название</label>
-        <input type="text" name="name" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-700 py-2 px-3" required>
-      </div>
-
-      <!-- Дата и время с кликабельной иконкой -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Дата и время</label>
-          <div class="relative">
-            <input type="datetime-local" name="date" id="createEventDate" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-700 py-2 px-3 pr-10" required>
-            <button type="button" onclick="document.getElementById('createEventDate').focus()"
-                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600">
-              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- Тип мероприятия с кликабельной иконкой -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Тип</label>
-          <div class="relative">
-            <select name="event_type" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-700 py-2 pl-3 pr-10 appearance-none">
-              <option value="выездные анимации">Выездные анимации</option>
-              <option value="открытые анимации">Открытые анимации</option>
-              <option value="панорамик">Панорамик</option>
-              <option value="другое" selected>Другое</option>
-            </select>
-            <button type="button" onclick="this.previousElementSibling.focus()"
-                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 pointer-events-none">
-              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Описание -->
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Описание</label>
-        <textarea name="description" rows="4" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-700 py-2 px-3" required></textarea>
-      </div>
-
-      <!-- Участники и статус -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Макс. участников</label>
-          <input type="number" name="max_participants" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-700 py-2 px-3" required>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Статус</label>
-          <div class="relative">
-            <select name="moderation_status" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-gray-700 py-2 pl-3 pr-10 appearance-none">
-              <option value="pending" selected>На модерации</option>
-              <option value="approved">Принято</option>
-              <option value="rejected">Отказано</option>
-            </select>
-            <button type="button" onclick="this.previousElementSibling.focus()"
-                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 pointer-events-none">
-              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Кнопки с кликабельными иконками -->
-      <div class="flex justify-end space-x-3 pt-4">
-        <button type="button" onclick="closeCreateEventModal()"
-                class="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors group">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 group-hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          Отмена
-        </button>
-        <button type="submit"
-                class="flex items-center gap-2 px-6 py-2 bg-blue-600 rounded-lg text-white hover:bg-blue-700 transition-colors group">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white group-hover:text-blue-100" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
-          Сохранить
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- Модальное окно редактирования -->
-<div id="editEventModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto" id="editEventFormContainer">
-    <!-- Заголовок будет добавлен через AJAX -->
-  </div>
-</div>
-
-<!-- Модальное окно просмотра -->
-<div id="viewEventModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
-  <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl relative max-h-[90vh] overflow-y-auto" id="viewEventContentContainer">
-    <!-- Заголовок будет добавлен через AJAX -->
-  </div>
 </div>
 
 <script>
-  // Инициализация календаря
-  document.addEventListener('DOMContentLoaded', function() {
-    flatpickr('#createEventDate', {
-      enableTime: true,
-      dateFormat: "Y-m-d H:i",
-      time_24hr: true,
-      locale: "ru",
-      minDate: "today",
-      static: true,
-      clickOpens: true
-    });
-  });
-
-  // Управление модальными окнами
-  function openCreateEventModal() {
-    document.getElementById('createEventModal').classList.remove('hidden');
+// Управление модальными окнами
+function openModal(modalId) {
+    document.getElementById(modalId).classList.remove('hidden');
     document.body.classList.add('overflow-hidden');
-  }
+}
 
-  function closeCreateEventModal() {
-    document.getElementById('createEventModal').classList.add('hidden');
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
     document.body.classList.remove('overflow-hidden');
-  }
+}
 
-  function openEditEventModal(eventId) {
-    fetch(`/staff/events/${eventId}/edit/`, {
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    })
-      .then(response => response.json())
-      .then(data => {
-        const container = document.getElementById('editEventFormContainer');
-        container.innerHTML = `
-          <div class="sticky top-0 bg-white p-6 border-b border-gray-200 flex justify-between items-center z-10">
-            <h2 class="text-2xl font-bold text-gray-800">Редактирование</h2>
-            <button onclick="closeEditEventModal()"
-                    class="p-2 rounded-full transition-colors hover:bg-gray-100 group"
-                    aria-label="Закрыть окно">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500 group-hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          ${data.html}
-        `;
+// Инициализация Flatpickr
+document.addEventListener('DOMContentLoaded', function() {
+    flatpickr('input[type="datetime-local"]', {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        time_24hr: true,
+        locale: "ru",
+        minDate: "today"
+    });
+});
 
-        document.getElementById('editEventModal').classList.remove('hidden');
-        document.body.classList.add('overflow-hidden');
-
-        flatpickr('#id_date', {
-          enableTime: true,
-          dateFormat: "Y-m-d H:i",
-          time_24hr: true,
-          locale: "ru",
-          minDate: "today",
-          static: true,
-          clickOpens: true
-        });
-
-        attachEditFormHandler();
-      });
-  }
-
-  function closeEditEventModal() {
-    document.getElementById('editEventModal').classList.add('hidden');
-    document.body.classList.remove('overflow-hidden');
-  }
-
-  function openViewEventModal(eventId) {
-    fetch(`/staff/events/${eventId}/view/`, {
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    })
-      .then(response => response.json())
-      .then(data => {
-        const container = document.getElementById('viewEventContentContainer');
-        container.innerHTML = `
-          <div class="sticky top-0 bg-white p-6 border-b border-gray-200 flex justify-between items-center z-10">
-            <h2 class="text-2xl font-bold text-gray-800">Просмотр мероприятия</h2>
-            <button onclick="closeViewEventModal()"
-                    class="p-2 rounded-full transition-colors hover:bg-gray-100 group"
-                    aria-label="Закрыть окно">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-500 group-hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          ${data.html}
-        `;
-
-        document.getElementById('viewEventModal').classList.remove('hidden');
-        document.body.classList.add('overflow-hidden');
-      });
-  }
-
-  function closeViewEventModal() {
-    document.getElementById('viewEventModal').classList.add('hidden');
-    document.body.classList.remove('overflow-hidden');
-  }
-
-  function attachEditFormHandler() {
-    const form = document.getElementById('editEventForm');
-    if (form) {
-      form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const submitButton = form.querySelector('button[type="submit"]');
-        const originalContent = submitButton.innerHTML;
-
-        submitButton.disabled = true;
-        submitButton.innerHTML = `
-          <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          Сохранение...
-        `;
-
-        fetch(form.action, {
-          method: 'POST',
-          body: new FormData(form)
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success) {
-            Swal.fire({
-              icon: 'success',
-              title: 'Сохранено!',
-              showConfirmButton: false,
-              timer: 1500
-            }).then(() => {
-              location.reload();
-            });
-          } else {
-            submitButton.disabled = false;
-            submitButton.innerHTML = originalContent;
-            Swal.fire({
-              icon: 'error',
-              title: 'Ошибка',
-              text: data.message || 'Произошла ошибка при сохранении'
-            });
-          }
-        })
-        .catch(error => {
-          submitButton.disabled = false;
-          submitButton.innerHTML = originalContent;
-          Swal.fire({
-            icon: 'error',
-            title: 'Ошибка',
-            text: 'Произошла ошибка соединения'
-          });
-        });
-      });
+// Закрытие по клику вне модалки
+window.onclick = function(event) {
+    if (event.target.classList.contains('bg-black')) {
+        event.target.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
     }
-  }
+}
 </script>
 {% endblock %}

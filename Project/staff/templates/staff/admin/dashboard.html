@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block admin_content %}
-<div class="max-w-7xl mx-auto">
+<div class="max-w-7xl mx-auto" x-data="tabManager">
     <h1 class="text-3xl font-bold text-gray-900 mb-8">Добро пожаловать, {{ user.username }}!</h1>
 
     <!-- Статистические карточки -->
@@ -38,11 +38,13 @@
     <!-- Навигация по вкладкам -->
     <div class="border-b border-gray-200 mb-6">
         <nav class="-mb-px flex space-x-8">
-            <button @click="activeTab = 'users'" :class="{'border-blue-500 text-blue-600': activeTab === 'users'}"
+            <button @click="activeTab = 'users'"
+                    :class="{'border-blue-500 text-blue-600': activeTab === 'users'}"
                     class="py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors">
                 Пользователи
             </button>
-            <button @click="activeTab = 'bookings'" :class="{'border-blue-500 text-blue-600': activeTab === 'bookings'}"
+            <button @click="activeTab = 'bookings'"
+                    :class="{'border-blue-500 text-blue-600': activeTab === 'bookings'}"
                     class="py-4 px-1 border-b-2 font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors">
                 Бронирования
             </button>
@@ -50,12 +52,15 @@
     </div>
 
     <!-- Контент вкладки: Пользователи -->
-    <div x-show="activeTab === 'users'" class="space-y-6">
+    <div x-show="activeTab === 'users'" x-cloak class="space-y-6">
         <!-- Фильтр пользователей -->
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input type="text" name="search" placeholder="Поиск по имени" value="{{ request.GET.search }}"
+                <input type="text" name="search"
+                       placeholder="Поиск по имени"
+                       value="{{ request.GET.search }}"
                        class="p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+
                 <select name="role" class="p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">Все роли</option>
                     <option value="ADMIN" {% if request.GET.role == "ADMIN" %}selected{% endif %}>Администратор</option>
@@ -63,6 +68,7 @@
                     <option value="STAFF" {% if request.GET.role == "STAFF" %}selected{% endif %}>Сотрудник</option>
                     <option value="CLIENT" {% if request.GET.role == "CLIENT" %}selected{% endif %}>Клиент</option>
                 </select>
+
                 <div class="flex space-x-2">
                     <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex-1">
                         Применить
@@ -153,18 +159,22 @@
     </div>
 
     <!-- Контент вкладки: Бронирования -->
-    <div x-show="activeTab === 'bookings'" class="space-y-6" x-cloak>
+    <div x-show="activeTab === 'bookings'" x-cloak class="space-y-6">
         <!-- Фильтр бронирований -->
         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <form id="booking-search-form" method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input type="text" name="booking_search" placeholder="Поиск по мероприятию" value="{{ request.GET.booking_search }}"
+                <input type="text" name="booking_search"
+                       placeholder="Поиск по мероприятию"
+                       value="{{ request.GET.booking_search }}"
                        class="p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+
                 <select name="booking_status" class="p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">Все статусы</option>
                     <option value="Активно" {% if request.GET.booking_status == "Активно" %}selected{% endif %}>Активно</option>
                     <option value="Одобрено" {% if request.GET.booking_status == "Одобрено" %}selected{% endif %}>Одобрено</option>
                     <option value="Отклонено" {% if request.GET.booking_status == "Отклонено" %}selected{% endif %}>Отклонено</option>
                 </select>
+
                 <div class="flex space-x-2">
                     <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex-1">
                         Применить
@@ -227,7 +237,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                         </svg>
                                     </a>
-                                    <form action="{% url 'bookings:delete-booking' booking.id %" method="post"
+                                    <form action="{% url 'bookings:delete_booking' booking.id %}" method="post"
                                           class="inline-block"
                                           onsubmit="return confirm('Вы уверены, что хотите удалить бронирование?');">
                                         {% csrf_token %}
@@ -309,12 +319,12 @@ document.addEventListener('alpine:init', () => {
             if (tab && ['users', 'bookings'].includes(tab)) {
                 this.activeTab = tab;
             }
-        },
 
-        updateUrl() {
-            const url = new URL(window.location);
-            url.searchParams.set('tab', this.activeTab);
-            window.history.replaceState(null, '', url.toString());
+            this.$watch('activeTab', (value) => {
+                const url = new URL(window.location);
+                url.searchParams.set('tab', value);
+                window.history.replaceState(null, '', url.toString());
+            });
         }
     }));
 });
@@ -359,31 +369,5 @@ document.getElementById('bookingForm').addEventListener('submit', function(event
         alert('Ошибка сети');
     });
 });
-
-document.addEventListener('DOMContentLoaded', function() {
-    const bookingForm = document.getElementById('booking-search-form');
-    if (bookingForm) {
-        bookingForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const formData = new URLSearchParams(new FormData(this));
-
-            fetch(this.action + '?' + formData.toString(), {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const newContent = doc.getElementById('bookings-tab');
-                document.getElementById('bookings-tab').innerHTML = newContent.innerHTML;
-            })
-            .catch(error => console.error('Error:', error));
-        });
-    }
-});
 </script>
-
-<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 {% endblock %}

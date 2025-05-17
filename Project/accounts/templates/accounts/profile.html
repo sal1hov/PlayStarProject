@@ -110,15 +110,15 @@
                     </a>
                     {% if user.is_authenticated %}
                         {% if user|has_group:'Admin' or user.is_superuser %}
-                            <a href="{% url 'admin_dashboard' %}" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                            <a href="{% url 'staff:admin-dashboard' %}" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">
                                 Админ-панель
                             </a>
                         {% elif user|has_group:'Manager' %}
-                            <a href="{% url 'manager_dashboard' %}" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700">
+                            <a href="{% url 'staff:manager-dashboard' %}" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700">
                                 Панель менеджера
                             </a>
                         {% elif user|has_group:'Staff' %}
-                            <a href="{% url 'employee_dashboard' %}" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                            <a href="{% url 'staff:employee-dashboard' %}" class="w-full flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
                                 Панель сотрудника
                             </a>
                         {% endif %}
@@ -191,7 +191,7 @@
                                     {% endif %}
                                     <div class="flex space-x-2">
                                         {% if booking.status == 'pending' %}
-                                            <form action="{% url 'delete_booking' booking.id %}" method="post" class="delete-booking-form">
+                                            <form action="{% url 'bookings:delete_booking' booking.id %}" method="post" class="delete-booking-form">
                                                 {% csrf_token %}
                                                 <button type="submit" class="text-red-600 hover:text-red-900 text-sm">
                                                     Удалить
@@ -311,7 +311,7 @@
             </div>
 
             <!-- Тело формы -->
-            <form id="bookingForm" method="post" action="{% url 'create_booking' %}" class="px-6 py-4 space-y-6">
+            <form id="bookingForm" method="post" action="{% url 'bookings:create_booking' %}" class="px-6 py-4 space-y-6">
                 {% csrf_token %}
 
                 <div class="space-y-4">
@@ -490,8 +490,9 @@
             method: 'POST',
             body: formData,
             headers: {
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
+                    'X-CSRFToken': "{{ csrf_token }}",
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
         })
         .then(response => response.json())
         .then(data => {

@@ -1,20 +1,15 @@
 from django.contrib import admin
 from django.urls import path, include
-from main.views import index, register, profile_view, logout_view
-from staff.views import edit_user, delete_user, manage_booking
-from bookings.views import edit_booking, delete_booking
+from main.views import index, register, profile_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', index, name='index'),
     path('register/', register, name='register'),
-    path('accounts/', include(('accounts.urls', 'accounts'), namespace='accounts')),  # <-- Добавлен namespace
+    path('accounts/', include(('accounts.urls', 'accounts'), namespace='accounts')),
     path('accounts/', include('django.contrib.auth.urls')),
-    path('bookings/', include('bookings.urls')),
-    path('staff/', include('staff.urls')),
+    path('bookings/', include(('bookings.urls', 'bookings'), namespace='bookings')),
+    path('staff/', include('staff.urls', namespace='staff')),
     path('profile/', profile_view, name='profile'),
-    path('booking/<int:booking_id>/edit/', edit_booking, name='edit_booking'),
-    path('booking/<int:booking_id>/delete/', delete_booking, name='delete_booking'),
-    path('booking/<int:booking_id>/<str:action>/', manage_booking, name='manage_booking'),
     path('', include('main.urls')),
 ]

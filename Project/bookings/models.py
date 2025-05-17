@@ -20,6 +20,18 @@ class Booking(models.Model):
         ('other', 'Другое'),
     )
 
+    BOOKING_SOURCE = (
+        ('online', 'Онлайн'),
+        ('offline', 'Оффлайн'),
+    )
+
+    booking_source = models.CharField(
+        'Источник бронирования',
+        max_length=20,
+        choices=[('website', 'Сайт'), ('telegram', 'Телеграм')],
+        default='website'
+    )
+
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     booking_type = models.CharField(
         'Тип бронирования',

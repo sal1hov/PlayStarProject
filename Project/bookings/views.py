@@ -96,40 +96,25 @@ def edit_booking_admin(request, booking_id):
 
 
 @login_required
-@require_http_methods(["DELETE", "POST"])
 def delete_booking(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
 
-    # Проверка прав доступа
     if not (request.user == booking.user or
-            request.user.is_superuser or
             request.user.groups.filter(name__in=['Admin', 'Manager']).exists()):
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'success': False, 'message': 'У вас нет прав для удаления этого бронирования.'},
-                                status=403)
-        messages.error(request, 'У вас нет прав для удаления этого бронирования.')
-        return redirect('profile')
+        return JsonResponse({'error': 'Доступ запрещен'}, status=403)
 
-    # Проверка статуса бронирования
     if booking.status == 'approved':
-        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'success': False, 'message': 'Нельзя удалить подтвержденное бронирование.'},
-                                status=400)
-        messages.error(request, 'Нельзя удалить подтвержденное бронирование.')
-        return redirect('profile')
+        return JsonResponse({'error': 'Нельзя удалить подтвержденное бронирование'}, status=400)
 
-    # Удаляем связанное мероприятие, если оно есть
-    Event.objects.filter(booking=booking).delete()
-    booking.delete()
-
-    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return JsonResponse({'success': True, 'message': 'Бронирование успешно удалено.'})
-
-    messages.success(request, 'Бронирование успешно удалено.')
-    return redirect('profile')
+    try:
+        Event.objects.filter(booking=booking).delete()
+        booking.delete()
+        return JsonResponse({'success': True, 'message': 'Бронирование удалено'})
+    except Exception as e:
+        logger.error(f"Booking deletion error: {str(e)}")
+        return JsonResponse({'error': 'Ошибка сервера'}, status=500)
 
 
-@csrf_exempt
 @login_required
 def create_booking(request):
     if request.method == 'POST':
@@ -140,10 +125,8 @@ def create_booking(request):
                 booking.user = request.user
                 booking.status = 'pending'
 
-                # Обработка специальных полей
-                booking_type = form.cleaned_data.get('booking_type')
-                if booking_type == 'other':
-                    booking.event_name = form.cleaned_data.get('custom_type')
+                if form.cleaned_data['booking_type'] == 'other':
+                    booking.event_name = form.cleaned_data['custom_type']
                 else:
                     booking.event_name = booking.get_booking_type_display()
 
@@ -157,12 +140,12 @@ def create_booking(request):
                 'errors': form.errors
             }, status=400)
         except Exception as e:
-            logger.exception("Server error:")
+            logger.error(f"Booking creation error: {str(e)}")
             return JsonResponse({
                 'success': False,
-                'message': f'Ошибка сервера: {str(e)}'
+                'message': 'Ошибка сервера при создании бронирования'
             }, status=500)
     return JsonResponse({
         'success': False,
-        'message': 'Метод не разрешен'
+        'message': 'Недопустимый метод запроса'
     }, status=405)

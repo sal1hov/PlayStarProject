@@ -36,9 +36,10 @@ def role_required(*group_names):
 @role_required('Admin', 'Manager')
 def admin_dashboard(request):
     all_users = CustomUser.objects.all()
-    users = CustomUser.objects.all()
+    users = CustomUser.objects.all().order_by('-date_joined')
     search_query = request.GET.get('search', '').strip()
     role_filter = request.GET.get('role', '').strip().upper()
+    bookings = Booking.objects.select_related('user').all().order_by('-booking_date')
 
     if search_query:
         users = users.filter(username__icontains=search_query)
@@ -146,6 +147,7 @@ def employee_dashboard(request):
 @role_required('Admin', 'Manager')
 def statistics_view(request):
     try:
+        # Обработка параметров даты
         start_date_str = request.GET.get('start_date')
         end_date_str = request.GET.get('end_date')
         start_date = None
@@ -157,72 +159,89 @@ def statistics_view(request):
                 end_date = datetime.strptime(end_date_str, '%d.%m.%y').date()
                 start_date = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
                 end_date = timezone.make_aware(datetime.combine(end_date, datetime.max.time()))
-            except ValueError as e:
+            except ValueError:
                 return JsonResponse({'error': 'Неверный формат даты. Используйте ДД.ММ.ГГ'}, status=400)
 
-            bookings = Booking.objects.filter(
-                booking_date__gte=start_date,
-                booking_date__lte=end_date
-            )
-            users = CustomUser.objects.filter(
-                date_joined__gte=start_date,
-                date_joined__lte=end_date
-            )
-        else:
-            bookings = Booking.objects.all()
-            users = CustomUser.objects.all()
+        # Регистрации пользователей
+        users_query = CustomUser.objects.all()
+        # Бронирования
+        bookings_query = Booking.objects.all()
+        # Доходы
+        earnings_query = Booking.objects.filter(status='approved')
 
-        users_by_month = users.annotate(
+        if start_date and end_date:
+            users_query = users_query.filter(date_joined__range=(start_date, end_date))
+            bookings_query = bookings_query.filter(booking_date__range=(start_date, end_date))
+            earnings_query = earnings_query.filter(booking_date__range=(start_date, end_date))
+
+        # Подготовка данных для графиков
+        users_by_month = users_query.annotate(
             month=TruncMonth('date_joined')
-        ).values('month').annotate(count=Count('id')).order_by('month')
-        users_by_month = list(users_by_month)
-        for item in users_by_month:
-            if item['month']:
-                item['month'] = item['month'].strftime('%Y-%m')
+        ).values('month').annotate(
+            count=Count('id')
+        ).order_by('month')
 
-        bookings_by_status = bookings.values('status').annotate(count=Count('id')).order_by('status')
-        status_translation = {
-            'pending': 'На модерации',
-            'approved': 'Подтверждено',
-            'rejected': 'Отклонено',
-            'completed': 'Завершено'
-        }
-        for item in bookings_by_status:
-            item['status'] = status_translation.get(item['status'], item['status'])
+        bookings_by_status = bookings_query.values('status').annotate(
+            count=Count('id')
+        ).order_by('status')
 
-        online_bookings_count = 0
-        total_earnings = bookings.aggregate(total=Sum('paid_amount'))['total'] or 0
-
-        earnings_by_month = bookings.annotate(
+        earnings_by_month = earnings_query.annotate(
             month=TruncMonth('booking_date')
-        ).values('month').annotate(total=Sum('paid_amount')).order_by('month')
-        earnings_by_month = list(earnings_by_month)
-        for item in earnings_by_month:
-            if item['month']:
-                item['month'] = item['month'].strftime('%Y-%m')
+        ).values('month').annotate(
+            total=Sum(F('prepayment_amount') + F('paid_amount'))
+        ).order_by('month')
 
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({
-                'users_by_month': users_by_month,
-                'bookings_by_status': list(bookings_by_status),
-                'online_bookings_count': online_bookings_count,
-                'total_earnings': total_earnings,
-                'earnings_by_month': earnings_by_month,
+        # Конвертация дат в строки
+        users_data = []
+        for item in users_by_month:
+            users_data.append({
+                'month': item['month'].strftime('%Y-%m') if item['month'] else '',
+                'count': item['count']
             })
 
-        return render(request, 'staff/admin/statistics.html', {
-            'users_by_month': users_by_month,
-            'bookings_by_status': list(bookings_by_status),
+        earnings_data = []
+        for item in earnings_by_month:
+            earnings_data.append({
+                'month': item['month'].strftime('%Y-%m') if item['month'] else '',
+                'total': float(item['total']) if item['total'] else 0
+            })
+
+        # Статусы бронирований
+        status_mapping = dict(Booking.STATUS_CHOICES)
+        bookings_data = []
+        for item in bookings_by_status:
+            bookings_data.append({
+                'status': status_mapping.get(item['status'], item['status']),
+                'count': item['count']
+            })
+
+        # Основные метрики
+        total_earnings = earnings_query.aggregate(
+            total=Sum(F('prepayment_amount') + F('paid_amount'))
+        ).get('total') or 0
+
+        online_bookings_count = bookings_query.filter(
+            booking_type__in=['birthday', 'vr', 'animation']  # Пример фильтрации онлайн-бронирований
+        ).count()
+
+        context = {
+            'users_by_month': users_data,
+            'bookings_by_status': bookings_data,
+            'earnings_by_month': earnings_data,
+            'total_earnings': float(total_earnings),
             'online_bookings_count': online_bookings_count,
-            'total_earnings': total_earnings,
-            'earnings_by_month': earnings_by_month,
-        })
+        }
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse(context)
+
+        return render(request, 'staff/admin/statistics.html', context)
+
     except Exception as e:
         logger.error(f"Ошибка в statistics_view: {e}")
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'error': 'Произошла ошибка на сервере'}, status=500)
-        else:
-            raise
+        return render(request, 'staff/admin/statistics.html', {'error': str(e)})
 
 @login_required
 @role_required('Admin', 'Manager')
@@ -253,7 +272,7 @@ def events_view(request):
 
     no_events = events.count() == 0
 
-    return render(request, 'staff/events.html', {
+    return render(request, 'staff/admin/events.html', {
         'events': page_obj,
         'event_date': event_date,
         'moderation_status': moderation_status,
@@ -354,10 +373,12 @@ def view_booking(request, booking_id):
 @role_required('Admin', 'Manager')
 def income_management(request):
     try:
+        # Расчет основных метрик
         total_income = Booking.objects.aggregate(
-            total=Sum(F('prepayment_amount') + F('paid_amount'))
+            total=Sum(F('prepayment_amount') + F('paid_amount'))  # Закрывающая скобка добавлена
         )['total'] or Decimal('0.00')
 
+        # Расчет среднего дохода за последние 30 дней
         thirty_days_ago = timezone.now() - timedelta(days=30)
         average_income = Booking.objects.filter(
             booking_date__gte=thirty_days_ago
@@ -365,25 +386,28 @@ def income_management(request):
             avg=Avg(F('prepayment_amount') + F('paid_amount'))
         )['avg'] or Decimal('0.00')
 
+        # Сумма всех предоплат
         total_prepayments = Booking.objects.filter(
             prepayment=True
         ).aggregate(
             total=Sum('prepayment_amount')
         )['total'] or Decimal('0.00')
 
+        # Данные для графика
         earnings_by_month = Booking.objects.annotate(
             month=TruncMonth('booking_date')
         ).values('month').annotate(
             total=Sum(F('prepayment_amount') + F('paid_amount'))
         ).order_by('month')
 
-        return render(request, 'staff/income_management.html', {
+        return render(request, 'staff/admin/income_management.html', {
             'total_income': total_income,
             'average_income': average_income,
             'total_prepayments': total_prepayments,
             'earnings_by_month': earnings_by_month,
             'bookings': Booking.objects.all().order_by('-booking_date')
         })
+
     except Exception as e:
         logger.error(f"Ошибка в income_management: {e}")
         return render(request, 'staff/admin/income_management.html', {
@@ -393,7 +417,6 @@ def income_management(request):
             'earnings_by_month': [],
             'bookings': []
         })
-
 @csrf_exempt
 @login_required
 @role_required('Admin', 'Manager')

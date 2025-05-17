@@ -1,366 +1,250 @@
-{% extends 'base.html' %}
-{% block title %}Управление доходами{% endblock %}
-{% block content %}
-<div class="flex min-h-screen">
-    <!-- Боковое меню -->
-    <aside class="w-64 bg-gray-800 text-white p-6 flex flex-col justify-between">
-        <div>
-            <h2 class="text-2xl font-bold mb-8">Админ-панель</h2>
-            <nav class="space-y-4">
-                <a href="{% url 'admin_dashboard' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Главная</a>
-                <a href="{% url 'statistics' %}" class="block py-2 px-4 hover:bg-gray-700 rounded-lg transition duration-300">Статистика</a>
-                <a href="{% url 'income_management' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Управление доходами</a>
-                <a href="{% url 'events' %}" class="block py-2 px-4 rounded-lg hover:bg-gray-700 transition duration-300">Мероприятия</a>
-            </nav>
-        </div>
-        <div class="space-y-4">
-            <a href="{% url 'admin:index' %}" class="block py-2 px-4 bg-gray-700 rounded-lg text-white hover:bg-gray-600 transition duration-300">Django-админка</a>
-        </div>
-    </aside>
+{% extends 'staff/base_admin.html' %}
+{% load static %}
 
-    <!-- Основной контент -->
-    <main class="flex-1 p-8 bg-gray-100">
-        <h1 class="text-3xl font-bold text-gray-800 mb-8">Управление доходами</h1>
+{% block admin_content %}
+<div class="max-w-7xl mx-auto" x-data="{ activeTab: 'overview' }">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Управление доходами</h1>
 
-        <!-- Фильтр по дате -->
-        <div class="mb-8">
-            <label for="dateRange" class="block text-sm font-medium text-gray-700">Выберите дату:</label>
-            <div class="flex items-center space-x-4">
-                <input type="text" id="dateRange" name="dateRange" placeholder="Выберите диапазон" class="mt-1 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 w-64">
-                <button id="applyFilter" class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">Применить</button>
-                <button id="resetFilter" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">Сбросить</button>
+    <!-- Фильтр по дате -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input type="text" id="dateRange" placeholder="Выберите диапазон дат"
+                   class="p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <div class="flex space-x-2">
+                <button id="applyFilter" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex-1">
+                    Применить
+                </button>
+                <button id="resetFilter" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                    Сбросить
+                </button>
             </div>
         </div>
+    </div>
 
-        <!-- Карточки с данными -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white p-6 rounded-lg shadow">
-                <p class="text-gray-600">Общий доход</p>
-                <p class="text-2xl font-bold text-gray-800" id="totalIncome">{{ total_income|default:"0.00" }} руб.</p>
-            </div>
-            <div class="bg-white p-6 rounded-lg shadow">
-                <p class="text-gray-600">Средний доход за месяц</p>
-                <p class="text-2xl font-bold text-gray-800" id="averageIncome">{{ average_income|default:"0.00" }} руб.</p>
-            </div>
-            <div class="bg-white p-6 rounded-lg shadow">
-                <p class="text-gray-600">Общая сумма предоплат</p>
-                <p class="text-2xl font-bold text-gray-800" id="totalPrepayments">{{ total_prepayments|default:"0.00" }} руб.</p>
-            </div>
-        </div>
-
-        <!-- График доходов по месяцам -->
-        <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
-            <h2 class="text-xl font-bold mb-4">Доходы по месяцам</h2>
-            <div class="relative h-96">
-                <canvas id="incomeChart"></canvas>
-            </div>
-        </div>
-
-        <!-- Список бронирований -->
-        <div class="bg-white p-6 rounded-lg shadow-lg">
-            <h2 class="text-xl font-bold mb-4">История бронирований</h2>
-            <div class="overflow-x-auto">
-                <div class="min-w-full" style="max-height: 600px; overflow-y: auto;">
-                    <table class="w-full text-left relative">
-                        <thead class="sticky top-0 bg-white shadow-sm">
-                            <tr class="border-b">
-                                <th class="py-2 bg-white">Мероприятие</th>
-                                <th class="py-2 bg-white">Дата бронирования</th>
-                                <th class="py-2 bg-white">Оплачено</th>
-                                <th class="py-2 bg-white">Предоплата</th>
-                                <th class="py-2 bg-white">Статус</th>
-                                <th class="py-2 bg-white">Действия</th>
-                            </tr>
-                        </thead>
-                        <tbody id="bookingsBody">
-                            {% for booking in bookings %}
-                            <tr class="border-b hover:bg-gray-50 transition duration-300" id="booking-{{ booking.id }}">
-                                <td class="py-2">{{ booking.event_name }}</td>
-                                <td class="py-2">{{ booking.booking_date|date:"d.m.Y H:i" }}</td>
-                                <td class="py-2" id="paidAmount-{{ booking.id }}">{{ booking.paid_amount|default:"0.00" }} руб.</td>
-                                <td class="py-2" id="prepayment-{{ booking.id }}">{{ booking.prepayment|yesno:"Да,Нет" }}</td>
-                                <td class="py-2">{{ booking.get_status_display }}</td>
-                                <td class="py-2">
-                                    <button onclick="openEditModal({{ booking.id }}, '{{ booking.paid_amount|default:0 }}', '{{ booking.prepayment }}')"
-                                            class="bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600 transition duration-300">
-                                        Редактировать
-                                    </button>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+    <!-- Статистические карточки -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 bg-green-100 rounded-lg mr-4">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Общий доход</p>
+                    <p class="text-2xl font-semibold">{{ total_income|default:"0.00" }} ₽</p>
                 </div>
             </div>
         </div>
-    </main>
-</div>
 
-<!-- Модальное окно для редактирования -->
-<div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center">
-    <div class="bg-white p-6 rounded-lg w-11/12 sm:w-2/3 md:w-1/2 lg:w-1/3">
-        <h2 class="text-xl font-bold mb-4">Редактировать оплату</h2>
-        <div id="prepaymentError" class="text-red-500 text-sm mb-2 hidden"></div>
-        <form id="editForm" method="post">
-            {% csrf_token %}
-            <input type="hidden" id="editBookingId" name="booking_id">
-
-            <div class="mb-4">
-                <label for="editPrepayment" class="block text-sm font-medium text-gray-700">Предоплата</label>
-                <input type="number" id="editPrepayment"
-                       class="w-full p-2 border rounded-lg bg-gray-100 cursor-not-allowed"
-                       value="1000.00" readonly>
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 bg-blue-100 rounded-lg mr-4">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Средний за месяц</p>
+                    <p class="text-2xl font-semibold">{{ average_income|default:"0.00" }} ₽</p>
+                </div>
             </div>
+        </div>
 
-            <div class="mb-4">
-                <label for="editPaidAmount" class="block text-sm font-medium text-gray-700">Доплата</label>
-                <input type="number" id="editPaidAmount" name="paid_amount"
-                       class="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 transition duration-300"
-                       required step="0.01" min="0">
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div class="flex items-center">
+                <div class="p-3 bg-purple-100 rounded-lg mr-4">
+                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Предоплаты</p>
+                    <p class="text-2xl font-semibold">{{ total_prepayments|default:"0.00" }} ₽</p>
+                </div>
             </div>
+        </div>
+    </div>
 
-            <div class="mb-4">
-                <label class="flex items-center space-x-2">
-                    <input type="checkbox" id="isPrepayment" name="is_prepayment" class="form-checkbox">
-                    <span class="text-sm font-medium text-gray-700">Активировать предоплату</span>
-                </label>
-            </div>
+    <!-- График доходов -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
+        <h2 class="text-xl font-bold mb-4">Динамика доходов</h2>
+        <div class="relative h-96">
+            <canvas id="incomeChart"></canvas>
+        </div>
+    </div>
 
-            <div class="flex justify-end space-x-2">
-                <button type="button" onclick="closeEditModal()"
-                        class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
-                    Отмена
-                </button>
-                <button type="submit"
-                        class="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300">
-                    Сохранить
-                </button>
-            </div>
-        </form>
+    <!-- Таблица бронирований -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Мероприятие</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Оплата</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for booking in bookings %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ booking.event_name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ booking.booking_date|date:"d.m.Y H:i" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                                {{ booking.paid_amount|default:"0.00" }} ₽
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span class="px-2 py-1 rounded-full
+                                {% if booking.status == 'approved' %}bg-green-100 text-green-800
+                                {% elif booking.status == 'rejected' %}bg-red-100 text-red-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                {{ booking.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                            <button onclick="openEditModal({{ booking.id }}, '{{ booking.paid_amount|default:0 }}', '{{ booking.prepayment }}')"
+                                    class="text-blue-600 hover:text-blue-900 p-2 rounded-lg hover:bg-blue-50 transition-colors">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Модальное окно редактирования -->
+    <div id="editModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center">
+        <div class="bg-white p-6 rounded-lg w-11/12 sm:w-2/3 md:w-1/2 lg:w-1/3">
+            <h2 class="text-xl font-bold mb-4">Редактировать оплату</h2>
+            <form id="editForm" method="post">
+                {% csrf_token %}
+                <input type="hidden" id="editBookingId" name="booking_id">
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Предоплата</label>
+                    <input type="number" id="editPrepayment"
+                           class="w-full p-2 border border-gray-200 rounded-lg bg-gray-100"
+                           value="1000.00" readonly>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Доплата</label>
+                    <input type="number" id="editPaidAmount" name="paid_amount"
+                           class="w-full p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500"
+                           required step="0.01" min="0">
+                </div>
+
+                <div class="mb-4 flex items-center">
+                    <input type="checkbox" id="isPrepayment" name="is_prepayment"
+                           class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                    <label class="ml-2 text-sm text-gray-700">Активировать предоплату</label>
+                </div>
+
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="closeEditModal()"
+                            class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors">
+                        Отмена
+                    </button>
+                    <button type="submit"
+                            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        Сохранить
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
-
-<!-- Уведомления -->
-<div id="toast" class="hidden fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-white"></div>
 
 {{ earnings_by_month|json_script:"earnings-data" }}
 
 <script>
-    let incomeChart = null;
-    let flatpickrInstance = null;
-
-    document.addEventListener("DOMContentLoaded", () => {
-        initializeDatePicker();
-        initializeChart();
-        setupEventListeners();
-        loadInitialData();
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация Flatpickr
+    flatpickr("#dateRange", {
+        mode: "range",
+        dateFormat: "d.m.Y",
+        locale: "ru"
     });
 
-    // Инициализация datepicker
-    function initializeDatePicker() {
-        const dateInput = document.getElementById('dateRange');
-        if (!dateInput) return;
-
-        flatpickrInstance = flatpickr(dateInput, {
-            mode: "range",
-            dateFormat: "d.m.Y",
-            locale: "ru",
-            onChange: (dates) => {
-                if (dates.length === 2) loadFilteredData();
-            }
-        });
-    }
-
     // Инициализация графика
-    function initializeChart() {
-        const ctx = document.getElementById('incomeChart').getContext('2d');
-        const initialData = JSON.parse(document.getElementById('earnings-data').textContent);
+    const ctx = document.getElementById('incomeChart').getContext('2d');
+    const chartData = JSON.parse(document.getElementById('earnings-data').textContent);
 
-        incomeChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: initialData.map(item => item.month),
-                datasets: [{
-                    label: 'Доходы',
-                    data: initialData.map(item => item.total),
-                    borderColor: '#4BC0C0',
-                    borderWidth: 2,
-                    fill: true,
-                    backgroundColor: createGradient(ctx),
-                    tension: 0.4
-                }]
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: chartData.map(item => item.month),
+            datasets: [{
+                label: 'Доходы',
+                data: chartData.map(item => item.total),
+                borderColor: '#3B82F6',
+                backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return value + ' руб.';
-                            }
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value + ' ₽';
                         }
                     }
                 }
             }
-        });
-    }
-
-    // Загрузка данных
-    async function loadInitialData() {
-        try {
-            const response = await fetch("{% url 'income_management_data' %}");
-            const data = await response.json();
-            if (data.success) updateUI(data);
-        } catch (error) {
-            showToast('Ошибка загрузки данных', 'error');
         }
-    }
-
-    // Обновление интерфейса
-    function updateUI(data) {
-        document.getElementById('totalIncome').textContent = `${parseFloat(data.total_income).toFixed(2)} руб.`;
-        document.getElementById('averageIncome').textContent = `${parseFloat(data.average_income).toFixed(2)} руб.`;
-        document.getElementById('totalPrepayments').textContent = `${parseFloat(data.total_prepayments).toFixed(2)} руб.`;
-
-        incomeChart.data.labels = data.chart_data.labels;
-        incomeChart.data.datasets[0].data = data.chart_data.data;
-        incomeChart.update();
-
-        const tbody = document.getElementById('bookingsBody');
-        tbody.innerHTML = data.bookings.map(booking => `
-            <tr class="border-b hover:bg-gray-50" id="booking-${booking.id}">
-                <td class="py-2">${booking.event_name}</td>
-                <td class="py-2">${new Date(booking.booking_date).toLocaleDateString('ru-RU', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                })}</td>
-                <td class="py-2" id="paidAmount-${booking.id}">${parseFloat(booking.paid_amount).toFixed(2)} руб.</td>
-                <td class="py-2" id="prepayment-${booking.id}">${booking.prepayment ? 'Да' : 'Нет'}</td>
-                <td class="py-2">${booking.status_display}</td>
-                <td class="py-2">
-                    <button onclick="openEditModal(${booking.id}, '${booking.paid_amount}', '${booking.prepayment}')"
-                        class="bg-blue-500 text-white py-1 px-3 rounded-lg hover:bg-blue-600">
-                        Редактировать
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-    }
-
-    // Открытие модального окна
-    function openEditModal(id, amount, prepayment) {
-        if (!id || isNaN(id)) {
-            showToast('Ошибка: Некорректный ID бронирования', 'error');
-            return;
-        }
-
-        const paidAmountInput = document.getElementById('editPaidAmount');
-        const prepaymentCheckbox = document.getElementById('isPrepayment');
-        const errorBlock = document.getElementById('prepaymentError');
-
-        errorBlock.classList.add('hidden');
-        document.getElementById('editBookingId').value = id;
-
-        prepaymentCheckbox.checked = prepayment === 'True';
-        if (prepaymentCheckbox.checked) {
-            paidAmountInput.min = 0;
-            paidAmountInput.value = parseFloat(amount) || 0;
-        } else {
-            paidAmountInput.value = parseFloat(amount) || 0;
-        }
-
-        prepaymentCheckbox.addEventListener('change', function() {
-            paidAmountInput.min = this.checked ? 0 : 0;
-        });
-
-        document.getElementById('editModal').classList.remove('hidden');
-    }
-
-    // Закрытие модального окна
-    function closeEditModal() {
-        document.getElementById('editModal').classList.add('hidden');
-    }
-
-    // Уведомления
-    function showToast(message, type = 'success') {
-        const toast = document.getElementById('toast');
-        toast.textContent = message;
-        toast.className = `fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg ${
-            type === 'success' ? 'bg-green-500' : 'bg-red-500'
-        } text-white`;
-        toast.classList.remove('hidden');
-        setTimeout(() => toast.classList.add('hidden'), 3000);
-    }
-
-    // Градиент для графика
-    function createGradient(ctx) {
-        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-        gradient.addColorStop(0, 'rgba(75, 192, 192, 0.3)');
-        gradient.addColorStop(1, 'rgba(75, 192, 192, 0.05)');
-        return gradient;
-    }
+    });
 
     // Обработчики событий
-    function setupEventListeners() {
-        document.getElementById('applyFilter').addEventListener('click', loadFilteredData);
-        document.getElementById('resetFilter').addEventListener('click', () => {
-            flatpickrInstance.clear();
-            loadInitialData();
-        });
-        document.getElementById('editForm').addEventListener('submit', handleFormSubmit);
+    document.getElementById('applyFilter').addEventListener('click', loadFilteredData);
+    document.getElementById('resetFilter').addEventListener('click', () => {
+        document.getElementById('dateRange')._flatpickr.clear();
+        loadInitialData();
+    });
+});
+
+async function loadFilteredData() {
+    try {
+        const dateRange = document.getElementById('dateRange').value;
+        const response = await fetch(`{% url 'staff:income-management-data' %}?date_range=${encodeURIComponent(dateRange)}`);
+        const data = await response.json();
+        updateUI(data);
+    } catch (error) {
+        console.error('Ошибка:', error);
     }
+}
 
-    // Обработка формы
-    async function handleFormSubmit(e) {
-        e.preventDefault();
+function updateUI(data) {
+    // Обновление данных на странице
+    document.getElementById('totalIncome').textContent = data.total_income + ' ₽';
+    document.getElementById('averageIncome').textContent = data.average_income + ' ₽';
+    document.getElementById('totalPrepayments').textContent = data.total_prepayments + ' ₽';
+}
 
-        const formData = new FormData(e.target);
-        const bookingId = formData.get('booking_id');
-        const isPrepayment = formData.get('is_prepayment') === 'on';
-        const paidAmount = parseFloat(formData.get('paid_amount')) || 0;
+function openEditModal(id, amount, prepayment) {
+    document.getElementById('editBookingId').value = id;
+    document.getElementById('editPaidAmount').value = amount;
+    document.getElementById('isPrepayment').checked = prepayment === 'True';
+    document.getElementById('editModal').classList.remove('hidden');
+}
 
-        try {
-            const response = await fetch("{% url 'edit_income_and_prepayment' %}", {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                showToast(result.message);
-                closeEditModal();
-                loadInitialData();
-            } else {
-                showToast(result.error, 'error');
-            }
-        } catch (error) {
-            showToast('Ошибка сети', 'error');
-        }
-    }
-
-    // Фильтрация данных
-    async function loadFilteredData() {
-        try {
-            const dateRange = document.getElementById('dateRange').value;
-            const response = await fetch(
-                `{% url 'income_management_data' %}?date_range=${encodeURIComponent(dateRange)}`
-            );
-            const data = await response.json();
-            if (data.success) updateUI(data);
-        } catch (error) {
-            showToast('Ошибка загрузки данных', 'error');
-        }
-    }
+function closeEditModal() {
+    document.getElementById('editModal').classList.add('hidden');
+}
 </script>
 {% endblock %}
