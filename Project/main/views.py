@@ -24,19 +24,20 @@ def role_required(*group_names):
 @login_required
 def profile_view(request):
     user = request.user
-    bookings = Booking.objects.filter(user=user).order_by('-booking_date')  # Получаем все бронирования текущего пользователя
+    bookings = Booking.objects.filter(user=user).order_by('-event_date')  # Исправлено booking_date → event_date
     if request.method == 'POST':
         form = BookingForm(request.POST)
         if form.is_valid():
             booking = form.save(commit=False)
             booking.user = user
-            booking.status = 'pending'  # Устанавливаем статус "ожидает утверждения"
+            booking.status = 'pending'
             booking.save()
             messages.success(request, 'Бронирование успешно создано.')
             return redirect('profile')
     else:
         form = BookingForm()
     return render(request, 'accounts/profile.html', {'user': user, 'bookings': bookings, 'form': form})
+
 
 @login_required
 def edit_booking(request, booking_id):

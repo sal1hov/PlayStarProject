@@ -45,7 +45,7 @@ def profile(request):
 
     context = {
         'user': user,
-        'bookings': Booking.objects.filter(user=user).order_by('-booking_date')[:5],
+        'bookings': Booking.objects.filter(user=user).order_by('-created_at')[:5],
         'user_events': Event.objects.filter(booking__user=user)
                        .select_related('booking')
                        .order_by('-date')[:5],

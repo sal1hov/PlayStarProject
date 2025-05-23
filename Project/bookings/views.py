@@ -116,36 +116,38 @@ def delete_booking(request, booking_id):
 
 
 @login_required
+@require_http_methods(["POST"])
 def create_booking(request):
-    if request.method == 'POST':
+    form = BookingForm(request.POST, enforce_future_date=True)
+
+    if form.is_valid():
         try:
-            form = BookingForm(request.POST, enforce_future_date=True)
-            if form.is_valid():
-                booking = form.save(commit=False)
-                booking.user = request.user
-                booking.status = 'pending'
+            booking = form.save(commit=False)
+            booking.user = request.user
 
-                if form.cleaned_data['booking_type'] == 'other':
-                    booking.event_name = form.cleaned_data['custom_type']
-                else:
-                    booking.event_name = booking.get_booking_type_display()
+            # Автоматическое заполнение названия мероприятия
+            if booking.booking_type == 'other' and form.cleaned_data.get('custom_type'):
+                booking.event_name = form.cleaned_data['custom_type']
+            else:
+                booking.event_name = booking.get_booking_type_display()
 
-                booking.save()
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Бронирование успешно создано! Ожидайте звонка от менеджера.'
-                })
+            booking.save()
             return JsonResponse({
-                'success': False,
-                'errors': form.errors
-            }, status=400)
+                'success': True,
+                'message': 'Бронирование успешно создано! Ожидайте подтверждения.',
+                'redirect_url': '/profile/'
+            })
         except Exception as e:
-            logger.error(f"Booking creation error: {str(e)}")
+            logger.error(f"Ошибка создания бронирования: {str(e)}")
             return JsonResponse({
                 'success': False,
-                'message': 'Ошибка сервера при создании бронирования'
+                'message': 'Внутренняя ошибка сервера'
             }, status=500)
-    return JsonResponse({
-        'success': False,
-        'message': 'Недопустимый метод запроса'
-    }, status=405)
+    else:
+        # Сбор ошибок формы
+        errors = {field: [error for error in errors] for field, errors in form.errors.items()}
+        return JsonResponse({
+            'success': False,
+            'message': 'Исправьте ошибки в форме',
+            'errors': errors
+        }, status=400)

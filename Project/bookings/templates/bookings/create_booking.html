@@ -1,33 +1,91 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}Создать бронирование{% endblock %}
 
 {% block content %}
-<div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-2xl">
-    <h2 class="text-3xl font-bold text-gray-800 mb-6">Создать новое бронирование</h2>
-    <form method="post">
-        {% csrf_token %}
-        <div class="space-y-4">
-            <div class="flex items-center space-x-2">
-                <label for="{{ form.event_name.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Название мероприятия:</label>
-                {{ form.event_name }}
-            </div>
-            <div class="flex items-center space-x-2">
-                <label for="{{ form.event_date.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Дата мероприятия:</label>
-                {{ form.event_date }}
-            </div>
-            <div class="flex items-center space-x-2">
-                <label for="{{ form.children_count.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Количество детей:</label>
-                {{ form.children_count }}
-            </div>
-            <div class="flex items-center space-x-2">
-                <label for="{{ form.comment.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">Комментарий:</label>
-                {{ form.comment }}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Создать новое бронирование</h3>
+                </div>
+
+                <div class="card-body">
+                    <form method="post" id="bookingForm">
+                        {% csrf_token %}
+
+                        <!-- Тип бронирования -->
+                        <div class="form-group mb-4">
+                            <label class="form-label fw-bold">Тип мероприятия:</label>
+                            {{ form.booking_type }}
+                            <small class="form-text text-muted">Выберите тип мероприятия из списка</small>
+                        </div>
+
+                        <!-- Динамические поля -->
+                        <div id="dynamicFields">
+                            <!-- Поле для ввода адреса -->
+                            <div class="form-group mb-4 animation-field" style="display: none;">
+                                <label class="form-label fw-bold">Адрес проведения:</label>
+                                {{ form.location }}
+                            </div>
+
+                            <!-- Поле для кастомного типа -->
+                            <div class="form-group mb-4 other-field" style="display: none;">
+                                <label class="form-label fw-bold">Ваш тип мероприятия:</label>
+                                {{ form.custom_type }}
+                            </div>
+                        </div>
+
+                        <!-- Основные поля -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-4">
+                                    <label class="form-label fw-bold">Дата и время:</label>
+                                    {{ form.event_date }}
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group mb-4">
+                                    <label class="form-label fw-bold">Количество детей:</label>
+                                    {{ form.children_count }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Комментарий -->
+                        <div class="form-group mb-4">
+                            <label class="form-label fw-bold">Комментарий:</label>
+                            {{ form.comment }}
+                        </div>
+
+                        <!-- Кнопка отправки -->
+                        <button type="submit" class="btn btn-primary btn-lg w-100">
+                            <i class="bi bi-calendar-check me-2"></i>Создать бронирование
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
-        <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
-            Создать бронирование
-        </button>
-    </form>
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const bookingType = document.getElementById('id_booking_type');
+    const animationField = document.querySelector('.animation-field');
+    const otherField = document.querySelector('.other-field');
+
+    function updateFields() {
+        const value = bookingType.value;
+        animationField.style.display = value === 'animation' ? 'block' : 'none';
+        otherField.style.display = value === 'other' ? 'block' : 'none';
+    }
+
+    bookingType.addEventListener('change', updateFields);
+    updateFields(); // Initial check
+});
+</script>
 {% endblock %}

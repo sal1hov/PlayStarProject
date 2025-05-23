@@ -476,48 +476,57 @@
     });
 
     // Обработка отправки формы через AJAX
-    document.getElementById('bookingForm').addEventListener('submit', function(e) {
+        document.getElementById('bookingForm').addEventListener('submit', function(e) {
         e.preventDefault();
 
         const formData = new FormData(this);
         const submitButton = this.querySelector('button[type="submit"]');
-        const originalButtonText = submitButton.textContent;
+        const originalButtonText = submitButton.innerHTML;
 
+        // Блокировка кнопки
         submitButton.disabled = true;
-        submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Обработка...';
+        submitButton.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Обработка...';
 
         fetch(this.action, {
             method: 'POST',
             body: formData,
             headers: {
-                    'X-CSRFToken': "{{ csrf_token }}",
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                }
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            }
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 showNotification('success', data.message);
-                closeModal();
-                setTimeout(() => location.reload(), 1500);
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 1500);
             } else {
-                let errorMessage = data.message || 'Произошла ошибка';
+                // Очистка предыдущих ошибок
+                document.querySelectorAll('.error-message').forEach(el => el.remove());
+
+                // Отображение новых ошибок
                 if (data.errors) {
-                    errorMessage += '\n\n';
-                    for (const field in data.errors) {
-                        errorMessage += `${field}: ${data.errors[field].join(', ')}\n`;
-                    }
+                    Object.entries(data.errors).forEach(([field, errors]) => {
+                        const input = document.querySelector(`[name=${field}]`);
+                        if (input) {
+                            const errorContainer = document.createElement('div');
+                            errorContainer.className = 'error-message text-red-500 text-sm mt-1';
+                            errorContainer.textContent = errors.join(', ');
+                            input.parentNode.appendChild(errorContainer);
+                        }
+                    });
                 }
-                showNotification('error', errorMessage);
+                showNotification('error', data.message || 'Ошибка при создании бронирования');
             }
         })
         .catch(error => {
             console.error('Ошибка:', error);
-            showNotification('error', 'Произошла ошибка при отправке формы.');
+            showNotification('error', 'Ошибка соединения с сервером');
         })
         .finally(() => {
             submitButton.disabled = false;
-            submitButton.textContent = originalButtonText;
+            submitButton.innerHTML = originalButtonText;
         });
     });
 

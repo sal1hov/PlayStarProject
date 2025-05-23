@@ -20,9 +20,11 @@ from django.urls import reverse_lazy
 from .models import Shift, ShiftRequest
 from .forms import ShiftRequestForm
 from django.contrib.auth import update_session_auth_hash
-
+import traceback
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
+
 
 def role_required(*group_names):
     def in_groups(user):
@@ -30,7 +32,9 @@ def role_required(*group_names):
             if bool(user.groups.filter(name__in=group_names)) or user.is_superuser:
                 return True
         return False
+
     return user_passes_test(in_groups)
+
 
 @login_required
 @role_required('Admin', 'Manager')
@@ -39,7 +43,7 @@ def admin_dashboard(request):
     users = CustomUser.objects.all().order_by('-date_joined')
     search_query = request.GET.get('search', '').strip()
     role_filter = request.GET.get('role', '').strip().upper()
-    bookings = Booking.objects.select_related('user').all().order_by('-booking_date')
+    bookings = Booking.objects.select_related('user').all().order_by('-created_at')
 
     if search_query:
         users = users.filter(username__icontains=search_query)
@@ -48,10 +52,9 @@ def admin_dashboard(request):
         users = users.filter(role=role_filter)
 
     total_users = all_users.count()
-
     bookings = Booking.objects.all()
-
     booking_search = request.GET.get('booking_search')
+
     if booking_search:
         bookings = bookings.filter(event_name__icontains=booking_search)
 
@@ -73,6 +76,7 @@ def admin_dashboard(request):
         'total_bookings': total_bookings,
         'pending_bookings': pending_bookings
     })
+
 
 @login_required
 @role_required('Admin', 'Manager')
@@ -112,6 +116,7 @@ def edit_user(request, user_id):
         'role_choices': CustomUser.ROLE_CHOICES
     })
 
+
 @login_required
 @role_required('Admin', 'Manager')
 def delete_user(request, user_id):
@@ -119,6 +124,7 @@ def delete_user(request, user_id):
     user_to_delete.delete()
     messages.success(request, 'Пользователь успешно удален.')
     return redirect('staff:admin-dashboard')
+
 
 @login_required
 @role_required('Admin', 'Manager')
@@ -132,22 +138,24 @@ def manage_booking(request, booking_id, action):
     messages.success(request, f'Бронирование успешно {"утверждено" if action == "approve" else "отклонено"}.')
     return redirect('staff:admin-dashboard')
 
+
 @login_required
 @role_required('Admin', 'Manager')
 def manager_dashboard(request):
     bookings = Booking.objects.all()
     return render(request, 'staff/manager_dashboard.html', {'bookings': bookings})
 
+
 @login_required
 @role_required('Staff')
 def employee_dashboard(request):
     return render(request, 'staff/employee_dashboard.html')
 
+
 @login_required
 @role_required('Admin', 'Manager')
 def statistics_view(request):
     try:
-        # Обработка параметров даты
         start_date_str = request.GET.get('start_date')
         end_date_str = request.GET.get('end_date')
         start_date = None
@@ -159,22 +167,19 @@ def statistics_view(request):
                 end_date = datetime.strptime(end_date_str, '%d.%m.%y').date()
                 start_date = timezone.make_aware(datetime.combine(start_date, datetime.min.time()))
                 end_date = timezone.make_aware(datetime.combine(end_date, datetime.max.time()))
-            except ValueError:
+            except ValueError as e:
+                logger.error(f"Ошибка формата даты: {e}")
                 return JsonResponse({'error': 'Неверный формат даты. Используйте ДД.ММ.ГГ'}, status=400)
 
-        # Регистрации пользователей
         users_query = CustomUser.objects.all()
-        # Бронирования
         bookings_query = Booking.objects.all()
-        # Доходы
         earnings_query = Booking.objects.filter(status='approved')
 
         if start_date and end_date:
             users_query = users_query.filter(date_joined__range=(start_date, end_date))
-            bookings_query = bookings_query.filter(booking_date__range=(start_date, end_date))
-            earnings_query = earnings_query.filter(booking_date__range=(start_date, end_date))
+            bookings_query = bookings_query.filter(created_at__range=(start_date, end_date))
+            earnings_query = earnings_query.filter(created_at__range=(start_date, end_date))
 
-        # Подготовка данных для графиков
         users_by_month = users_query.annotate(
             month=TruncMonth('date_joined')
         ).values('month').annotate(
@@ -186,12 +191,11 @@ def statistics_view(request):
         ).order_by('status')
 
         earnings_by_month = earnings_query.annotate(
-            month=TruncMonth('booking_date')
+            month=TruncMonth('created_at')
         ).values('month').annotate(
-            total=Sum(F('prepayment_amount') + F('paid_amount'))
+            total=Sum(F('prepayment') + F('paid_amount'))
         ).order_by('month')
 
-        # Конвертация дат в строки
         users_data = []
         for item in users_by_month:
             users_data.append({
@@ -203,10 +207,9 @@ def statistics_view(request):
         for item in earnings_by_month:
             earnings_data.append({
                 'month': item['month'].strftime('%Y-%m') if item['month'] else '',
-                'total': float(item['total']) if item['total'] else 0
+                'total': float(item['total']) if item['total'] else 0.0
             })
 
-        # Статусы бронирований
         status_mapping = dict(Booking.STATUS_CHOICES)
         bookings_data = []
         for item in bookings_by_status:
@@ -215,13 +218,12 @@ def statistics_view(request):
                 'count': item['count']
             })
 
-        # Основные метрики
         total_earnings = earnings_query.aggregate(
-            total=Sum(F('prepayment_amount') + F('paid_amount'))
-        ).get('total') or 0
+            total=Sum(F('prepayment') + F('paid_amount'))
+        ).get('total') or 0.0
 
         online_bookings_count = bookings_query.filter(
-            booking_type__in=['birthday', 'vr', 'animation']  # Пример фильтрации онлайн-бронирований
+            booking_type__in=['birthday', 'vr', 'animation']
         ).count()
 
         context = {
@@ -238,10 +240,17 @@ def statistics_view(request):
         return render(request, 'staff/admin/statistics.html', context)
 
     except Exception as e:
-        logger.error(f"Ошибка в statistics_view: {e}")
+        logger.error(f"Critical error in statistics_view: {str(e)}", exc_info=True)
+        error_message = 'Произошла ошибка на сервере' if not settings.DEBUG else str(e)
+
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'error': 'Произошла ошибка на сервере'}, status=500)
-        return render(request, 'staff/admin/statistics.html', {'error': str(e)})
+            return JsonResponse({'error': error_message}, status=500)
+
+        return render(request, 'staff/admin/statistics.html', {
+            'error': error_message,
+            'traceback': traceback.format_exc() if settings.DEBUG else None
+        })
+
 
 @login_required
 @role_required('Admin', 'Manager')
@@ -280,6 +289,7 @@ def events_view(request):
         'no_events': no_events,
     })
 
+
 @login_required
 @role_required('Admin', 'Manager')
 def event_view(request, event_id):
@@ -289,6 +299,7 @@ def event_view(request, event_id):
         return JsonResponse({'html': html})
     else:
         return JsonResponse({'error': 'This endpoint is only accessible via AJAX.'}, status=400)
+
 
 @login_required
 @role_required('Admin')
@@ -313,6 +324,7 @@ def create_event(request):
     else:
         return render(request, 'staff/partials/edit_event_form.html', {'form': form})
 
+
 @login_required
 @role_required('Admin', 'Manager')
 def edit_event(request, event_id):
@@ -332,6 +344,7 @@ def edit_event(request, event_id):
         else:
             return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
+
 @login_required
 @role_required('Admin', 'Manager')
 def approve_event(request, event_id):
@@ -340,6 +353,7 @@ def approve_event(request, event_id):
     event.save()
     messages.success(request, f'Мероприятие "{event.name}" подтверждено.')
     return redirect('staff:events')
+
 
 @login_required
 @role_required('Admin', 'Manager')
@@ -350,6 +364,7 @@ def reject_event(request, event_id):
     messages.success(request, f'Мероприятие "{event.name}" отклонено.')
     return redirect('staff:events')
 
+
 @login_required
 @role_required('Admin', 'Manager')
 def delete_event(request, event_id):
@@ -358,121 +373,147 @@ def delete_event(request, event_id):
     messages.success(request, 'Мероприятие успешно удалено.')
     return redirect('staff:events')
 
+
 @login_required
 @role_required('Admin', 'Manager')
 def view_booking(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         html = render_to_string('staff/partials/view_booking.html',
-                               {'booking': booking},
-                               request=request)
+                                {'booking': booking},
+                                request=request)
         return JsonResponse({'html': html})
     return JsonResponse({'error': 'This endpoint is only accessible via AJAX.'}, status=400)
+
+
 
 @login_required
 @role_required('Admin', 'Manager')
 def income_management(request):
     try:
-        # Расчет основных метрик
-        total_income = Booking.objects.aggregate(
-            total=Sum(F('prepayment_amount') + F('paid_amount'))  # Закрывающая скобка добавлена
+        start_date_str = request.GET.get('start_date')
+        end_date_str = request.GET.get('end_date')
+        start_date = None
+        end_date = None
+
+        if start_date_str and end_date_str:
+            try:
+                start_date = datetime.strptime(start_date_str, '%d.%m.%Y').date()
+                end_date = datetime.strptime(end_date_str, '%d.%m.%Y').date()
+            except ValueError:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({'error': 'Неверный формат даты'}, status=400)
+                else:
+                    messages.error(request, 'Неверный формат даты')
+                    return redirect('staff:income-management')
+
+        bookings = Booking.objects.all().order_by('-created_at')
+
+        if start_date and end_date:
+            bookings = bookings.filter(  # ← ЗДЕСЬ БЫЛА ОШИБКА
+                created_at__date__range=(start_date, end_date)
+            )  # ← ДОБАВЛЕНА ЗАКРЫВАЮЩАЯ СКОБКА
+
+        total_income = bookings.aggregate(
+            total=Sum(F('prepayment') + F('cashier_payment') + F('paid_amount'))
         )['total'] or Decimal('0.00')
 
-        # Расчет среднего дохода за последние 30 дней
-        thirty_days_ago = timezone.now() - timedelta(days=30)
-        average_income = Booking.objects.filter(
-            booking_date__gte=thirty_days_ago
-        ).aggregate(
-            avg=Avg(F('prepayment_amount') + F('paid_amount'))
+        avg_income = bookings.aggregate(
+            avg=Avg(F('prepayment') + F('cashier_payment') + F('paid_amount'))
         )['avg'] or Decimal('0.00')
 
-        # Сумма всех предоплат
-        total_prepayments = Booking.objects.filter(
-            prepayment=True
-        ).aggregate(
-            total=Sum('prepayment_amount')
+        total_prepayments = bookings.aggregate(
+            total=Sum('prepayment')
         )['total'] or Decimal('0.00')
 
-        # Данные для графика
-        earnings_by_month = Booking.objects.annotate(
-            month=TruncMonth('booking_date')
-        ).values('month').annotate(
-            total=Sum(F('prepayment_amount') + F('paid_amount'))
-        ).order_by('month')
+        earnings_by_month = (
+            bookings.annotate(month=TruncMonth('created_at'))
+            .values('month')
+            .annotate(total=Sum(
+                F('prepayment') + F('cashier_payment') + F('paid_amount')
+            ))
+            .order_by('month')
+        )
+
+        chart_data = [
+            {
+                'month': item['month'].strftime('%Y-%m') if item['month'] else '',
+                'total': float(item['total']) if item['total'] else 0.0
+            }
+            for item in earnings_by_month
+        ]
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'total_income': float(total_income),
+                'average_income': float(avg_income),
+                'total_prepayments': float(total_prepayments),
+                'bookings': [
+                    {
+                        'id': b.id,
+                        'event_name': b.event_name,
+                        'created_at': b.created_at.isoformat(),
+                        'total_payment': float(b.total_payment),
+                        'prepayment': float(b.prepayment),
+                        'status': b.status,
+                        'status_display': b.status_display
+                    }
+                    for b in bookings
+                ],
+                'earnings_by_month': chart_data
+            })
 
         return render(request, 'staff/admin/income_management.html', {
+            'bookings': bookings,
             'total_income': total_income,
-            'average_income': average_income,
+            'average_income': avg_income,
             'total_prepayments': total_prepayments,
-            'earnings_by_month': earnings_by_month,
-            'bookings': Booking.objects.all().order_by('-booking_date')
+            'earnings_by_month': chart_data,
+            'start_date': start_date,
+            'end_date': end_date
         })
 
     except Exception as e:
-        logger.error(f"Ошибка в income_management: {e}")
-        return render(request, 'staff/admin/income_management.html', {
-            'total_income': Decimal('0.00'),
-            'average_income': Decimal('0.00'),
-            'total_prepayments': Decimal('0.00'),
-            'earnings_by_month': [],
-            'bookings': []
-        })
+        logger.error(f"Ошибка в income_management: {str(e)}")
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'error': 'Internal Server Error'}, status=500)
+        else:
+            raise
+
 @csrf_exempt
 @login_required
 @role_required('Admin', 'Manager')
-def add_income(request):
-    if request.method == 'POST':
-        try:
-            booking_id = request.POST.get('booking_id')
-            amount = request.POST.get('amount')
-
-            if not booking_id or not amount:
-                return JsonResponse({'success': False, 'error': 'Необходимо указать ID бронирования и сумму.'})
-
-            try:
-                amount_decimal = Decimal(amount)
-            except (ValueError, TypeError):
-                return JsonResponse({'success': False, 'error': 'Сумма должна быть числом.'})
-
-            booking = Booking.objects.get(id=booking_id)
-            booking.amount += amount_decimal
-            booking.save()
-
-            return JsonResponse({'success': True, 'message': 'Доход успешно добавлен.'})
-        except Booking.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Бронирование не найдено.'})
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
-    return JsonResponse({'success': False, 'error': 'Недопустимый метод запроса.'})
-
-@csrf_exempt
-@login_required
-def edit_income_and_prepayment(request):
+def edit_income(request):
     if request.method == 'POST':
         try:
             booking = Booking.objects.get(id=request.POST.get('booking_id'))
-            is_prepayment = request.POST.get('is_prepayment') == 'on'
+            prepayment = request.POST.get('prepayment') == 'true'
+            paid_amount = Decimal(request.POST.get('paid_amount', '0'))
 
-            booking.prepayment = is_prepayment
-            paid_amount = Decimal(request.POST.get('paid_amount', 0))
-
-            if is_prepayment:
-                booking.paid_amount = max(paid_amount, Decimal('0'))
+            if prepayment:
+                booking.prepayment = max(paid_amount, Decimal('1000.00'))
+                booking.paid_amount = Decimal('0.00')
             else:
                 booking.paid_amount = paid_amount
+                booking.prepayment = Decimal('0.00')
 
             booking.save()
 
-            total_prepayments = Booking.objects.filter(prepayment=True).aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
-
             return JsonResponse({
                 'success': True,
+                'new_prepayment': float(booking.prepayment),
                 'new_paid_amount': float(booking.paid_amount),
-                'new_prepayment': booking.prepayment,
-                'total_prepayments': float(total_prepayments)
+                'new_total': float(booking.total_payment)
             })
+
+        except Booking.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Бронирование не найдено'}, status=404)
         except Exception as e:
-            return JsonResponse({'success': False, 'error': str(e)})
+            logger.error(f"Ошибка обновления оплаты: {str(e)}")
+            return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+    return JsonResponse({'success': False, 'error': 'Метод не разрешен'}, status=405)
+
 
 @login_required
 @role_required('Admin', 'Manager')
@@ -492,17 +533,18 @@ def income_management_data(request):
         bookings = Booking.objects.all()
         if start_date and end_date:
             bookings = bookings.filter(
-                booking_date__date__gte=start_date,
-                booking_date__date__lte=end_date
+                created_at__date__gte=start_date,
+                created_at__date__lte=end_date
             )
 
         total_income = bookings.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
         avg_income = bookings.aggregate(avg=Avg('paid_amount'))['avg'] or Decimal('0.00')
-        total_prepayments = bookings.filter(prepayment=True).aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
+        total_prepayments = bookings.filter(prepayment=True).aggregate(total=Sum('paid_amount'))['total'] or Decimal(
+            '0.00')
         total_earnings = bookings.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
 
         earnings_by_month = bookings.annotate(
-            month=TruncMonth('booking_date')
+            month=TruncMonth('created_at')
         ).values('month').annotate(
             total=Sum('paid_amount')
         ).order_by('month')
@@ -516,10 +558,10 @@ def income_management_data(request):
                 chart_data['labels'].append(item['month'].strftime('%Y-%m'))
                 chart_data['data'].append(float(item['total']))
 
-        bookings_data = list(bookings.order_by('-booking_date').values(
+        bookings_data = list(bookings.order_by('-created_at').values(
             'id',
             'event_name',
-            'booking_date',
+            'created_at',
             'paid_amount',
             'prepayment',
             'status'
@@ -538,6 +580,7 @@ def income_management_data(request):
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
+
 class ShiftListView(ListView):
     model = Shift
     template_name = 'staff/shift_list.html'
@@ -547,6 +590,7 @@ class ShiftListView(ListView):
     def get_queryset(self):
         return Shift.objects.filter(date__gte=timezone.now().date()).order_by('date')
 
+
 class MyShiftRequestsView(ListView):
     model = ShiftRequest
     template_name = 'staff/my_shift_requests.html'
@@ -554,6 +598,7 @@ class MyShiftRequestsView(ListView):
 
     def get_queryset(self):
         return ShiftRequest.objects.filter(employee=self.request.user).order_by('-created_at')
+
 
 class CreateShiftRequestView(CreateView):
     model = ShiftRequest
@@ -564,6 +609,7 @@ class CreateShiftRequestView(CreateView):
     def form_valid(self, form):
         form.instance.employee = self.request.user
         return super().form_valid(form)
+
 
 class AdminShiftApprovalView(ListView):
     model = ShiftRequest
@@ -579,6 +625,7 @@ class AdminShiftApprovalView(ListView):
             return redirect('staff:employee-dashboard')
         return super().dispatch(request, *args, **kwargs)
 
+
 @login_required
 def approve_shift_request(request, pk):
     shift_request = get_object_or_404(ShiftRequest, pk=pk)
@@ -587,6 +634,7 @@ def approve_shift_request(request, pk):
         shift_request.save()
         messages.success(request, 'Заявка утверждена')
     return redirect('staff:admin_shift_approval')
+
 
 @login_required
 def reject_shift_request(request, pk):
@@ -597,6 +645,7 @@ def reject_shift_request(request, pk):
         messages.success(request, 'Заявка отклонена')
     return redirect('staff:admin_shift_approval')
 
+
 @login_required
 @role_required('Admin', 'Manager')
 def shift_request_details(request, pk):
@@ -604,6 +653,7 @@ def shift_request_details(request, pk):
     return render(request, 'staff/partials/shift_request_details.html', {
         'request': shift_request
     })
+
 
 @login_required
 @role_required('Admin', 'Manager')
