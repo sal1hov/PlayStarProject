@@ -13,8 +13,6 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.11/24/outline/index.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/heroicons@2.0.11/24/solid/index.min.js"></script>
     <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
     <style>
         [x-cloak] { display: none !important; }
@@ -24,39 +22,64 @@
         .fade-enter, .fade-leave-to {
             opacity: 0;
         }
+        .notification {
+            transition: all 0.3s ease;
+        }
+        .notification-enter {
+            opacity: 0;
+            transform: translateX(100%);
+        }
+        .notification-enter-active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .notification-exit {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .notification-exit-active {
+            opacity: 0;
+            transform: translateX(100%);
+        }
     </style>
 </head>
 <body class="bg-gray-50">
 <div class="min-h-screen flex">
-    <aside class="w-64 bg-white shadow-lg fixed left-0 top-0 bottom-0 overflow-y-auto">
+    <!-- Боковая панель -->
+    <aside class="w-64 bg-white shadow-lg fixed left-0 top-0 bottom-0 overflow-y-auto z-10">
         <div class="p-6">
             <h2 class="text-2xl font-bold text-gray-800 mb-8">Админ-панель</h2>
             <nav class="space-y-2">
-                <a href="{% url 'staff:admin-dashboard' %}" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all">
+                <a href="{% url 'staff:admin-dashboard' %}"
+                   class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all {% if request.resolver_match.url_name == 'admin-dashboard' %}bg-blue-50 text-blue-600 font-medium{% endif %}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
                     </svg>
                     Главная
                 </a>
-                <a href="{% url 'staff:statistics' %}" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all">
+                <a href="{% url 'staff:statistics' %}"
+                   class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all {% if request.resolver_match.url_name == 'statistics' %}bg-blue-50 text-blue-600 font-medium{% endif %}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                     </svg>
                     Статистика
                 </a>
-                <a href="{% url 'staff:income-management' %}" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all">
+                <a href="{% url 'staff:income-management' %}"
+                   class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all {% if request.resolver_match.url_name == 'income-management' %}bg-blue-50 text-blue-600 font-medium{% endif %}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     Доходы
                 </a>
-                <a href="{% url 'staff:events' %}" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all">
+                <a href="{% url 'staff:events' %}"
+                   class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all {% if request.resolver_match.url_name == 'events' %}bg-blue-50 text-blue-600 font-medium{% endif %}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                     </svg>
                     Мероприятия
                 </a>
-                <a href="{% url 'staff:admin_shift_approval' %}" class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all">
+                <a href="{% url 'staff:admin_shift_approval' %}"
+                   class="flex items-center p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all {% if request.resolver_match.url_name == 'admin_shift_approval' %}bg-blue-50 text-blue-600 font-medium{% endif %}">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
@@ -74,8 +97,10 @@
         </div>
     </aside>
 
+    <!-- Основное содержимое -->
     <div class="ml-64 flex-1">
-        <header class="bg-white shadow-sm">
+        <!-- Шапка -->
+        <header class="bg-white shadow-sm sticky top-0 z-10">
             <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
                 <div class="flex items-center space-x-4">
                     <a href="{% url 'accounts:profile' %}" class="text-gray-600 hover:text-gray-900 flex items-center">
@@ -97,10 +122,105 @@
             </div>
         </header>
 
+        <!-- Уведомления -->
+        {% if messages %}
+        <div class="fixed top-4 right-4 z-50 space-y-2" id="notifications">
+            {% for message in messages %}
+            <div class="notification p-4 rounded-lg shadow-lg text-white
+                        {% if message.tags == 'success' %}bg-green-500
+                        {% elif message.tags == 'error' %}bg-red-500
+                        {% else %}bg-blue-500{% endif %}">
+                <div class="flex items-center">
+                    <span>{{ message }}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Основное содержимое страницы -->
         <main class="p-8">
             {% block admin_content %}{% endblock %}
         </main>
     </div>
 </div>
+
+<script>
+// Обработка уведомлений
+document.addEventListener('DOMContentLoaded', function() {
+    // Автоматическое скрытие уведомлений через 5 секунд
+    const notifications = document.querySelectorAll('.notification');
+    notifications.forEach(notification => {
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+    });
+
+    // Функция для показа уведомлений
+    window.showNotification = function(message, isSuccess = true) {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white ${
+            isSuccess ? 'bg-green-500' : 'bg-red-500'
+        }`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <span>${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        `;
+        document.body.appendChild(notification);
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 5000);
+    };
+
+    // Функция для удаления бронирований
+    window.deleteBooking = function(bookingId) {
+    if (!confirm('Вы уверены, что хотите удалить бронирование?')) {
+        return;
+    }
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    fetch(`/staff/booking/${bookingId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Ошибка сети');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, true);
+            // Обновляем таблицу через 1 секунду
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showNotification(data.error || 'Ошибка при удалении бронирования', false);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка сети при удалении бронирования', false);
+    });
+};
+</script>
 </body>
 </html>

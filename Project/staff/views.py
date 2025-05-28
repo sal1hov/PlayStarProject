@@ -695,3 +695,29 @@ def manage_user_children(request, user_id):
         'profile': profile,
         'children': children
     })
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def delete_booking_admin(request, booking_id):
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Метод не разрешен'}, status=405)
+
+    booking = get_object_or_404(Booking, id=booking_id)
+
+    try:
+        # Удаляем связанные события
+        Event.objects.filter(booking=booking).delete()
+        booking.delete()
+        messages.success(request, 'Бронирование успешно удалено')
+        return JsonResponse({
+            'success': True,
+            'message': 'Бронирование успешно удалено'
+        })
+    except Exception as e:
+        logger.error(f"Ошибка при удалении бронирования: {str(e)}")
+        messages.error(request, 'Ошибка при удалении бронирования')
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

@@ -237,12 +237,12 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                         </svg>
                                     </a>
-                                    <form action="{% url 'bookings:delete_booking' booking.id %}" method="post"
+                                    <form action="{% url 'staff:delete-booking-admin' booking.id %}" method="post"
                                           class="inline-block"
                                           onsubmit="return confirm('Вы уверены, что хотите удалить бронирование?');">
                                         {% csrf_token %}
                                         <button title="Удалить бронирование"
-                                                type="submit"
+                                                onclick="deleteBooking({{ booking.id }})"
                                                 class="text-red-500 hover:text-red-700">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -369,5 +369,56 @@ document.getElementById('bookingForm').addEventListener('submit', function(event
         alert('Ошибка сети');
     });
 });
+
+// уведомление об удалении брони
+    function showNotification(message, isSuccess = true) {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white ${
+        isSuccess ? 'bg-green-500' : 'bg-red-500'
+    }`;
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    `;
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 5000);
+}
+
+function deleteBooking(bookingId) {
+    if (!confirm('Вы уверены, что хотите удалить бронирование?')) {
+        return;
+    }
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    fetch(`/staff/booking/${bookingId}/delete/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, true);
+            // Обновляем таблицу после удаления
+            setTimeout(() => window.location.reload(), 1000);
+        } else {
+            showNotification(data.error || 'Ошибка при удалении бронирования', false);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка сети при удалении бронирования', false);
+    });
+}
 </script>
 {% endblock %}
