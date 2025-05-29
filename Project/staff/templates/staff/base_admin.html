@@ -185,42 +185,68 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 5000);
     };
 
-    // Функция для удаления бронирований
+    // Функция для удаления бронирований (ИСПРАВЛЕНА)
     window.deleteBooking = function(bookingId) {
-    if (!confirm('Вы уверены, что хотите удалить бронирование?')) {
-        return;
+        Swal.fire({
+            title: 'Вы уверены?',
+            text: "Вы действительно хотите удалить бронирование?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Да, удалить!',
+            cancelButtonText: 'Отмена'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const csrfToken = getCookie('csrftoken');
+
+                fetch(`/staff/booking/${bookingId}/delete/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': csrfToken,
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire('Удалено!', data.message, 'success');
+                        // Обновляем таблицу через 1 секунду
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        Swal.fire('Ошибка!', data.error || 'Ошибка при удалении', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch Error:', error);
+                    Swal.fire('Ошибка!', 'Сетевая ошибка при удалении: ' + error.message, 'error');
+                });
+            }
+        });
+    };
+
+    // Функция для получения CSRF токена из куки
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
-
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-
-    fetch(`/staff/booking/${bookingId}/delete/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': csrfToken,
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Ошибка сети');
-        }
-        return response.json();
-    })
-    .then(data => {
-        if (data.success) {
-            showNotification(data.message, true);
-            // Обновляем таблицу через 1 секунду
-            setTimeout(() => window.location.reload(), 1000);
-        } else {
-            showNotification(data.error || 'Ошибка при удалении бронирования', false);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showNotification('Ошибка сети при удалении бронирования', false);
-    });
-};
+});
 </script>
 </body>
 </html>

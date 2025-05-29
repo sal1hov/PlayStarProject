@@ -1,3 +1,5 @@
+from main.models import CustomUser, Profile, Child
+from bookings.models import Booking
 import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -22,6 +24,7 @@ from .forms import ShiftRequestForm
 from django.contrib.auth import update_session_auth_hash
 import traceback
 from django.conf import settings
+from django.views.decorators.csrf import ensure_csrf_cookie
 
 logger = logging.getLogger(__name__)
 
@@ -699,25 +702,33 @@ def manage_user_children(request, user_id):
 
 @login_required
 @role_required('Admin', 'Manager')
+@ensure_csrf_cookie  # Важное исправление для CSRF
 def delete_booking_admin(request, booking_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'Метод не разрешен'}, status=405)
 
-    booking = get_object_or_404(Booking, id=booking_id)
-
     try:
-        # Удаляем связанные события
-        Event.objects.filter(booking=booking).delete()
+        booking = get_object_or_404(Booking, id=booking_id)
+
+        # Удаляем связанные события (если они есть)
+        events_deleted, _ = Event.objects.filter(booking=booking).delete()
         booking.delete()
-        messages.success(request, 'Бронирование успешно удалено')
+
+        logger.info(f"Бронирование {booking_id} удалено. Удалено событий: {events_deleted}")
+
         return JsonResponse({
             'success': True,
             'message': 'Бронирование успешно удалено'
         })
-    except Exception as e:
-        logger.error(f"Ошибка при удалении бронирования: {str(e)}")
-        messages.error(request, 'Ошибка при удалении бронирования')
+    except Booking.DoesNotExist:
+        logger.warning(f"Попытка удалить несуществующее бронирование: {booking_id}")
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': 'Бронирование не найдено'
+        }, status=404)
+    except Exception as e:
+        logger.error(f"Ошибка при удалении бронирования {booking_id}: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': 'Внутренняя ошибка сервера'
         }, status=500)
