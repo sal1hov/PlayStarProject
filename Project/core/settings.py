@@ -1,4 +1,3 @@
-# settings.py
 import os
 from pathlib import Path
 from datetime import timedelta
@@ -110,7 +109,6 @@ AUTH_USER_MODEL = 'main.CustomUser'
 LOGIN_REDIRECT_URL = '/profile/'  # Перенаправление на страницу профиля после входа
 LOGOUT_REDIRECT_URL = '/'  # Перенаправление на главную страницу после выхода
 
-
 # Обработка ошибок для AJAX
 def bad_request(request, exception=None):
     return JsonResponse({'error': 'Bad Request'}, status=400)
@@ -125,10 +123,10 @@ def server_error(request):
     return JsonResponse({'error': 'Server Error'}, status=500)
 
 # Добавьте в конец файла:
-handler400 = 'project.views.bad_request'
-handler403 = 'project.views.permission_denied'
-handler404 = 'project.views.page_not_found'
-handler500 = 'project.views.server_error'
+handler400 = 'core.views.bad_request'
+handler403 = 'core.views.permission_denied'
+handler404 = 'core.views.page_not_found'
+handler500 = 'core.views.server_error'
 
 # Telegram Bot Settings
 TELEGRAM_BOT_TOKEN = '7583679391:AAF2mlP0JLsli1SsCpmjZZ6b2_JnKSLuKOU'
@@ -146,3 +144,19 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': timedelta(minutes=30),  # Запускать каждые 30 минут
     },
 }
+
+# Настройки CSRF
+CSRF_COOKIE_HTTPONLY = False  # Разрешить доступ к CSRF из JS
+CSRF_COOKIE_SECURE = False    # Для разработки, на проде должно быть True
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+# Настройки CORS (если нужно)
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+]
+CORS_ALLOW_CREDENTIALS = True
+
+# Для обработки JSON
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+SESSION_COOKIE_HTTPONLY = False

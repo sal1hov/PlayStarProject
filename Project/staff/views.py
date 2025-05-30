@@ -389,7 +389,6 @@ def view_booking(request, booking_id):
     return JsonResponse({'error': 'This endpoint is only accessible via AJAX.'}, status=400)
 
 
-
 @login_required
 @role_required('Admin', 'Manager')
 def income_management(request):
@@ -413,9 +412,9 @@ def income_management(request):
         bookings = Booking.objects.all().order_by('-created_at')
 
         if start_date and end_date:
-            bookings = bookings.filter(  # ← ЗДЕСЬ БЫЛА ОШИБКА
+            bookings = bookings.filter(
                 created_at__date__range=(start_date, end_date)
-            )  # ← ДОБАВЛЕНА ЗАКРЫВАЮЩАЯ СКОБКА
+            )
 
         total_income = bookings.aggregate(
             total=Sum(F('prepayment') + F('cashier_payment') + F('paid_amount'))
@@ -482,6 +481,7 @@ def income_management(request):
             return JsonResponse({'error': 'Internal Server Error'}, status=500)
         else:
             raise
+
 
 @csrf_exempt
 @login_required
@@ -615,18 +615,48 @@ class CreateShiftRequestView(CreateView):
 
 
 class AdminShiftApprovalView(ListView):
+    template_name = "staff/admin/shift_approval.html"  # Исправленный путь
     model = ShiftRequest
-    template_name = 'staff/admin_shift_approval.html'
-    context_object_name = 'requests'
-    paginate_by = 20
+    context_object_name = "requests"
+    paginate_by = 10
 
     def get_queryset(self):
-        return ShiftRequest.objects.filter(status='pending').order_by('shift__date')
+        queryset = super().get_queryset()
 
-    def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_staff:
-            return redirect('staff:employee-dashboard')
-        return super().dispatch(request, *args, **kwargs)
+        # Фильтрация по статусу
+        status = self.request.GET.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+
+        # Фильтрация по дате
+        date = self.request.GET.get('date')
+        if date:
+            queryset = queryset.filter(shift__date=date)
+
+        return queryset.select_related('employee', 'shift')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['approved_requests_count'] = ShiftRequest.objects.filter(status='approved').count()
+        return context
+
+    def approve_shift_request(request, pk):
+        shift_request = get_object_or_404(ShiftRequest, pk=pk)
+        shift_request.status = 'approved'
+        shift_request.save()
+        messages.success(request, f'Смена {shift_request.shift} утверждена для {shift_request.employee}')
+        return redirect('staff:admin_shift_approval')
+
+    def reject_shift_request(request, pk):
+        shift_request = get_object_or_404(ShiftRequest, pk=pk)
+        shift_request.status = 'rejected'
+        shift_request.save()
+        messages.warning(request, f'Смена {shift_request.shift} отклонена для {shift_request.employee}')
+        return redirect('staff:admin_shift_approval')
+
+    def shift_request_details(request, pk):
+        shift_request = get_object_or_404(ShiftRequest, pk=pk)
+        return render(request, 'staff/partials/shift_request_details.html', {'request': shift_request})
 
 
 @login_required
@@ -702,32 +732,36 @@ def manage_user_children(request, user_id):
 
 @login_required
 @role_required('Admin', 'Manager')
-@ensure_csrf_cookie  # Важное исправление для CSRF
+@ensure_csrf_cookie
 def delete_booking_admin(request, booking_id):
+    # Проверяем, что запрос AJAX и требует JSON
+    if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'error': 'Требуется AJAX запрос'}, status=400)
+
     if request.method != 'POST':
         return JsonResponse({'error': 'Метод не разрешен'}, status=405)
 
     try:
-        booking = get_object_or_404(Booking, id=booking_id)
+        booking = Booking.objects.get(id=booking_id)
 
-        # Удаляем связанные события (если они есть)
-        events_deleted, _ = Event.objects.filter(booking=booking).delete()
+        # Удаление связанных событий
+        Event.objects.filter(booking=booking).delete()
         booking.delete()
-
-        logger.info(f"Бронирование {booking_id} удалено. Удалено событий: {events_deleted}")
 
         return JsonResponse({
             'success': True,
             'message': 'Бронирование успешно удалено'
         })
+
     except Booking.DoesNotExist:
-        logger.warning(f"Попытка удалить несуществующее бронирование: {booking_id}")
         return JsonResponse({
             'success': False,
             'error': 'Бронирование не найдено'
         }, status=404)
+
     except Exception as e:
-        logger.error(f"Ошибка при удалении бронирования {booking_id}: {str(e)}")
+        logger.error(f"Ошибка при удалении: {str(e)}", exc_info=True)
+        # Возвращаем ошибку в JSON-формате
         return JsonResponse({
             'success': False,
             'error': 'Внутренняя ошибка сервера'

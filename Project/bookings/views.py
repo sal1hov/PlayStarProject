@@ -15,7 +15,6 @@ from django.views.decorators.http import require_http_methods
 
 logger = logging.getLogger(__name__)
 
-
 @login_required
 @user_passes_test(role_required('Admin', 'Manager'))
 def manage_booking(request, booking_id, action):
@@ -34,7 +33,6 @@ def manage_booking(request, booking_id, action):
             messages.error(request, 'Неверное действие.')
         return redirect('admin_dashboard')
     return redirect('index')
-
 
 @login_required
 def edit_booking(request, booking_id):
@@ -71,7 +69,6 @@ def edit_booking(request, booking_id):
         'today': timezone.now().strftime('%Y-%m-%dT%H:%M')
     })
 
-
 @login_required
 @role_required('Admin', 'Manager')
 def edit_booking_admin(request, booking_id):
@@ -94,7 +91,6 @@ def edit_booking_admin(request, booking_id):
         'booking': booking
     })
 
-
 @login_required
 def delete_booking(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
@@ -113,7 +109,6 @@ def delete_booking(request, booking_id):
     except Exception as e:
         logger.error(f"Booking deletion error: {str(e)}")
         return JsonResponse({'error': 'Ошибка сервера'}, status=500)
-
 
 @login_required
 @require_http_methods(["POST"])

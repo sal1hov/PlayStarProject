@@ -199,18 +199,32 @@ document.addEventListener('DOMContentLoaded', function() {
         }).then((result) => {
             if (result.isConfirmed) {
                 const csrfToken = getCookie('csrftoken');
+                const url = "{% url 'staff:delete-booking-admin' 0 %}".replace('0', bookingId);
 
-                fetch(`/staff/booking/${bookingId}/delete/`, {
+                fetch(url, {
                     method: 'POST',
                     headers: {
                         'X-CSRFToken': csrfToken,
-                        'Content-Type': 'application/json'
+                        'X-Requested-With': 'XMLHttpRequest'  // Важно!
                     },
                     credentials: 'same-origin'
                 })
                 .then(response => {
+                    console.log('Статус ответа:', response.status);
+
+                    // Проверяем тип контента
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        return response.text().then(text => {
+                            console.error('Не JSON ответ:', text);
+                            throw new Error(`Ожидался JSON, но получен: ${contentType}`);
+                        });
+                    }
+
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        return response.json().then(data => {
+                            throw new Error(data.error || `HTTP ошибка! статус: ${response.status}`);
+                        });
                     }
                     return response.json();
                 })
