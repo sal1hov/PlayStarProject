@@ -6,12 +6,11 @@ from main.models import Profile
 
 User = get_user_model()
 
-# Соответствие ролей вашим существующим группам (с учетом регистра)
 ROLE_GROUPS_MAPPING = {
-    'CLIENT': None,  # Клиенты не входят в специальные группы
-    'STAFF': 'Staff',  # Ваша существующая группа
-    'MANAGER': 'Manager',  # Ваша существующая группа
-    'ADMIN': 'Admin'  # Ваша существующая группа
+    'CLIENT': None,
+    'STAFF': 'Staff',
+    'MANAGER': 'Manager',
+    'ADMIN': 'Admin'
 }
 
 
@@ -27,12 +26,19 @@ def track_role_change(sender, instance, **kwargs):
 
 @receiver(post_save, sender=User)
 def handle_user_roles_and_groups(sender, instance, created, **kwargs):
+    # Убираем дублирующее создание профиля
+    if created:
+        # Создаем профиль только если он еще не существует
+        Profile.objects.get_or_create(user=instance)
+
     role_changed = hasattr(instance, '_original_role') and instance._original_role != instance.role
 
     if created or role_changed:
+        # Удаляем пользователя из всех служебных групп
         for group in instance.groups.filter(name__in=['Admin', 'Manager', 'Staff']):
             instance.groups.remove(group)
 
+        # Добавляем в соответствующую группу
         group_name = ROLE_GROUPS_MAPPING.get(instance.role)
         if group_name:
             try:
@@ -41,22 +47,9 @@ def handle_user_roles_and_groups(sender, instance, created, **kwargs):
             except Group.DoesNotExist:
                 print(f'Группа {group_name} не найдена!')
 
-    if created:
-        Profile.objects.get_or_create(user=instance)
-    elif hasattr(instance, 'profile'):
-        instance.profile.save()
-
+    # Создаем StaffProfile для служебных ролей
     if instance.role in ['STAFF', 'MANAGER', 'ADMIN']:
         from staff.models import StaffProfile
         StaffProfile.objects.get_or_create(user=instance)
 
-
-@receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    if created:
-        Profile.objects.create(user=instance)
-
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    if hasattr(instance, 'profile'):  # Проверяем, существует ли профиль
-        instance.profile.save()
+# УДАЛЕНО: дублирующие обработчики create_user_profile и save_user_profile

@@ -2,7 +2,8 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
-from .models import CustomUser, Child
+from .models import CustomUser, Child, Profile
+
 
 class RegisterForm(UserCreationForm):
     name_validator = RegexValidator(
@@ -56,8 +57,8 @@ class RegisterForm(UserCreationForm):
     class Meta:
         model = CustomUser
         fields = ['username', 'email', 'first_name', 'last_name',
-                 'child_name', 'child_age', 'phone_number',
-                 'password1', 'password2', 'privacy_policy']
+                  'child_name', 'child_age', 'phone_number',
+                  'password1', 'password2', 'privacy_policy']
 
     def clean_email(self):
         email = self.cleaned_data.get('email')
@@ -69,10 +70,16 @@ class RegisterForm(UserCreationForm):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
         user.role = 'CLIENT'
+
         if commit:
             user.save()
+
+            # Убедимся, что профиль создан
+            profile, created = Profile.objects.get_or_create(user=user)
+
+            # Создаем ребенка
             Child.objects.create(
-                profile=user.profile,
+                profile=profile,
                 name=self.cleaned_data['child_name'],
                 age=self.cleaned_data['child_age']
             )

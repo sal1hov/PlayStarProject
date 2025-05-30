@@ -6,21 +6,17 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from main.models import CustomUser, Profile, Child
-from bookings.models import Booking
 from django.core.paginator import Paginator
 from django.db.models import Count, Sum, Avg, F
 from django.db.models.functions import TruncMonth, TruncDay
 from django.template.loader import render_to_string
-from .models import Event
-from .forms import EventForm
+from .models import Event, Shift, ShiftRequest
+from .forms import EventForm, ShiftRequestForm
 from datetime import datetime, timedelta
 from django.utils import timezone
 from decimal import Decimal
-from django.views.generic import ListView, CreateView, UpdateView
+from django.views.generic import ListView, CreateView
 from django.urls import reverse_lazy
-from .models import Shift, ShiftRequest
-from .forms import ShiftRequestForm
 from django.contrib.auth import update_session_auth_hash
 import traceback
 from django.conf import settings
@@ -112,7 +108,8 @@ def edit_user(request, user_id):
             messages.error(request, f'Ошибка при обновлении пользователя: {str(e)}')
             logger.error(f"Error updating user {user_id}: {str(e)}")
 
-    return render(request, 'staff/edit_user.html', {
+    # ИСПРАВЛЕННЫЙ ПУТЬ К ШАБЛОНУ
+    return render(request, 'staff/admin/edit_user.html', {
         'user': user_to_edit,
         'profile': profile,
         'children': children,
@@ -298,7 +295,7 @@ def events_view(request):
 def event_view(request, event_id):
     event = get_object_or_404(Event, id=event_id)
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        html = render_to_string('staff/partials/view_event.html', {'event': event}, request=request)
+        html = render_to_string('staff/common/partials/view_event.html', {'event': event}, request=request)
         return JsonResponse({'html': html})
     else:
         return JsonResponse({'error': 'This endpoint is only accessible via AJAX.'}, status=400)
@@ -322,10 +319,10 @@ def create_event(request):
         form = EventForm()
 
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        html = render_to_string('staff/partials/edit_event_form.html', {'form': form}, request=request)
+        html = render_to_string('staff/common/partials/edit_event_form.html', {'form': form}, request=request)
         return JsonResponse({'html': html})
     else:
-        return render(request, 'staff/partials/edit_event_form.html', {'form': form})
+        return render(request, 'staff/common/partials/edit_event_form.html', {'form': form})
 
 
 @login_required
@@ -337,7 +334,8 @@ def edit_event(request, event_id):
 
     if request.method == 'GET':
         form = EventForm(instance=event)
-        html = render_to_string('staff/partials/edit_event_form.html', {'form': form, 'event': event}, request=request)
+        html = render_to_string('staff/common/partials/edit_event_form.html', {'form': form, 'event': event},
+                                request=request)
         return JsonResponse({'html': html})
     elif request.method == 'POST':
         form = EventForm(request.POST, request.FILES, instance=event)
@@ -382,7 +380,7 @@ def delete_event(request, event_id):
 def view_booking(request, booking_id):
     booking = get_object_or_404(Booking, id=booking_id)
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        html = render_to_string('staff/partials/view_booking.html',
+        html = render_to_string('staff/common/partials/view_booking.html',
                                 {'booking': booking},
                                 request=request)
         return JsonResponse({'html': html})
@@ -615,13 +613,13 @@ class CreateShiftRequestView(CreateView):
 
 
 class AdminShiftApprovalView(ListView):
-    template_name = "staff/admin/shift_approval.html"  # Исправленный путь
+    template_name = "staff/admin/shift_approval.html"
     model = ShiftRequest
     context_object_name = "requests"
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().select_related('employee', 'shift')
 
         # Фильтрация по статусу
         status = self.request.GET.get('status')
@@ -633,30 +631,12 @@ class AdminShiftApprovalView(ListView):
         if date:
             queryset = queryset.filter(shift__date=date)
 
-        return queryset.select_related('employee', 'shift')
+        return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['approved_requests_count'] = ShiftRequest.objects.filter(status='approved').count()
         return context
-
-    def approve_shift_request(request, pk):
-        shift_request = get_object_or_404(ShiftRequest, pk=pk)
-        shift_request.status = 'approved'
-        shift_request.save()
-        messages.success(request, f'Смена {shift_request.shift} утверждена для {shift_request.employee}')
-        return redirect('staff:admin_shift_approval')
-
-    def reject_shift_request(request, pk):
-        shift_request = get_object_or_404(ShiftRequest, pk=pk)
-        shift_request.status = 'rejected'
-        shift_request.save()
-        messages.warning(request, f'Смена {shift_request.shift} отклонена для {shift_request.employee}')
-        return redirect('staff:admin_shift_approval')
-
-    def shift_request_details(request, pk):
-        shift_request = get_object_or_404(ShiftRequest, pk=pk)
-        return render(request, 'staff/partials/shift_request_details.html', {'request': shift_request})
 
 
 @login_required
@@ -683,7 +663,7 @@ def reject_shift_request(request, pk):
 @role_required('Admin', 'Manager')
 def shift_request_details(request, pk):
     shift_request = get_object_or_404(ShiftRequest, pk=pk)
-    return render(request, 'staff/partials/shift_request_details.html', {
+    return render(request, 'staff/common/partials/shift_request_details.html', {
         'request': shift_request
     })
 
