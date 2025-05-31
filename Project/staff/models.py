@@ -4,12 +4,14 @@ from django.db.models.signals import post_migrate
 from django.dispatch import receiver
 from django.contrib.auth.models import Group
 
+
 class StaffProfile(models.Model):
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE)
     position = models.CharField(max_length=100)
 
     def __str__(self):
         return f'{self.user.username} - {self.position}'
+
 
 class SiteSettings(models.Model):
     site_title = models.CharField(max_length=255, verbose_name="Заголовок сайта")
@@ -23,6 +25,7 @@ class SiteSettings(models.Model):
     class Meta:
         verbose_name = "Настройка сайта"
         verbose_name_plural = "Настройки сайта"
+
 
 # Константы для выбора типа и статуса модерации
 EVENT_TYPES = (
@@ -119,10 +122,28 @@ class Shift(models.Model):
 
     def __str__(self):
         return f"{self.get_shift_type_display()} - {self.date.strftime('%d.%m.%Y')}"
+
     @property
-    def is_manual_creation(self):
-        """Проверяет, создано ли мероприятие вручную через админку"""
-        return self.booking is None
+    def start_time(self):
+        """Виртуальное поле для получения времени начала смены"""
+        times = {
+            'morning': '09:00',
+            'afternoon': '15:00',
+            'night': '21:00',
+            'full': '09:00'
+        }
+        return times.get(self.shift_type, '')
+
+    @property
+    def end_time(self):
+        """Виртуальное поле для получения времени окончания смены"""
+        times = {
+            'morning': '15:00',
+            'afternoon': '21:00',
+            'night': '09:00',
+            'full': '21:00'
+        }
+        return times.get(self.shift_type, '')
 
 
 class ShiftRequest(models.Model):
@@ -139,6 +160,8 @@ class ShiftRequest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     admin_comment = models.TextField(blank=True, null=True)
+    # Добавлено поле comment
+    comment = models.TextField(blank=True, null=True, verbose_name='Комментарий сотрудника')
 
     class Meta:
         unique_together = ('employee', 'shift')
@@ -154,8 +177,10 @@ class ShiftRequest(models.Model):
             'date': self.shift.date.strftime("%d.%m.%Y"),
             'status': self.get_status_display(),
             'created_at': self.created_at.strftime("%d.%m.%Y %H:%M"),
-            'admin_comment': self.admin_comment or 'Нет комментария'
+            'admin_comment': self.admin_comment or 'Нет комментария',
+            'comment': self.comment or 'Нет комментария'  # Добавлено поле comment
         }
+
 
 @receiver(post_migrate)
 def verify_groups_exist(sender, **kwargs):

@@ -4,18 +4,18 @@ import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
 from django.views.decorators.csrf import csrf_exempt
 from django.core.paginator import Paginator
-from django.db.models import Count, Sum, Avg, F
+from django.db.models import Count, Sum, Avg, F, Q
 from django.db.models.functions import TruncMonth, TruncDay
 from django.template.loader import render_to_string
-from .models import Event, Shift, ShiftRequest
+from .models import Event, Shift, ShiftRequest  # Убедитесь, что Shift импортирован
 from .forms import EventForm, ShiftRequestForm
 from datetime import datetime, timedelta
 from django.utils import timezone
 from decimal import Decimal
-from django.views.generic import ListView, CreateView
+from django.views.generic import ListView, CreateView, UpdateView
 from django.urls import reverse_lazy
 from django.contrib.auth import update_session_auth_hash
 import traceback
@@ -108,7 +108,6 @@ def edit_user(request, user_id):
             messages.error(request, f'Ошибка при обновлении пользователя: {str(e)}')
             logger.error(f"Error updating user {user_id}: {str(e)}")
 
-    # ИСПРАВЛЕННЫЙ ПУТЬ К ШАБЛОНУ
     return render(request, 'staff/admin/edit_user.html', {
         'user': user_to_edit,
         'profile': profile,
@@ -120,9 +119,45 @@ def edit_user(request, user_id):
 @login_required
 @role_required('Admin', 'Manager')
 def delete_user(request, user_id):
-    user_to_delete = get_object_or_404(CustomUser, id=user_id)
-    user_to_delete.delete()
-    messages.success(request, 'Пользователь успешно удален.')
+    if request.method == 'POST':
+        try:
+            user_to_delete = get_object_or_404(CustomUser, id=user_id)
+            username = user_to_delete.username
+            user_to_delete.delete()
+
+            # Для AJAX-запросов возвращаем JSON
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': f'Пользователь {username} успешно удалён'
+                })
+
+            # Для обычных запросов сохраняем сообщение и редиректим
+            messages.success(request, 'Пользователь успешно удален.')
+            return redirect('staff:admin-dashboard')
+
+        except Exception as e:
+            error_msg = f'Ошибка при удалении пользователя: {str(e)}'
+            logger.error(error_msg)
+
+            # Для AJAX-запросов возвращаем ошибку
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False,
+                    'error': error_msg
+                }, status=500)
+
+            # Для обычных запросов сохраняем ошибку и редиректим
+            messages.error(request, error_msg)
+            return redirect('staff:admin-dashboard')
+
+    # Блокируем GET-запросы к этому эндпоинту
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': False,
+            'error': 'Метод не разрешен'
+        }, status=405)
+
     return redirect('staff:admin-dashboard')
 
 
@@ -149,7 +184,8 @@ def manager_dashboard(request):
 @login_required
 @role_required('Staff')
 def employee_dashboard(request):
-    return render(request, 'staff/employee_dashboard.html')
+    # Исправленный путь к шаблону
+    return render(request, 'staff/employee/dashboard.html')
 
 
 @login_required
@@ -594,7 +630,7 @@ class ShiftListView(ListView):
 
 class MyShiftRequestsView(ListView):
     model = ShiftRequest
-    template_name = 'staff/my_shift_requests.html'
+    template_name = 'staff/employee/shifts/my_shift_requests.html'
     context_object_name = 'requests'
 
     def get_queryset(self):
@@ -604,12 +640,22 @@ class MyShiftRequestsView(ListView):
 class CreateShiftRequestView(CreateView):
     model = ShiftRequest
     form_class = ShiftRequestForm
-    template_name = 'staff/shift_request_form.html'
+    template_name = 'staff/employee/shifts/shift_request_form.html'
     success_url = reverse_lazy('staff:my-shift-requests')
 
     def form_valid(self, form):
         form.instance.employee = self.request.user
         return super().form_valid(form)
+
+
+class UpdateShiftRequestView(UpdateView):
+    model = ShiftRequest
+    form_class = ShiftRequestForm
+    template_name = 'staff/employee/shifts/shift_request_form.html'
+    success_url = reverse_lazy('staff:my-shift-requests')
+
+    def get_queryset(self):
+        return ShiftRequest.objects.filter(employee=self.request.user, status='pending')
 
 
 class AdminShiftApprovalView(ListView):
@@ -619,14 +665,12 @@ class AdminShiftApprovalView(ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = super().get_queryset().select_related('employee', 'shift')
+        queryset = ShiftRequest.objects.select_related('employee', 'shift').order_by('-created_at')
 
-        # Фильтрация по статусу
         status = self.request.GET.get('status')
         if status:
             queryset = queryset.filter(status=status)
 
-        # Фильтрация по дате
         date = self.request.GET.get('date')
         if date:
             queryset = queryset.filter(shift__date=date)
@@ -636,34 +680,52 @@ class AdminShiftApprovalView(ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['approved_requests_count'] = ShiftRequest.objects.filter(status='approved').count()
+        context['pending_requests_count'] = ShiftRequest.objects.filter(status='pending').count()
         return context
 
 
 @login_required
+@role_required('Admin', 'Manager')
 def approve_shift_request(request, pk):
     shift_request = get_object_or_404(ShiftRequest, pk=pk)
-    if request.user.is_staff:
-        shift_request.status = 'approved'
-        shift_request.save()
-        messages.success(request, 'Заявка утверждена')
-    return redirect('staff:admin_shift_approval')
-
-
-@login_required
-def reject_shift_request(request, pk):
-    shift_request = get_object_or_404(ShiftRequest, pk=pk)
-    if request.user.is_staff:
-        shift_request.status = 'rejected'
-        shift_request.save()
-        messages.success(request, 'Заявка отклонена')
+    shift_request.status = 'approved'
+    shift_request.save()
+    messages.success(request, 'Заявка утверждена')
     return redirect('staff:admin_shift_approval')
 
 
 @login_required
 @role_required('Admin', 'Manager')
+def reject_shift_request(request, pk):
+    shift_request = get_object_or_404(ShiftRequest, pk=pk)
+    shift_request.status = 'rejected'
+
+    if request.method == 'POST' and request.POST.get('admin_comment'):
+        shift_request.admin_comment = request.POST.get('admin_comment')
+
+    shift_request.save()
+    messages.success(request, 'Заявка отклонена')
+    return redirect('staff:admin_shift_approval')
+
+
+@login_required
 def shift_request_details(request, pk):
     shift_request = get_object_or_404(ShiftRequest, pk=pk)
-    return render(request, 'staff/common/partials/shift_request_details.html', {
+
+    # Проверка прав доступа
+    if not (request.user == shift_request.employee or
+            request.user.is_staff or
+            request.user.role in ['Admin', 'Manager']):
+        return HttpResponseForbidden("У вас нет доступа к этой странице")
+
+    # Для AJAX запросов (админка)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render(request, 'staff/common/partials/shift_request_details.html', {
+            'request': shift_request
+        })
+
+    # Для обычных запросов (панель сотрудника)
+    return render(request, 'staff/employee/shifts/shift_request_details.html', {
         'request': shift_request
     })
 
@@ -746,3 +808,84 @@ def delete_booking_admin(request, booking_id):
             'success': False,
             'error': 'Внутренняя ошибка сервера'
         }, status=500)
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def filter_users(request):
+    search_query = request.GET.get('search', '').strip()
+    role_filter = request.GET.get('role', '').strip().upper()
+    page_number = request.GET.get('page', 1)
+
+    users = CustomUser.objects.all().order_by('-date_joined')
+
+    if search_query:
+        users = users.filter(username__icontains=search_query)
+
+    if role_filter:
+        users = users.filter(role=role_filter)
+
+    paginator = Paginator(users, 5)
+    page_obj = paginator.get_page(page_number)
+
+    # Рендерим только таблицу пользователей
+    html = render_to_string(
+        'staff/common/partials/user_table.html',
+        {'users': page_obj},
+        request=request
+    )
+
+    return JsonResponse({'html': html})
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def create_shift(request):
+    if request.method == 'POST':
+        date = request.POST.get('date')
+        start_time = request.POST.get('start_time')
+        end_time = request.POST.get('end_time')
+
+        try:
+            Shift.objects.create(
+                date=date,
+                start_time=start_time,
+                end_time=end_time
+            )
+            messages.success(request, 'Смена успешно создана')
+            return redirect('staff:shift_list')
+        except Exception as e:
+            messages.error(request, f'Ошибка при создании смены: {str(e)}')
+
+    return render(request, 'staff/admin/create_shift.html')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def edit_shift(request, shift_id):
+    shift = get_object_or_404(Shift, id=shift_id)
+
+    if request.method == 'POST':
+        shift.date = request.POST.get('date')
+        shift.start_time = request.POST.get('start_time')
+        shift.end_time = request.POST.get('end_time')
+        shift.save()
+        messages.success(request, 'Смена успешно обновлена')
+        return redirect('staff:shift_list')
+
+    return render(request, 'staff/admin/edit_shift.html', {'shift': shift})
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def delete_shift(request, shift_id):
+    shift = get_object_or_404(Shift, id=shift_id)
+
+    # Проверка, что на смену нет заявок
+    if shift.shiftrequest_set.exists():
+        messages.error(request, 'Нельзя удалить смену с активными заявками')
+        return redirect('staff:shift_list')
+
+    shift.delete()
+    messages.success(request, 'Смена успешно удалена')
+    return redirect('staff:shift_list')

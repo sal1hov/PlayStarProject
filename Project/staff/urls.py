@@ -27,10 +27,13 @@ urlpatterns = [
 
     path('shifts/', views.ShiftListView.as_view(), name='shift-list'),
     path('my-shifts/', views.MyShiftRequestsView.as_view(), name='my-shift-requests'),
-    path('shift-request/create/', views.CreateShiftRequestView.as_view(), name='create-shift-request'),
+    path('shift-request/create/', views.CreateShiftRequestView.as_view(), name='shift-request-create'),
+    path('shift-request/<int:pk>/update/', views.UpdateShiftRequestView.as_view(), name='shift-request-update'),
+    path('shift-request/<int:pk>/details/', views.shift_request_details, name='shift-request-details'),
     path('admin/shift-approval/', views.AdminShiftApprovalView.as_view(), name='admin_shift_approval'),
     path('admin/shift-approval/<int:pk>/approve/', views.approve_shift_request, name='approve-shift-request'),
     path('admin/shift-approval/<int:pk>/reject/', views.reject_shift_request, name='reject-shift-request'),
     path('shift-request/<int:pk>/details/', views.shift_request_details, name='shift-request-details'),
     path('user/<int:user_id>/children/', views.manage_user_children, name='manage-user-children'),
+    path('filter-users/', views.filter_users, name='filter_users'),
 ]

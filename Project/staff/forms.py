@@ -1,9 +1,9 @@
 from django import forms
 from django.contrib.auth.models import User
+from django.utils import timezone
 from main.models import Profile, Child
-from .models import SiteSettings, Event, EVENT_TYPES, MODERATION_STATUS
+from .models import SiteSettings, Event, Shift, ShiftRequest
 from bookings.models import Booking
-from .models import ShiftRequest
 
 # Форма для обновления данных пользователя
 class UserUpdateForm(forms.ModelForm):
@@ -81,8 +81,19 @@ class IncomeForm(forms.ModelForm):
 class ShiftRequestForm(forms.ModelForm):
     class Meta:
         model = ShiftRequest
-        fields = ['shift']
+        fields = ['shift', 'comment']
+        widgets = {
+            'shift': forms.Select(attrs={'class': 'form-control'}),
+            'comment': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Необязательный комментарий'
+            }),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['shift'].queryset = Shift.objects.filter(date__gte=timezone.now().date())
+        # Фильтруем смены: только будущие
+        self.fields['shift'].queryset = Shift.objects.filter(
+            date__gte=timezone.now().date()
+        ).order_by('date')  # Убрана сортировка по start_time

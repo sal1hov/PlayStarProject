@@ -1,0 +1,58 @@
+{% extends 'staff/base_employee.html' %}
+{% block content %}
+<div class="bg-white rounded-lg shadow-md p-6 max-w-3xl mx-auto">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">Детали заявки на смену</h2>
+    
+    <div class="space-y-4">
+        <div>
+            <h3 class="text-sm font-medium text-gray-500">Дата смены</h3>
+            <p class="mt-1 text-sm text-gray-900">{{ request.shift.date|date:"d.m.Y" }}</p>
+        </div>
+        
+        <div>
+            <h3 class="text-sm font-medium text-gray-500">Время</h3>
+            <p class="mt-1 text-sm text-gray-900">{{ request.shift.start_time }} - {{ request.shift.end_time }}</p>
+        </div>
+        
+        <div>
+            <h3 class="text-sm font-medium text-gray-500">Статус</h3>
+            <p class="mt-1">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                    {% if request.status == 'approved' %}bg-green-100 text-green-800
+                    {% elif request.status == 'rejected' %}bg-red-100 text-red-800
+                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                    {{ request.get_status_display }}
+                </span>
+            </p>
+        </div>
+        
+        {% if request.comment %}
+        <div>
+            <h3 class="text-sm font-medium text-gray-500">Ваш комментарий</h3>
+            <p class="mt-1 text-sm text-gray-900">{{ request.comment }}</p>
+        </div>
+        {% endif %}
+        
+        {% if request.admin_comment %}
+        <div>
+            <h3 class="text-sm font-medium text-gray-500">Комментарий администратора</h3>
+            <p class="mt-1 text-sm text-gray-900">{{ request.admin_comment }}</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="mt-8 flex justify-between">
+        <a href="{% url 'staff:my-shift-requests' %}" 
+           class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors">
+            Назад к списку
+        </a>
+        
+        {% if request.status == 'pending' %}
+        <a href="{% url 'staff:shift-request-create' %}?edit={{ request.pk }}" 
+           class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+            Редактировать
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'staff/base_employee.html' %}
+{% block content %}
+<div class="bg-white rounded-lg shadow-md p-6 max-w-3xl mx-auto">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">
+        {% if object %}Редактирование заявки{% else %}Новая заявка на смену{% endif %}
+    </h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="id_shift">
+                    Смена
+                </label>
+                {{ form.shift }}
+                {% if form.shift.errors %}
+                    <p class="text-red-500 text-xs italic mt-1">{{ form.shift.errors }}</p>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="id_comment">
+                    Комментарий (необязательно)
+                </label>
+                {{ form.comment }}
+                {% if form.comment.errors %}
+                    <p class="text-red-500 text-xs italic mt-1">{{ form.comment.errors }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-between">
+            <a href="{% url 'staff:my-shift-requests' %}" 
+               class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors">
+                Отмена
+            </a>
+            <button type="submit" 
+                    class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                {% if object %}Обновить{% else %}Создать заявку{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация Flatpickr для выбора даты
+    flatpickr("#id_shift_date", {
+        dateFormat: "Y-m-d",
+        locale: "ru",
+        minDate: "today"
+    });
+});
+</script>
+{% endblock %}

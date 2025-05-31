@@ -1,0 +1,68 @@
+{% if users.object_list %}
+<div class="overflow-x-auto">
+    <table class="w-full">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Роль</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+            </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+            {% for user in users %}
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ user.username }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ user.get_role_display }}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                    <div class="flex items-center justify-center space-x-3">
+                        <a href="{% url 'staff:edit-user' user.id %}"
+                           class="text-blue-600 hover:text-blue-900 p-2 rounded-lg hover:bg-blue-50 transition-colors"
+                           title="Редактировать">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                            </svg>
+                        </a>
+                        <!-- Заменяем форму на кнопку с вызовом функции deleteUser -->
+                        <button onclick="deleteUser({{ user.id }})"
+                                class="text-red-600 hover:text-red-900 p-2 rounded-lg hover:bg-red-50 transition-colors"
+                                title="Удалить">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if users.paginator.num_pages > 1 %}
+<div class="px-6 py-4 border-t border-gray-200">
+    <div class="flex items-center justify-between">
+        <span class="text-sm text-gray-700">
+            Страница {{ users.number }} из {{ users.paginator.num_pages }}
+        </span>
+        <div class="flex space-x-2">
+            {% if users.has_previous %}
+                <button onclick="loadPage({{ users.previous_page_number }})"
+                       class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+                    Назад
+                </button>
+            {% endif %}
+            {% if users.has_next %}
+                <button onclick="loadPage({{ users.next_page_number }})"
+                       class="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+                    Далее
+                </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% else %}
+<div class="p-6 text-center text-gray-500">
+    Пользователи не найдены
+</div>
+{% endif %}
