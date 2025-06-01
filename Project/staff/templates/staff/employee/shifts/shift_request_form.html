@@ -1,56 +1,175 @@
 {% extends 'staff/base_employee.html' %}
+{% load static %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'staff/css/employee.css' %}">
+
+{% endblock %}
+
 {% block content %}
-<div class="bg-white rounded-lg shadow-md p-6 max-w-3xl mx-auto">
+<div class="max-w-4xl mx-auto bg-white p-6 rounded-lg shadow-lg">
     <h2 class="text-2xl font-bold text-gray-800 mb-6">
         {% if object %}Редактирование заявки{% else %}Новая заявка на смену{% endif %}
     </h2>
-    
-    <form method="post">
-        {% csrf_token %}
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="id_shift">
-                    Смена
-                </label>
-                {{ form.shift }}
-                {% if form.shift.errors %}
-                    <p class="text-red-500 text-xs italic mt-1">{{ form.shift.errors }}</p>
-                {% endif %}
+
+    <!-- Информация о сотруднике -->
+    <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+        <div class="flex items-center space-x-4">
+            <div class="bg-blue-100 p-3 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
             </div>
-            
             <div>
-                <label class="block text-gray-700 text-sm font-bold mb-2" for="id_comment">
-                    Комментарий (необязательно)
-                </label>
-                {{ form.comment }}
-                {% if form.comment.errors %}
-                    <p class="text-red-500 text-xs italic mt-1">{{ form.comment.errors }}</p>
-                {% endif %}
+                <h3 class="font-bold text-lg">Ваша информация</h3>
+                <p class="text-gray-700">
+                    <span class="font-medium">Роль:</span> {{ professional_role_display }}
+                </p>
             </div>
         </div>
-        
-        <div class="flex items-center justify-between">
-            <a href="{% url 'staff:my-shift-requests' %}" 
-               class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors">
+    </div>
+
+    <!-- Блок предупреждений -->
+    {% if professional_role == 'none' %}
+    <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded" role="alert">
+        <div class="flex items-center">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <h3 class="text-lg font-bold">Профессиональная роль не назначена!</h3>
+        </div>
+        <p class="mt-2">
+            Обратитесь к администратору, чтобы получить доступ к функционалу смен.
+        </p>
+    </div>
+    {% elif not is_weekend %}
+    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded" role="alert">
+        <div class="flex items-center">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <h3 class="text-lg font-bold">Сейчас не выходные!</h3>
+        </div>
+        <p class="mt-2">
+            Заявки на смены можно подавать только в субботу и воскресенье.
+        </p>
+    </div>
+    {% endif %}
+
+    {% if professional_role != 'none' and is_weekend %}
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Скрытое поле для роли (автоматически заполняется) -->
+        <input type="hidden" name="role" value="{{ professional_role }}">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Дата смены -->
+            <div class="space-y-2">
+                <label class="block text-gray-700 text-sm font-bold mb-1" for="id_date">
+                    Дата смены <span class="text-red-500">*</span>
+                </label>
+                <div class="relative date-field">
+                    <input type="date" name="date" id="id_date"
+                           class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300 shadow-sm hover:shadow-md focus:shadow-lg text-gray-700 bg-white"
+                           value="{{ form.date.value|default:'' }}">
+                </div>
+                {% if form.date.errors %}
+                    <p class="text-red-500 text-sm mt-1">{{ form.date.errors.as_text }}</p>
+                {% else %}
+                    <p class="text-gray-500 text-xs mt-1">Выберите дату в следующей неделе</p>
+                {% endif %}
+            </div>
+
+            <!-- Время смены -->
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="block text-gray-700 text-sm font-bold mb-1" for="id_start_time">
+                        Начало смены <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative time-field">
+                        <input type="time" name="start_time" id="id_start_time"
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300 shadow-sm hover:shadow-md focus:shadow-lg text-gray-700 bg-white"
+                               value="{{ form.start_time.value|default:'' }}">
+                    </div>
+                    {% if form.start_time.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.start_time.errors.as_text }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-gray-700 text-sm font-bold mb-1" for="id_end_time">
+                        Конец смены <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative time-field">
+                        <input type="time" name="end_time" id="id_end_time"
+                               class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300 shadow-sm hover:shadow-md focus:shadow-lg text-gray-700 bg-white"
+                               value="{{ form.end_time.value|default:'' }}">
+                    </div>
+                    {% if form.end_time.errors %}
+                        <p class="text-red-500 text-sm mt-1">{{ form.end_time.errors.as_text }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Комментарий -->
+        <div class="space-y-2">
+            <label class="block text-gray-700 text-sm font-bold mb-1" for="id_comment">
+                Комментарий
+            </label>
+            <textarea name="comment" id="id_comment"
+                      class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-300 shadow-sm hover:shadow-md focus:shadow-lg text-gray-700 bg-white min-h-[100px]"
+                      >{{ form.comment.value|default:'' }}</textarea>
+            <p class="text-gray-500 text-xs mt-1">Укажите дополнительную информацию при необходимости</p>
+        </div>
+
+        <!-- Кнопки -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4">
+            <a href="{% url 'staff:my-shift-requests' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg text-center transition-colors duration-300">
                 Отмена
             </a>
-            <button type="submit" 
-                    class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-                {% if object %}Обновить{% else %}Создать заявку{% endif %}
+            <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center transition-colors duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300" type="submit">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                {% if object %}Обновить заявку{% else %}Создать заявку{% endif %}
             </button>
         </div>
     </form>
+    {% endif %}
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Инициализация Flatpickr для выбора даты
-    flatpickr("#id_shift_date", {
-        dateFormat: "Y-m-d",
-        locale: "ru",
-        minDate: "today"
-    });
+    // Установка минимальной даты (следующий понедельник)
+    const today = new Date();
+    const nextMonday = new Date(today);
+    nextMonday.setDate(today.getDate() + (1 + 7 - today.getDay()) % 7);
+
+    const minDate = nextMonday.toISOString().split('T')[0];
+    const dateField = document.getElementById('id_date');
+
+    if (dateField) {
+        dateField.setAttribute('min', minDate);
+
+        // Установка максимальной даты (1 неделя вперед - до воскресенья)
+        const maxDate = new Date(nextMonday);
+        maxDate.setDate(nextMonday.getDate() + 6);
+        dateField.setAttribute('max', maxDate.toISOString().split('T')[0]);
+
+        // Обновление подсказки с диапазоном дат
+        const dateHint = dateField.parentElement.querySelector('.text-xs');
+        if (dateHint) {
+            const formatDate = (date) => date.toLocaleDateString('ru-RU', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+
+            dateHint.textContent = `Диапазон: ${formatDate(nextMonday)} - ${formatDate(maxDate)}`;
+        }
+    }
 });
 </script>
 {% endblock %}

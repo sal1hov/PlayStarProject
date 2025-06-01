@@ -139,6 +139,26 @@
                     </div>
                 </div>
 
+                <!-- Профессиональная роль (ДОБАВЛЕН НОВЫЙ РАЗДЕЛ) -->
+                <div class="border-t border-gray-200 pt-6 mb-8">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Профессиональная роль</h3>
+                    <div class="flex flex-wrap gap-4">
+                        {% for role_value, role_name in professional_roles %}
+                        <div class="flex items-center">
+                            <input id="professional_role-{{ role_value }}" name="professional_role" type="radio"
+                                   value="{{ role_value }}" class="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                                   {% if user.professional_role == role_value %}checked{% endif %}>
+                            <label for="professional_role-{{ role_value }}" class="ml-2 block text-sm text-gray-700">
+                                {{ role_name }}
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <p class="mt-2 text-sm text-gray-500">
+                        Для сотрудников: определяет доступные смены и функционал
+                    </p>
+                </div>
+
                 <!-- Статус активации -->
                 <div class="border-t border-gray-200 pt-6 mb-8">
                     <h3 class="text-lg font-medium text-gray-900 mb-4">Статус аккаунта</h3>

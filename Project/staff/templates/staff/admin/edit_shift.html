@@ -1,0 +1,86 @@
+{% extends 'staff/base_admin.html' %}
+{% block content %}
+<div class="bg-white rounded-lg shadow-md p-6 max-w-3xl mx-auto">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">Редактировать смену</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="id_role">
+                    Роль сотрудника
+                </label>
+                {{ form.role }}
+                {% if form.role.errors %}
+                    <p class="text-red-500 text-xs italic mt-1">{{ form.role.errors }}</p>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="id_shift_type">
+                    Тип смены
+                </label>
+                {{ form.shift_type }}
+                {% if form.shift_type.errors %}
+                    <p class="text-red-500 text-xs italic mt-1">{{ form.shift_type.errors }}</p>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="id_date">
+                    Дата смены
+                </label>
+                {{ form.date }}
+                {% if form.date.errors %}
+                    <p class="text-red-500 text-xs italic mt-1">{{ form.date.errors }}</p>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="id_max_staff">
+                    Макс. сотрудников
+                </label>
+                {{ form.max_staff }}
+                {% if form.max_staff.errors %}
+                    <p class="text-red-500 text-xs italic mt-1">{{ form.max_staff.errors }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="flex items-center justify-end">
+            <a href="{% url 'staff:shift-list' %}" 
+               class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors mr-2">
+                Отмена
+            </a>
+            <button type="submit" 
+                    class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                Обновить смену
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Динамическое обновление типов смен при изменении роли
+    const roleSelect = document.getElementById('id_role');
+    const shiftTypeSelect = document.getElementById('id_shift_type');
+    
+    roleSelect.addEventListener('change', function() {
+        const role = this.value;
+        fetch(`/staff/shifts/get_shift_types/?role=${role}`)
+            .then(response => response.json())
+            .then(data => {
+                shiftTypeSelect.innerHTML = '';
+                data.types.forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type[0];
+                    option.textContent = type[1];
+                    shiftTypeSelect.appendChild(option);
+                });
+            });
+    });
+});
+</script>
+{% endblock %}

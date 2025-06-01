@@ -1,9 +1,14 @@
-{% extends 'staff/base_employee.html' %}
-{% block content %}
-<div class="bg-white rounded-lg shadow-md p-6">
+{% extends 'staff/base_admin.html' %}
+{% block admin_content %}
+<div class="bg-white rounded-lg shadow-md p-6 max-w-3xl mx-auto">
     <h2 class="text-2xl font-bold text-gray-800 mb-6">Детали заявки на смену</h2>
 
     <div class="space-y-4">
+        <div>
+            <h3 class="text-sm font-medium text-gray-500">Сотрудник</h3>
+            <p class="mt-1 text-sm text-gray-900">{{ request.employee.get_full_name }}</p>
+        </div>
+
         <div>
             <h3 class="text-sm font-medium text-gray-500">Дата смены</h3>
             <p class="mt-1 text-sm text-gray-900">{{ request.date|date:"d.m.Y" }}</p>
@@ -33,31 +38,37 @@
 
         {% if request.comment %}
         <div>
-            <h3 class="text-sm font-medium text-gray-500">Ваш комментарий</h3>
+            <h3 class="text-sm font-medium text-gray-500">Комментарий сотрудника</h3>
             <p class="mt-1 text-sm text-gray-900">{{ request.comment }}</p>
         </div>
         {% endif %}
 
         {% if request.admin_comment and request.status == 'rejected' %}
         <div>
-            <h3 class="text-sm font-medium text-gray-500">Комментарий администратора</h3>
+            <h3 class="text-sm font-medium text-gray-500">Ваш комментарий</h3>
             <p class="mt-1 text-sm text-gray-900">{{ request.admin_comment }}</p>
         </div>
         {% endif %}
     </div>
 
-    <div class="mt-8 flex space-x-4">
-        <a href="{% url 'staff:my-shift-requests' %}"
+    <div class="mt-8 flex justify-between">
+        <a href="{% url 'staff:admin_shift_approval' %}"
            class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors">
             Назад к списку
         </a>
 
         {% if request.status == 'pending' %}
-        <a href="{% url 'staff:shift-request-update' request.pk %}"
-           class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
-            Редактировать
-        </a>
+        <div class="flex space-x-2">
+            <a href="{% url 'staff:approve-shift-request' request.pk %}"
+               class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
+                Утвердить
+            </a>
+            <a href="{% url 'staff:reject-shift-request' request.pk %}"
+               class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors">
+                Отклонить
+            </a>
+        </div>
         {% endif %}
     </div>
 </div>
-{% endblock %}
+{% endblock admin_content %}

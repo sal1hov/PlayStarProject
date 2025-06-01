@@ -8,12 +8,28 @@ class CustomUser(AbstractUser):
         ('MANAGER', 'Менеджер'),
         ('ADMIN', 'Администратор'),
     ]
+
+    # ПРОФЕССИОНАЛЬНЫЕ РОЛИ (должности)
+    PROFESSIONAL_ROLES = [
+        ('none', 'Не назначена'),
+        ('animator', 'Детский городок'),
+        ('additional', 'Доп. сотрудник'),
+        ('vr_operator', 'VR сотрудник'),
+        ('cashier', 'Кассир (Администратор)'),
+    ]
+
     phone_number = models.CharField(max_length=15, unique=True, verbose_name="Номер телефона")
     role = models.CharField(
         max_length=10,
         choices=ROLE_CHOICES,
         default='CLIENT',
         verbose_name='Роль'
+    )
+    professional_role = models.CharField(
+        max_length=20,
+        choices=PROFESSIONAL_ROLES,
+        default='none',
+        verbose_name='Профессиональная роль'
     )
     email = models.EmailField(unique=True, verbose_name="Email")
 
@@ -25,6 +41,13 @@ class CustomUser(AbstractUser):
 
     def is_manager_or_higher(self):
         return self.role in ['MANAGER', 'ADMIN']
+
+    # ДОБАВЛЕНО: Метод для отображения профессиональной роли
+    def get_professional_role_display(self):
+        return dict(self.PROFESSIONAL_ROLES).get(
+            self.professional_role,
+            self.professional_role
+        )
 
     @property
     def telegram_account(self):

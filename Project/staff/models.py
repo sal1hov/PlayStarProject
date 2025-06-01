@@ -3,6 +3,9 @@ from django.contrib.auth import get_user_model
 from django.db.models.signals import post_migrate
 from django.dispatch import receiver
 from django.contrib.auth.models import Group
+from django.core.exceptions import ValidationError
+from django.utils import timezone
+from main.models import CustomUser
 
 
 class StaffProfile(models.Model):
@@ -91,59 +94,111 @@ class Event(models.Model):
         return self.name
 
     def get_event_type_display(self):
-        """Возвращает читаемое название типа мероприятия"""
         return dict(EVENT_TYPES).get(self.event_type, self.event_type)
 
     def get_moderation_status_display(self):
-        """Возвращает читаемое название статуса модерации"""
         return dict(MODERATION_STATUS).get(self.moderation_status, self.moderation_status)
 
     def get_location_display(self):
-        """Возвращает читаемое название места проведения"""
         return dict(self.LOCATION_CHOICES).get(self.location, self.location)
 
     class Meta:
         verbose_name = "Мероприятие"
         verbose_name_plural = "Мероприятия"
-        ordering = ['date']  # Сортировка по дате (от ближайших к дальним)
+        ordering = ['date']
 
 
 class Shift(models.Model):
-    SHIFT_TYPES = (
-        ('morning', 'Утро (9:00-15:00)'),
-        ('afternoon', 'День (15:00-21:00)'),
-        ('night', 'Ночь (21:00-9:00)'),
-        ('full', 'Полный день (9:00-21:00)'),
+    ROLE_CHOICES = [
+        ('animator', 'Детский городок'),
+        ('additional', 'Доп. сотрудник'),
+        ('vr_operator', 'VR сотрудник'),
+        ('cashier', 'Кассир (Администратор)'),
+    ]
+
+    SHIFT_TYPES = [
+        ('full', 'Полный день (9:30-22:00)'),
+        ('morning', 'Утро (9:30-16:00)'),
+        ('evening', 'Вечер (16:00-22:00)'),
+        ('additional_evening', 'Вечер доп. сотрудника (15:00-22:00)'),
+        ('vr_evening', 'Вечер VR сотрудника (15:00-22:00)'),
+    ]
+
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default='animator',  # ДОБАВЛЕНО ЗНАЧЕНИЕ ПО УМОЛЧАНИЮ
+        verbose_name="Роль сотрудника"
+    )
+    shift_type = models.CharField(
+        max_length=20,
+        choices=SHIFT_TYPES,
+        verbose_name="Тип смены"
+    )
+    date = models.DateField(verbose_name="Дата смены")
+    max_staff = models.PositiveIntegerField(default=1, verbose_name="Макс. сотрудников")
+    staff = models.ManyToManyField(
+        CustomUser,
+        related_name='shifts',
+        blank=True,
+        verbose_name="Сотрудники"
     )
 
-    shift_type = models.CharField(max_length=20, choices=SHIFT_TYPES)
-    date = models.DateField()
-    max_staff = models.PositiveIntegerField(default=1)
-
     def __str__(self):
-        return f"{self.get_shift_type_display()} - {self.date.strftime('%d.%m.%Y')}"
+        role_display = dict(self.ROLE_CHOICES).get(self.role, self.role)
+        shift_display = dict(self.SHIFT_TYPES).get(self.shift_type, self.shift_type)
+        return f"{role_display} - {shift_display} - {self.date.strftime('%d.%m.%Y')}"
+
+    def get_staff_names(self):
+        return ", ".join([staff.get_full_name() for staff in self.staff.all()])
+
+    def clean(self):
+        # Для кассиров доступен только полный день
+        if self.role == 'cashier' and self.shift_type != 'full':
+            raise ValidationError("Кассиры могут работать только полный день")
+
+        # Проверка доступных типов смен для ролей
+        valid_combinations = {
+            'animator': ['full', 'morning', 'evening'],
+            'additional': ['full', 'additional_evening'],
+            'vr_operator': ['full', 'vr_evening'],
+            'cashier': ['full']
+        }
+        if self.shift_type not in valid_combinations.get(self.role, []):
+            raise ValidationError(f"Недопустимый тип смены для роли {self.get_role_display()}")
 
     @property
     def start_time(self):
-        """Виртуальное поле для получения времени начала смены"""
         times = {
-            'morning': '09:00',
-            'afternoon': '15:00',
-            'night': '21:00',
-            'full': '09:00'
+            'full': '09:30',
+            'morning': '09:30',
+            'evening': '16:00',
+            'additional_evening': '15:00',
+            'vr_evening': '15:00',
         }
         return times.get(self.shift_type, '')
 
     @property
     def end_time(self):
-        """Виртуальное поле для получения времени окончания смены"""
         times = {
-            'morning': '15:00',
-            'afternoon': '21:00',
-            'night': '09:00',
-            'full': '21:00'
+            'full': '22:00',
+            'morning': '16:00',
+            'evening': '22:00',
+            'additional_evening': '22:00',
+            'vr_evening': '22:00',
         }
         return times.get(self.shift_type, '')
+
+    @property
+    def duration(self):
+        durations = {
+            'full': 12.5,
+            'morning': 6.5,
+            'evening': 6,
+            'additional_evening': 7,
+            'vr_evening': 7,
+        }
+        return durations.get(self.shift_type, 0)
 
 
 class ShiftRequest(models.Model):
@@ -151,40 +206,63 @@ class ShiftRequest(models.Model):
         ('pending', 'На рассмотрении'),
         ('approved', 'Утверждено'),
         ('rejected', 'Отклонено'),
-        ('modified', 'Изменено администратором'),
     )
 
+    ROLE_CHOICES = [
+        ('animator', 'Детский городок'),
+        ('additional', 'Доп. сотрудник'),
+        ('vr_operator', 'VR сотрудник'),
+        ('cashier', 'Кассир (Администратор)'),
+    ]
+
     employee = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name='shift_requests')
-    shift = models.ForeignKey(Shift, on_delete=models.CASCADE)
+    date = models.DateField(verbose_name="Дата смены")
+    start_time = models.TimeField(verbose_name="Начало смены")
+    end_time = models.TimeField(verbose_name="Конец смены")
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        verbose_name="Роль"
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     admin_comment = models.TextField(blank=True, null=True)
-    # Добавлено поле comment
     comment = models.TextField(blank=True, null=True, verbose_name='Комментарий сотрудника')
 
     class Meta:
-        unique_together = ('employee', 'shift')
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.employee.username} - {self.shift} ({self.get_status_display()})"
+        return f"{self.employee.username} - {self.date} ({self.get_status_display()})"
 
-    def get_details(self):
-        return {
-            'employee': self.employee.get_full_name(),
-            'shift_type': self.shift.get_shift_type_display(),
-            'date': self.shift.date.strftime("%d.%m.%Y"),
-            'status': self.get_status_display(),
-            'created_at': self.created_at.strftime("%d.%m.%Y %H:%M"),
-            'admin_comment': self.admin_comment or 'Нет комментария',
-            'comment': self.comment or 'Нет комментария'  # Добавлено поле comment
-        }
+    def get_shift_type_from_times(self):
+        """Определяем тип смены на основе времени"""
+        start_hour = self.start_time.hour
+        end_hour = self.end_time.hour
+
+        if start_hour == 9 and end_hour == 22:
+            return 'full'
+        elif start_hour == 9 and end_hour == 16:
+            return 'morning'
+        elif start_hour == 16 and end_hour == 22:
+            return 'evening'
+        elif start_hour == 15 and end_hour == 22:
+            if self.role == 'additional':
+                return 'additional_evening'
+            elif self.role == 'vr_operator':
+                return 'vr_evening'
+        return 'full'
+
+    def duration(self):
+        """Рассчитать продолжительность смены в часах"""
+        start = timezone.datetime.combine(self.date, self.start_time)
+        end = timezone.datetime.combine(self.date, self.end_time)
+        return (end - start).total_seconds() / 3600
 
 
 @receiver(post_migrate)
 def verify_groups_exist(sender, **kwargs):
-    """Проверяет существование необходимых групп (выводит предупреждение если нет)"""
     required_groups = ['Admin', 'Manager', 'Staff']
     for group_name in required_groups:
         if not Group.objects.filter(name=group_name).exists():

@@ -10,17 +10,21 @@ from django.core.paginator import Paginator
 from django.db.models import Count, Sum, Avg, F, Q
 from django.db.models.functions import TruncMonth, TruncDay
 from django.template.loader import render_to_string
-from .models import Event, Shift, ShiftRequest  # Убедитесь, что Shift импортирован
+from .models import Event, Shift, ShiftRequest
 from .forms import EventForm, ShiftRequestForm
 from datetime import datetime, timedelta
 from django.utils import timezone
 from decimal import Decimal
-from django.views.generic import ListView, CreateView, UpdateView
+from django.views.generic import ListView, CreateView, UpdateView, DetailView, TemplateView
 from django.urls import reverse_lazy
 from django.contrib.auth import update_session_auth_hash
 import traceback
 from django.conf import settings
 from django.views.decorators.csrf import ensure_csrf_cookie
+from .forms import ShiftForm
+from django.views import View
+from django.db import transaction
+
 
 logger = logging.getLogger(__name__)
 
@@ -87,6 +91,7 @@ def edit_user(request, user_id):
     if request.method == 'POST':
         try:
             user_to_edit.role = request.POST.get('role')
+            user_to_edit.professional_role = request.POST.get('professional_role', 'none')  # Добавлено
             user_to_edit.first_name = request.POST.get('first_name')
             user_to_edit.last_name = request.POST.get('last_name')
             user_to_edit.email = request.POST.get('email')
@@ -112,7 +117,8 @@ def edit_user(request, user_id):
         'user': user_to_edit,
         'profile': profile,
         'children': children,
-        'role_choices': CustomUser.ROLE_CHOICES
+        'role_choices': CustomUser.ROLE_CHOICES,
+        'professional_roles': CustomUser.PROFESSIONAL_ROLES  # Добавлено
     })
 
 
@@ -618,15 +624,147 @@ def income_management_data(request):
         return JsonResponse({'success': False, 'error': str(e)})
 
 
+class ShiftManagementView(TemplateView):
+    template_name = 'staff/admin/shift_management.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Фильтрация смен
+        shifts = Shift.objects.filter(date__gte=timezone.now().date()).order_by('date')
+        date_filter = self.request.GET.get('date')
+        if date_filter:
+            try:
+                filter_date = datetime.strptime(date_filter, '%Y-%m-%d').date()
+                shifts = shifts.filter(date=filter_date)
+            except ValueError:
+                pass
+        context['shifts'] = shifts
+
+        # Фильтрация заявок
+        requests = ShiftRequest.objects.select_related('employee').order_by('-created_at')
+        status = self.request.GET.get('status')
+        if status:
+            requests = requests.filter(status=status)
+
+        date_req = self.request.GET.get('date_req')
+        if date_req:
+            requests = requests.filter(date=date_req)
+
+        context['requests'] = requests
+        context['approved_requests_count'] = ShiftRequest.objects.filter(status='approved').count()
+        context['pending_requests_count'] = ShiftRequest.objects.filter(status='pending').count()
+
+        return context
+
 class ShiftListView(ListView):
     model = Shift
-    template_name = 'staff/shift_list.html'
+    template_name = 'staff/admin/shift_list.html'
     context_object_name = 'shifts'
     paginate_by = 10
 
     def get_queryset(self):
-        return Shift.objects.filter(date__gte=timezone.now().date()).order_by('date')
+        queryset = Shift.objects.filter(date__gte=timezone.now().date()).order_by('date')
 
+        # Фильтрация по дате
+        date_filter = self.request.GET.get('date')
+        if date_filter:
+            try:
+                filter_date = datetime.strptime(date_filter, '%Y-%m-%d').date()
+                queryset = queryset.filter(date=filter_date)
+            except ValueError:
+                pass
+
+        return queryset
+
+
+class CreateShiftView(View):
+    template_name = 'staff/admin/create_shift.html'
+    success_url = reverse_lazy('staff:shift-management')
+
+    def get(self, request, *args, **kwargs):
+        return render(request, self.template_name)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            week_start = request.POST.get('week_start')
+            if not week_start:
+                messages.error(request, "Не указана дата начала недели")
+                return render(request, self.template_name)
+
+            # Собираем данные по дням
+            dates = request.POST.getlist('dates[]')
+            staff_data = {}
+
+            # Собираем данные по сотрудникам
+            for key in request.POST:
+                if key.startswith('staff['):
+                    # Формат ключа: staff[day_index][staff_index]
+                    parts = key.split('[')
+                    day_index = int(parts[1].split(']')[0])
+                    staff_index = int(parts[2].split(']')[0])
+
+                    # Получаем связанные данные
+                    role = request.POST.get(f'role[{day_index}][{staff_index}]')
+                    shift_type = request.POST.get(f'shift_type[{day_index}][{staff_index}]')
+                    staff_id = request.POST.get(key)
+
+                    if not all([role, shift_type, staff_id]):
+                        continue
+
+                    if day_index not in staff_data:
+                        staff_data[day_index] = []
+
+                    staff_data[day_index].append({
+                        'role': role,
+                        'shift_type': shift_type,
+                        'staff_id': staff_id
+                    })
+
+            # Создаем смены
+            created_shifts = 0
+            for day_index, staff_list in staff_data.items():
+                if day_index >= len(dates):
+                    continue
+
+                try:
+                    date = datetime.strptime(dates[day_index], '%Y-%m-%d').date()
+                except ValueError:
+                    continue
+
+                for staff_info in staff_list:
+                    try:
+                        staff_member = CustomUser.objects.get(id=staff_info['staff_id'])
+                    except CustomUser.DoesNotExist:
+                        continue
+
+                    # Создаем смену
+                    shift = Shift.objects.create(
+                        date=date,
+                        role=staff_info['role'],
+                        shift_type=staff_info['shift_type'],
+                        max_staff=1
+                    )
+                    shift.staff.add(staff_member)
+                    created_shifts += 1
+
+            messages.success(request, f"Успешно создано {created_shifts} смен!")
+            return redirect(self.success_url)
+
+        except Exception as e:
+            logger.error(f"Ошибка при создании смен: {str(e)}", exc_info=True)
+            messages.error(request, f"Ошибка при создании смен: {str(e)}")
+            return render(request, self.template_name)
+
+class UpdateShiftView(UpdateView):
+    model = Shift
+    form_class = ShiftForm
+    template_name = 'staff/admin/edit_shift.html'
+    success_url = reverse_lazy('staff:shift-management')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Смена успешно обновлена')
+        return super().form_valid(form)
 
 class MyShiftRequestsView(ListView):
     model = ShiftRequest
@@ -634,8 +772,7 @@ class MyShiftRequestsView(ListView):
     context_object_name = 'requests'
 
     def get_queryset(self):
-        return ShiftRequest.objects.filter(employee=self.request.user).order_by('-created_at')
-
+        return ShiftRequest.objects.filter(employee=self.request.user).order_by('-date')
 
 class CreateShiftRequestView(CreateView):
     model = ShiftRequest
@@ -643,10 +780,15 @@ class CreateShiftRequestView(CreateView):
     template_name = 'staff/employee/shifts/shift_request_form.html'
     success_url = reverse_lazy('staff:my-shift-requests')
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
     def form_valid(self, form):
         form.instance.employee = self.request.user
+        messages.success(self.request, 'Заявка на смену успешно создана!')
         return super().form_valid(form)
-
 
 class UpdateShiftRequestView(UpdateView):
     model = ShiftRequest
@@ -657,6 +799,20 @@ class UpdateShiftRequestView(UpdateView):
     def get_queryset(self):
         return ShiftRequest.objects.filter(employee=self.request.user, status='pending')
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        today = timezone.now().date()
+        context['is_weekend'] = today.weekday() in [5, 6]
+        context['user_role'] = self.request.user.get_role_display()
+        context['professional_role'] = self.request.user.professional_role
+        context['professional_role_display'] = self.request.user.get_professional_role_display()
+        return context
+
 
 class AdminShiftApprovalView(ListView):
     template_name = "staff/admin/shift_approval.html"
@@ -665,7 +821,7 @@ class AdminShiftApprovalView(ListView):
     paginate_by = 10
 
     def get_queryset(self):
-        queryset = ShiftRequest.objects.select_related('employee', 'shift').order_by('-created_at')
+        queryset = ShiftRequest.objects.select_related('employee').order_by('-created_at')
 
         status = self.request.GET.get('status')
         if status:
@@ -673,7 +829,7 @@ class AdminShiftApprovalView(ListView):
 
         date = self.request.GET.get('date')
         if date:
-            queryset = queryset.filter(shift__date=date)
+            queryset = queryset.filter(date=date)
 
         return queryset
 
@@ -684,50 +840,73 @@ class AdminShiftApprovalView(ListView):
         return context
 
 
+class ShiftRequestDetailView(DetailView):
+    model = ShiftRequest
+    context_object_name = 'request'
+
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if not (request.user == obj.employee or
+                request.user.role in ['ADMIN', 'MANAGER']):
+            return HttpResponseForbidden("У вас нет доступа к этой странице")
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_template_names(self):
+        if self.request.user.role in ['ADMIN', 'MANAGER']:
+            return ['staff/admin/shift_request_details.html']
+        else:
+            return ['staff/employee/shifts/shift_request_details.html']
+
+
 @login_required
 @role_required('Admin', 'Manager')
+@transaction.atomic
 def approve_shift_request(request, pk):
     shift_request = get_object_or_404(ShiftRequest, pk=pk)
+
+    # Проверяем, существует ли уже смена на эту дату и роль
+    shift, created = Shift.objects.get_or_create(
+        date=shift_request.date,
+        role=shift_request.role,
+        defaults={
+            'shift_type': shift_request.get_shift_type_from_times(),
+            'max_staff': 1
+        }
+    )
+
+    # Добавляем сотрудника в смену
+    if shift_request.employee not in shift.staff.all():
+        shift.staff.add(shift_request.employee)
+
+    # Обновляем статус заявки
     shift_request.status = 'approved'
     shift_request.save()
-    messages.success(request, 'Заявка утверждена')
-    return redirect('staff:admin_shift_approval')
+
+    messages.success(request, 'Заявка утверждена и сотрудник добавлен в смену')
+    return redirect('staff:shift-management')
 
 
 @login_required
 @role_required('Admin', 'Manager')
 def reject_shift_request(request, pk):
     shift_request = get_object_or_404(ShiftRequest, pk=pk)
+
+    if request.method == 'POST':
+        shift_request.admin_comment = request.POST.get('admin_comment', '')
+
     shift_request.status = 'rejected'
-
-    if request.method == 'POST' and request.POST.get('admin_comment'):
-        shift_request.admin_comment = request.POST.get('admin_comment')
-
     shift_request.save()
     messages.success(request, 'Заявка отклонена')
-    return redirect('staff:admin_shift_approval')
+    return redirect('staff:shift-management')
 
 
 @login_required
-def shift_request_details(request, pk):
+@role_required('Admin', 'Manager')
+def delete_shift_request(request, pk):
     shift_request = get_object_or_404(ShiftRequest, pk=pk)
-
-    # Проверка прав доступа
-    if not (request.user == shift_request.employee or
-            request.user.is_staff or
-            request.user.role in ['Admin', 'Manager']):
-        return HttpResponseForbidden("У вас нет доступа к этой странице")
-
-    # Для AJAX запросов (админка)
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return render(request, 'staff/common/partials/shift_request_details.html', {
-            'request': shift_request
-        })
-
-    # Для обычных запросов (панель сотрудника)
-    return render(request, 'staff/employee/shifts/shift_request_details.html', {
-        'request': shift_request
-    })
+    shift_request.delete()
+    messages.success(request, 'Заявка на смену успешно удалена.')
+    return redirect('staff:shift-management')
 
 
 @login_required
@@ -765,7 +944,7 @@ def manage_user_children(request, user_id):
                 messages.success(request, 'Ребенок успешно удален')
                 return redirect('staff:manage-user-children', user_id=user_id)
 
-    return render(request, 'staff/manage_user_children.html', {
+    return render(request, 'staff/admin/manage_user_children.html', {
         'user': user,
         'profile': profile,
         'children': children
@@ -776,7 +955,6 @@ def manage_user_children(request, user_id):
 @role_required('Admin', 'Manager')
 @ensure_csrf_cookie
 def delete_booking_admin(request, booking_id):
-    # Проверяем, что запрос AJAX и требует JSON
     if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({'error': 'Требуется AJAX запрос'}, status=400)
 
@@ -785,8 +963,6 @@ def delete_booking_admin(request, booking_id):
 
     try:
         booking = Booking.objects.get(id=booking_id)
-
-        # Удаление связанных событий
         Event.objects.filter(booking=booking).delete()
         booking.delete()
 
@@ -803,7 +979,6 @@ def delete_booking_admin(request, booking_id):
 
     except Exception as e:
         logger.error(f"Ошибка при удалении: {str(e)}", exc_info=True)
-        # Возвращаем ошибку в JSON-формате
         return JsonResponse({
             'success': False,
             'error': 'Внутренняя ошибка сервера'
@@ -828,7 +1003,6 @@ def filter_users(request):
     paginator = Paginator(users, 5)
     page_obj = paginator.get_page(page_number)
 
-    # Рендерим только таблицу пользователей
     html = render_to_string(
         'staff/common/partials/user_table.html',
         {'users': page_obj},
@@ -878,14 +1052,42 @@ def edit_shift(request, shift_id):
 
 @login_required
 @role_required('Admin', 'Manager')
-def delete_shift(request, shift_id):
-    shift = get_object_or_404(Shift, id=shift_id)
+def delete_shift(request, pk):
+    shift = get_object_or_404(Shift, pk=pk)
 
-    # Проверка, что на смену нет заявок
     if shift.shiftrequest_set.exists():
         messages.error(request, 'Нельзя удалить смену с активными заявками')
-        return redirect('staff:shift_list')
+        return redirect('staff:shift-management')
 
     shift.delete()
     messages.success(request, 'Смена успешно удалена')
-    return redirect('staff:shift_list')
+    return redirect('staff:shift-management')
+
+
+@login_required
+def get_shift_types(request):
+    role = request.GET.get('role')
+    form = ShiftForm()
+    types = form.get_shift_type_choices(role)
+    return JsonResponse({'types': types})
+
+
+@login_required
+def get_staff(request):
+    role = request.GET.get('role')
+    staff = CustomUser.objects.filter(
+        professional_role=role,
+        role__in=['STAFF', 'MANAGER', 'ADMIN']
+    ).values('id', 'first_name', 'last_name', 'professional_role')
+
+    staff_data = []
+    for user in staff:
+        staff_data.append({
+            'id': user['id'],
+            'full_name': f"{user['first_name']} {user['last_name']}",
+            'professional_role': dict(CustomUser.PROFESSIONAL_ROLES).get(
+                user['professional_role'], user['professional_role']
+            )
+        })
+
+    return JsonResponse({'staff': staff_data})

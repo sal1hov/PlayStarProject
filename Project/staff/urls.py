@@ -26,14 +26,23 @@ urlpatterns = [
     path('income-management/edit/', views.edit_income, name='edit-income'),
 
     path('shifts/', views.ShiftListView.as_view(), name='shift-list'),
+    path('shifts/create/', views.CreateShiftView.as_view(), name='shift-create'),
+    path('shifts/<int:pk>/update/', views.UpdateShiftView.as_view(), name='shift-update'),
+    path('shifts/<int:pk>/delete/', views.delete_shift, name='shift-delete'),
+    path('shifts/get_shift_types/', views.get_shift_types, name='get-shift-types'),
+
+    # Смены и заявки
     path('my-shifts/', views.MyShiftRequestsView.as_view(), name='my-shift-requests'),
     path('shift-request/create/', views.CreateShiftRequestView.as_view(), name='shift-request-create'),
     path('shift-request/<int:pk>/update/', views.UpdateShiftRequestView.as_view(), name='shift-request-update'),
-    path('shift-request/<int:pk>/details/', views.shift_request_details, name='shift-request-details'),
+    path('shift-request/<int:pk>/delete/', views.delete_shift_request, name='shift-request-delete'),  # Добавлен маршрут
+    path('shift-request/<int:pk>/details/', views.ShiftRequestDetailView.as_view(), name='shift-request-details'),
     path('admin/shift-approval/', views.AdminShiftApprovalView.as_view(), name='admin_shift_approval'),
     path('admin/shift-approval/<int:pk>/approve/', views.approve_shift_request, name='approve-shift-request'),
     path('admin/shift-approval/<int:pk>/reject/', views.reject_shift_request, name='reject-shift-request'),
-    path('shift-request/<int:pk>/details/', views.shift_request_details, name='shift-request-details'),
+    path('shifts/get_shift_types/', views.get_shift_types, name='get-shift-types'),
+    path('shifts/get_staff/', views.get_staff, name='get-staff'),
+
     path('user/<int:user_id>/children/', views.manage_user_children, name='manage-user-children'),
     path('filter-users/', views.filter_users, name='filter_users'),
 ]

@@ -5,22 +5,16 @@
 
 {% block admin_content %}
 <div class="bg-white p-6 rounded-lg shadow overflow-x-auto">
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">Управление графиком сотрудников</h1>
-
-    <!-- Карточки статистики -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        <div class="bg-blue-50 p-6 rounded-lg border border-blue-200">
-            <p class="text-gray-600">Всего заявок</p>
-            <p class="text-2xl font-bold text-gray-800">{{ requests.paginator.count }}</p>
-        </div>
-        <div class="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
-            <p class="text-gray-600">На утверждении</p>
-            <p class="text-2xl font-bold text-gray-800">{{ requests|length }}</p>
-        </div>
-        <div class="bg-green-50 p-6 rounded-lg border border-green-200">
-            <p class="text-gray-600">Утверждено</p>
-            <p class="text-2xl font-bold text-gray-800">{{ approved_requests_count }}</p>
-        </div>
+    <!-- Заголовок с кнопкой создания смены -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <h1 class="text-3xl font-bold text-gray-800">Управление графиком сотрудников</h1>
+        <a href="{% url 'staff:shift-create' %}"
+           class="mt-4 md:mt-0 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center transition duration-300">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Создать смену
+        </a>
     </div>
 
     <!-- Фильтры -->
@@ -58,8 +52,9 @@
             <thead class="bg-gray-100">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Сотрудник</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Смена</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Время</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Роль</th>
                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
                     <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
                 </tr>
@@ -80,17 +75,14 @@
                             </div>
                         </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full
-                            {% if request.shift.shift_type == 'morning' %}bg-blue-100 text-blue-800
-                            {% elif request.shift.shift_type == 'afternoon' %}bg-yellow-100 text-yellow-800
-                            {% elif request.shift.shift_type == 'night' %}bg-purple-100 text-purple-800
-                            {% else %}bg-green-100 text-green-800{% endif %}">
-                            {{ request.shift.get_shift_type_display }}
-                        </span>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ request.date|date:"d.m.Y" }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {{ request.shift.date|date:"d.m.Y" }}
+                        {{ request.start_time|time:"H:i" }} - {{ request.end_time|time:"H:i" }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ request.get_role_display }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full
@@ -117,13 +109,29 @@
                             </svg>
                         </a>
                         {% endif %}
-                        <button onclick="showRequestDetails('{{ request.id }}')"
-                                class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition duration-300 inline-block"
-                                title="Подробнее">
+                        <!-- Добавленные кнопки Изменить и Удалить -->
+                        <a href="{% url 'staff:shift-request-update' request.pk %}"
+                           class="text-yellow-600 hover:text-yellow-800 p-2 rounded-lg hover:bg-yellow-50 transition duration-300 inline-block"
+                           title="Изменить">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </a>
+                        <a href="{% url 'staff:shift-request-delete' request.pk %}"
+                           class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition duration-300 inline-block"
+                           title="Удалить">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </a>
+                        <!-- Конец добавленных кнопок -->
+                        <a href="{% url 'staff:shift-request-details' request.pk %}"
+                           class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 transition duration-300 inline-block"
+                           title="Подробнее">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                        </button>
+                        </a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -184,53 +192,4 @@
         </div>
     {% endif %}
 </div>
-
-<!-- Модальное окно с деталями заявки -->
-<div id="requestDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center z-50 p-4">
-    <div class="bg-white rounded-lg w-full max-w-lg">
-        <div class="flex justify-between items-center p-4 border-b">
-            <h3 class="text-xl font-bold text-gray-800">Детали заявки на смену</h3>
-            <button onclick="hideRequestDetails()" class="text-gray-500 hover:text-gray-700">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-            </button>
-        </div>
-        <div id="requestDetailsContent" class="p-6 max-h-[70vh] overflow-y-auto">
-            <!-- Контент будет загружен через AJAX -->
-        </div>
-        <div class="p-4 border-t flex justify-end">
-            <button onclick="hideRequestDetails()"
-                    class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300">
-                Закрыть
-            </button>
-        </div>
-    </div>
-</div>
-
-<script>
-    // Показать детали заявки
-    function showRequestDetails(requestId) {
-        fetch(`/staff/shift-request/${requestId}/details/`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Ошибка загрузки данных');
-                }
-                return response.text();
-            })
-            .then(html => {
-                document.getElementById('requestDetailsContent').innerHTML = html;
-                document.getElementById('requestDetailsModal').classList.remove('hidden');
-            })
-            .catch(error => {
-                console.error('Ошибка:', error);
-                alert('Не удалось загрузить детали заявки');
-            });
-    }
-
-    // Скрыть модальное окно
-    function hideRequestDetails() {
-        document.getElementById('requestDetailsModal').classList.add('hidden');
-    }
-</script>
 {% endblock admin_content %}

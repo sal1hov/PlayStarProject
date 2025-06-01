@@ -1,9 +1,26 @@
-{% extends 'staff/base_employee.html' %}  <!-- Изменено наследование -->
-{% block content %}  <!-- Изменено название блока -->
+{% extends 'staff/base_employee.html' %}
+{% block content %}
 <div class="flex space-x-8 max-w-6xl mx-auto">
     <div class="w-full bg-white p-8 rounded-lg shadow-2xl">
         <h2 class="text-4xl font-bold text-gray-800 mb-6">Панель сотрудника</h2>
         <p class="text-xl font-semibold text-gray-800 mb-6">Добро пожаловать, {{ user.username }}!</p>
+
+        <!-- ДОБАВЛЕНО: Уведомление о профессиональной роли -->
+        {% if not user.professional_role or user.professional_role == 'none' %}
+        <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6" role="alert">
+            <div class="flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <h3 class="text-lg font-bold">Внимание! Ваш профиль не настроен</h3>
+            </div>
+            <p class="mt-2">
+                Администратор не назначил вам профессиональную роль.
+                Обратитесь к администратору, чтобы получить доступ к функционалу смен.
+            </p>
+        </div>
+        {% endif %}
+
         <!-- Тут можно добавить специфичные для сотрудника данные и функциональность -->
     </div>
 </div>

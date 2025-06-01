@@ -96,7 +96,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    BASE_DIR / "static",  # Убедитесь, что путь указан правильно
+    # Убрана несуществующая папка static
+    BASE_DIR / 'staff' / 'static',
+    BASE_DIR / 'main' / 'static',
+    BASE_DIR / 'accounts' / 'static',
 ]
 
 # Default primary key field type

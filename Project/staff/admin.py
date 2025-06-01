@@ -2,7 +2,6 @@ from django.contrib import admin
 from django.utils.html import format_html
 from .models import Event, StaffProfile, SiteSettings, Shift, ShiftRequest
 
-
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     list_display = ('name', 'event_type', 'date', 'location', 'moderation_status', 'image_preview')
@@ -18,7 +17,6 @@ class EventAdmin(admin.ModelAdmin):
     image_preview.allow_tags = True
     image_preview.short_description = "Превью"
 
-
 @admin.register(StaffProfile)
 class StaffProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'position', 'user_role')
@@ -30,7 +28,6 @@ class StaffProfileAdmin(admin.ModelAdmin):
         return obj.user.get_role_display()
 
     user_role.short_description = 'Роль'
-
 
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
@@ -52,7 +49,6 @@ class SiteSettingsAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False if self.model.objects.count() > 0 else super().has_add_permission(request)
-
 
 @admin.register(Shift)
 class ShiftAdmin(admin.ModelAdmin):
@@ -84,20 +80,14 @@ class ShiftAdmin(admin.ModelAdmin):
 
     pending_requests_count.short_description = 'На рассмотрении'
 
-
 @admin.register(ShiftRequest)
 class ShiftRequestAdmin(admin.ModelAdmin):
-    list_display = ('employee', 'shift_info', 'status', 'created_at', 'admin_actions')
-    list_filter = ('status', 'shift__date', 'shift__shift_type')
-    search_fields = ('employee__username', 'employee__first_name', 'employee__last_name', 'shift__date')
+    list_display = ('employee', 'date', 'role', 'status', 'created_at', 'admin_actions')
+    list_filter = ('status', 'date', 'role')  # Исправлено: убраны ссылки на shift
+    search_fields = ('employee__username', 'employee__first_name', 'employee__last_name', 'date')  # Исправлено: убраны ссылки на shift
     list_editable = ('status',)
     actions = ['approve_requests', 'reject_requests']
-    raw_id_fields = ('employee', 'shift')
-
-    def shift_info(self, obj):
-        return f"{obj.shift.date} ({obj.shift.get_shift_type_display()})"
-
-    shift_info.short_description = 'Смена'
+    raw_id_fields = ('employee',)  # Исправлено: убран shift
 
     def admin_actions(self, obj):
         return format_html(

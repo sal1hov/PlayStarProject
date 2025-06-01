@@ -1,0 +1,400 @@
+{% extends 'staff/base_admin.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="bg-white rounded-lg shadow-md p-6 mx-auto max-w-6xl">
+    <h2 class="text-2xl font-bold text-gray-800 mb-6">Создать график смен</h2>
+
+    <form method="post" id="shift-form">
+        {% csrf_token %}
+
+        <div class="grid grid-cols-1 gap-6 mb-8">
+            <div>
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="id_week_start">
+                    Неделя с
+                </label>
+                <input type="date" name="week_start" id="id_week_start"
+                       class="w-full p-2 border rounded-lg"
+                       required>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full border-collapse">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="border py-2 px-4 text-center">День недели</th>
+                        <th class="border py-2 px-4 text-center">Дата</th>
+                        <th class="border py-2 px-4 text-center">Сотрудники</th>
+                        <th class="border py-2 px-4 w-24"></th>
+                    </tr>
+                </thead>
+                <tbody id="days-container">
+                    <!-- Динамически добавляемые дни недели -->
+                    <tr class="day-row" data-day="0">
+                        <td class="border py-3 px-4 text-center font-medium">Понедельник</td>
+                        <td class="border py-3 px-4 text-center">
+                            <input type="date" name="dates[]" class="date-input w-full p-2 border rounded" readonly>
+                        </td>
+                        <td class="border py-3 px-4">
+                            <div class="staff-fields">
+                                <div class="staff-field flex items-center mb-2 space-x-2">
+                                    <!-- Роль сотрудника -->
+                                    <select name="role[0][0]" class="role-select w-1/3 p-2 border rounded-lg">
+                                        <option value="">-- Роль --</option>
+                                        <option value="animator">Детский городок</option>
+                                        <option value="additional">Доп. сотрудник</option>
+                                        <option value="vr_operator">VR сотрудник</option>
+                                        <option value="cashier">Касса (Администратор)</option>
+                                    </select>
+
+                                    <!-- Тип смены -->
+                                    <select name="shift_type[0][0]" class="shift-type-select w-1/3 p-2 border rounded-lg" disabled>
+                                        <option value="">-- Сначала выберите роль --</option>
+                                    </select>
+
+                                    <!-- Сотрудник -->
+                                    <select name="staff[0][0]" class="user-select w-1/3 p-2 border rounded-lg" disabled>
+                                        <option value="">-- Сначала выберите роль --</option>
+                                    </select>
+
+                                    <button type="button" class="remove-staff ml-2 text-red-500 hover:text-red-700 hidden">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" class="add-staff mt-2 text-sm text-blue-600 hover:text-blue-800 flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                Добавить сотрудника
+                            </button>
+                        </td>
+                        <td class="border py-3 px-4 text-center">
+                            <button type="button" class="remove-day text-red-500 hover:text-red-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-6">
+            <button type="button" id="add-day" class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-lg flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Добавить день
+            </button>
+        </div>
+
+        <div class="mt-8 flex items-center justify-end">
+            <a href="{% url 'staff:shift-list' %}"
+               class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors mr-2">
+                Отмена
+            </a>
+            <button type="submit"
+                    class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                Сохранить график
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Элементы контейнеров
+    const daysContainer = document.getElementById('days-container');
+    const weekStartInput = document.getElementById('id_week_start');
+
+    // Список дней недели
+    const weekDays = [
+        "Понедельник", "Вторник", "Среда",
+        "Четверг", "Пятница", "Суббота", "Воскресенье"
+    ];
+
+    // Соответствие ролей и типов смен
+    const shiftTypesByRole = {
+        'animator': [
+            ['full', 'Полный день (9:30-22:00)'],
+            ['morning', 'Утро (9:30-16:00)'],
+            ['evening', 'Вечер (16:00-22:00)']
+        ],
+        'additional': [
+            ['full', 'Полный день (9:30-22:00)'],
+            ['additional_evening', 'Вечер доп. сотрудника (15:00-22:00)']
+        ],
+        'vr_operator': [
+            ['full', 'Полный день (9:30-22:00)'],
+            ['vr_evening', 'Вечер VR сотрудника (15:00-22:00)']
+        ],
+        'cashier': [
+            ['full', 'Полный день (9:30-22:00)']
+        ]
+    };
+
+    // Обновление дат при выборе начала недели
+    weekStartInput.addEventListener('change', updateDates);
+
+    // Добавление нового дня
+    document.getElementById('add-day').addEventListener('click', function() {
+        // Определяем следующий день недели
+        const existingDays = daysContainer.querySelectorAll('.day-row');
+        const nextDayIndex = existingDays.length;
+
+        if (nextDayIndex >= 7) {
+            alert('Нельзя добавить больше 7 дней');
+            return;
+        }
+
+        // Создаем клон первого дня
+        const firstDay = daysContainer.querySelector('.day-row');
+        const newDay = firstDay.cloneNode(true);
+
+        // Обновляем данные
+        newDay.dataset.day = nextDayIndex;
+        newDay.querySelector('.day-row td:first-child').textContent = weekDays[nextDayIndex];
+
+        // Обновляем имена полей
+        const staffFields = newDay.querySelectorAll('.staff-field');
+        staffFields.forEach((staffField, staffIndex) => {
+            const roleSelect = staffField.querySelector('.role-select');
+            const shiftTypeSelect = staffField.querySelector('.shift-type-select');
+            const userSelect = staffField.querySelector('.user-select');
+
+            roleSelect.name = `role[${nextDayIndex}][${staffIndex}]`;
+            shiftTypeSelect.name = `shift_type[${nextDayIndex}][${staffIndex}]`;
+            userSelect.name = `staff[${nextDayIndex}][${staffIndex}]`;
+        });
+
+        // Сбрасываем значения
+        newDay.querySelector('.date-input').value = '';
+        newDay.querySelectorAll('.role-select').forEach(select => {
+            select.selectedIndex = 0;
+        });
+        newDay.querySelectorAll('.shift-type-select').forEach(select => {
+            select.selectedIndex = 0;
+            select.disabled = true;
+        });
+        newDay.querySelectorAll('.user-select').forEach(select => {
+            select.selectedIndex = 0;
+            select.disabled = true;
+        });
+
+        // Показываем кнопку удаления дня
+        newDay.querySelector('.remove-day').classList.remove('hidden');
+
+        // Добавляем в контейнер
+        daysContainer.appendChild(newDay);
+
+        // Обновляем даты
+        updateDates();
+    });
+
+    // Обработчик для удаления дня
+    daysContainer.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-day')) {
+            const dayRow = e.target.closest('.day-row');
+            if (daysContainer.querySelectorAll('.day-row').length > 1) {
+                dayRow.remove();
+                // Перенумеровываем оставшиеся дни
+                reindexDays();
+            } else {
+                alert('Должен остаться хотя бы один день');
+            }
+        }
+    });
+
+    // Обработчик для добавления сотрудника
+    daysContainer.addEventListener('click', function(e) {
+        if (e.target.closest('.add-staff')) {
+            const staffContainer = e.target.closest('td').querySelector('.staff-fields');
+            const firstStaffField = staffContainer.querySelector('.staff-field');
+            const newStaffField = firstStaffField.cloneNode(true);
+            const dayRow = e.target.closest('.day-row');
+            const dayIndex = dayRow.dataset.day;
+            const staffIndex = staffContainer.querySelectorAll('.staff-field').length;
+
+            // Обновляем имена полей
+            const roleSelect = newStaffField.querySelector('.role-select');
+            const shiftTypeSelect = newStaffField.querySelector('.shift-type-select');
+            const userSelect = newStaffField.querySelector('.user-select');
+
+            roleSelect.name = `role[${dayIndex}][${staffIndex}]`;
+            shiftTypeSelect.name = `shift_type[${dayIndex}][${staffIndex}]`;
+            userSelect.name = `staff[${dayIndex}][${staffIndex}]`;
+
+            // Сбрасываем значения
+            roleSelect.selectedIndex = 0;
+            shiftTypeSelect.selectedIndex = 0;
+            shiftTypeSelect.disabled = true;
+            userSelect.selectedIndex = 0;
+            userSelect.disabled = true;
+
+            // Показываем кнопку удаления
+            newStaffField.querySelector('.remove-staff').classList.remove('hidden');
+
+            // Вставляем перед кнопкой "Добавить сотрудника"
+            staffContainer.appendChild(newStaffField);
+        }
+    });
+
+    // Обработчик для удаления сотрудника
+    daysContainer.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-staff')) {
+            const staffField = e.target.closest('.staff-field');
+            const staffContainer = staffField.closest('.staff-fields');
+
+            if (staffContainer.querySelectorAll('.staff-field').length > 1) {
+                staffField.remove();
+                // Перенумеровываем поля сотрудников
+                reindexStaffFields(staffContainer);
+            } else {
+                alert('Должен остаться хотя бы один сотрудник');
+            }
+        }
+    });
+
+    // Обработчик изменения роли
+    daysContainer.addEventListener('change', function(e) {
+        if (e.target.classList.contains('role-select')) {
+            const roleSelect = e.target;
+            const shiftTypeSelect = roleSelect.closest('.staff-field').querySelector('.shift-type-select');
+            const userSelect = roleSelect.closest('.staff-field').querySelector('.user-select');
+            const role = roleSelect.value;
+
+            // Обновляем типы смен
+            shiftTypeSelect.innerHTML = '';
+            if (role) {
+                shiftTypeSelect.disabled = false;
+                shiftTypeSelect.innerHTML = '<option value="">-- Выберите тип смены --</option>';
+                shiftTypesByRole[role].forEach(type => {
+                    const option = document.createElement('option');
+                    option.value = type[0];
+                    option.textContent = type[1];
+                    shiftTypeSelect.appendChild(option);
+                });
+            } else {
+                shiftTypeSelect.disabled = true;
+                shiftTypeSelect.innerHTML = '<option value="">-- Сначала выберите роль --</option>';
+                userSelect.disabled = true;
+                userSelect.innerHTML = '<option value="">-- Сначала выберите роль --</option>';
+            }
+        }
+    });
+
+    // Обработчик изменения типа смены
+    daysContainer.addEventListener('change', function(e) {
+        if (e.target.classList.contains('shift-type-select')) {
+            const shiftTypeSelect = e.target;
+            const roleSelect = shiftTypeSelect.closest('.staff-field').querySelector('.role-select');
+            const userSelect = shiftTypeSelect.closest('.staff-field').querySelector('.user-select');
+            const role = roleSelect.value;
+            const shiftType = shiftTypeSelect.value;
+
+            // Обновляем список сотрудников
+            if (role && shiftType) {
+                userSelect.disabled = false;
+                fetch(`/staff/shifts/get_staff/?role=${role}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        userSelect.innerHTML = '<option value="">-- Выберите сотрудника --</option>';
+                        data.staff.forEach(staff => {
+                            const option = document.createElement('option');
+                            option.value = staff.id;
+                            option.textContent = `${staff.full_name} (${staff.professional_role})`;
+                            userSelect.appendChild(option);
+                        });
+                    });
+            } else {
+                userSelect.disabled = true;
+                userSelect.innerHTML = '<option value="">-- Сначала выберите тип смены --</option>';
+            }
+        }
+    });
+
+    // Обновление дат на основе выбранной недели
+    function updateDates() {
+        if (!weekStartInput.value) return;
+
+        const startDate = new Date(weekStartInput.value);
+        const dayRows = daysContainer.querySelectorAll('.day-row');
+
+        dayRows.forEach((row, index) => {
+            const date = new Date(startDate);
+            date.setDate(date.getDate() + index);
+
+            // Форматируем дату в YYYY-MM-DD
+            const formattedDate = date.toISOString().split('T')[0];
+            row.querySelector('.date-input').value = formattedDate;
+        });
+    }
+
+    // Перенумерация дней после удаления
+    function reindexDays() {
+        const dayRows = daysContainer.querySelectorAll('.day-row');
+
+        dayRows.forEach((row, index) => {
+            row.dataset.day = index;
+            row.querySelector('.day-row td:first-child').textContent = weekDays[index];
+
+            // Обновляем имена полей сотрудников
+            const staffFields = row.querySelectorAll('.staff-field');
+            staffFields.forEach((staffField, staffIndex) => {
+                const roleSelect = staffField.querySelector('.role-select');
+                const shiftTypeSelect = staffField.querySelector('.shift-type-select');
+                const userSelect = staffField.querySelector('.user-select');
+
+                roleSelect.name = `role[${index}][${staffIndex}]`;
+                shiftTypeSelect.name = `shift_type[${index}][${staffIndex}]`;
+                userSelect.name = `staff[${index}][${staffIndex}]`;
+            });
+        });
+    }
+
+    // Перенумерация полей сотрудников в контейнере
+    function reindexStaffFields(staffContainer) {
+        const staffFields = staffContainer.querySelectorAll('.staff-field');
+
+        staffFields.forEach((staffField, index) => {
+            const roleSelect = staffField.querySelector('.role-select');
+            const shiftTypeSelect = staffField.querySelector('.shift-type-select');
+            const userSelect = staffField.querySelector('.user-select');
+            const dayRow = staffField.closest('.day-row');
+            const dayIndex = dayRow.dataset.day;
+
+            roleSelect.name = `role[${dayIndex}][${index}]`;
+            shiftTypeSelect.name = `shift_type[${dayIndex}][${index}]`;
+            userSelect.name = `staff[${dayIndex}][${index}]`;
+        });
+    }
+
+    // Инициализация дат при загрузке
+    const today = new Date();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1));
+    weekStartInput.valueAsDate = monday;
+    updateDates();
+});
+</script>
+
+<style>
+.staff-field {
+    transition: all 0.3s ease;
+}
+.remove-staff, .remove-day {
+    transition: transform 0.2s ease;
+}
+.remove-staff:hover, .remove-day:hover {
+    transform: scale(1.1);
+}
+.day-row:hover {
+    background-color: #f9fafb;
+}
+</style>
+{% endblock admin_content %}
