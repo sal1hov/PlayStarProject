@@ -376,13 +376,14 @@ def create_event(request):
         form = EventForm(request.POST, request.FILES)
         if form.is_valid():
             event = form.save()
-            messages.success(request, 'Мероприятие успешно создано и отправлено на модерацию.')
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': True, 'message': 'Мероприятие успешно создано.'})
-            else:
-                return redirect('staff:events')
+            return redirect('staff:events')
         else:
-            messages.error(request, 'Ошибка при создании мероприятия.')
+            errors = form.errors.as_json()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'message': 'Ошибка валидации формы.', 'errors': errors}, status=400)
+            return render(request, 'staff/admin/events.html', {'form': form})
     else:
         form = EventForm()
 
@@ -390,28 +391,52 @@ def create_event(request):
         html = render_to_string('staff/common/partials/edit_event_form.html', {'form': form}, request=request)
         return JsonResponse({'html': html})
     else:
-        return render(request, 'staff/common/partials/edit_event_form.html', {'form': form})
+        return render(request, 'staff/admin/events.html', {'form': form})
 
 
 @login_required
 @role_required('Admin', 'Manager')
 def edit_event(request, event_id):
     event = get_object_or_404(Event, id=event_id)
-    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
-        return JsonResponse({'error': 'This endpoint is only accessible via AJAX.'}, status=400)
 
     if request.method == 'GET':
         form = EventForm(instance=event)
-        html = render_to_string('staff/common/partials/edit_event_form.html', {'form': form, 'event': event},
-                                request=request)
-        return JsonResponse({'html': html})
+
+        # Для AJAX-запросов возвращаем только форму
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            html = render_to_string('staff/common/partials/edit_event_form.html',
+                                    {'form': form, 'event': event},
+                                    request=request)
+            return JsonResponse({'html': html})
+
+        # Для обычных запросов возвращаем полную страницу
+        return render(request, 'staff/admin/edit_event.html', {
+            'form': form,
+            'event': event
+        })
+
     elif request.method == 'POST':
         form = EventForm(request.POST, request.FILES, instance=event)
         if form.is_valid():
             form.save()
-            return JsonResponse({'success': True, 'message': 'Мероприятие успешно обновлено.'})
+
+            # Для AJAX-запросов возвращаем JSON
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': True, 'message': 'Мероприятие успешно обновлено.'})
+
+            # Для обычных запросов делаем редирект
+            messages.success(request, 'Мероприятие успешно обновлено.')
+            return redirect('staff:events')
+
         else:
-            return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+            # Обработка ошибок валидации
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'errors': form.errors}, status=400)
+
+            return render(request, 'staff/admin/edit_event.html', {
+                'form': form,
+                'event': event
+            })
 
 
 @login_required
@@ -1255,4 +1280,76 @@ def edit_day_shifts_view(request):
     return render(request, 'staff/admin/edit_day_shifts.html', {
         'forms': forms,
         'date': target_date
+    })
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def users_view(request):
+    # Фильтрация пользователей
+    users = CustomUser.objects.all().order_by('-date_joined')
+
+    # Поиск по имени/почте
+    search_query = request.GET.get('search')
+    if search_query:
+        users = users.filter(
+            Q(username__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query)
+        )
+
+    # Фильтр по роли
+    role_filter = request.GET.get('role')
+    if role_filter:
+        users = users.filter(role=role_filter)
+
+    # Фильтр по активности
+    is_active_filter = request.GET.get('is_active')
+    if is_active_filter:
+        users = users.filter(is_active=bool(int(is_active_filter)))
+
+    # Пагинация
+    paginator = Paginator(users, 15)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'staff/admin/users.html', {
+        'users': page_obj
+    })
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def create_user(request):
+    if request.method == 'POST':
+        try:
+            # Создаем пользователя
+            user = CustomUser.objects.create_user(
+                username=request.POST.get('username'),
+                email=request.POST.get('email'),
+                password=request.POST.get('password1'),
+                first_name=request.POST.get('first_name'),
+                last_name=request.POST.get('last_name'),
+                phone_number=request.POST.get('phone_number'),
+                role=request.POST.get('role', 'CLIENT'),
+                professional_role=request.POST.get('professional_role', 'none'),
+                is_active='is_active' in request.POST
+            )
+
+            # Создаем профиль
+            profile = Profile.objects.create(
+                user=user,
+                bonuses=request.POST.get('bonuses', 0)
+            )
+
+            messages.success(request, f'Пользователь {user.username} успешно создан!')
+            return redirect('staff:users')
+
+        except Exception as e:
+            messages.error(request, f'Ошибка при создании пользователя: {str(e)}')
+
+    return render(request, 'staff/admin/create_user.html', {
+        'role_choices': CustomUser.ROLE_CHOICES,
+        'professional_roles': CustomUser.PROFESSIONAL_ROLES
     })

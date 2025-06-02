@@ -1,0 +1,237 @@
+{% extends 'staff/base_admin.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="max-w-7xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Управление пользователями</h1>
+
+    <!-- Фильтры и поиск -->
+    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-6">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <input type="text" name="search" placeholder="Поиск по имени/почте"
+                   value="{{ request.GET.search }}"
+                   class="p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+
+            <select name="role" class="p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Все роли</option>
+                <option value="ADMIN" {% if request.GET.role == "ADMIN" %}selected{% endif %}>Администратор</option>
+                <option value="MANAGER" {% if request.GET.role == "MANAGER" %}selected{% endif %}>Менеджер</option>
+                <option value="STAFF" {% if request.GET.role == "STAFF" %}selected{% endif %}>Сотрудник</option>
+                <option value="CLIENT" {% if request.GET.role == "CLIENT" %}selected{% endif %}>Клиент</option>
+            </select>
+
+            <select name="is_active" class="p-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <option value="">Все статусы</option>
+                <option value="1" {% if request.GET.is_active == "1" %}selected{% endif %}>Активен</option>
+                <option value="0" {% if request.GET.is_active == "0" %}selected{% endif %}>Неактивен</option>
+            </select>
+
+            <div class="flex space-x-2">
+                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex-1">
+                    Применить
+                </button>
+                <a href="{% url 'staff:users' %}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                    Сбросить
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Кнопка добавления пользователя -->
+    <div class="mb-4 flex justify-end">
+        <a href="{% url 'staff:create-user' %}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Добавить пользователя
+        </a>
+    </div>
+
+    <!-- Таблица пользователей -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        {% if users %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Имя пользователя</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ФИО</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Роль</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for user in users %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="text-sm font-medium text-gray-900">{{ user.username }}</div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">
+                                {% if user.get_full_name %}
+                                    {{ user.get_full_name }}
+                                {% else %}
+                                    <span class="text-gray-400">Не указано</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ user.get_role_display }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 py-1 text-xs rounded-full
+                                {% if user.is_active %}bg-green-100 text-green-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {% if user.is_active %}Активен{% else %}Неактивен{% endif %}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-center">
+                            <div class="flex items-center justify-center space-x-3">
+                                <a href="{% url 'staff:edit-user' user.id %}" title="Редактировать"
+                                   class="text-blue-500 hover:text-blue-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                    </svg>
+                                </a>
+                                <a href="{% url 'staff:manage-user-children' user.id %}" title="Дети"
+                                   class="text-purple-500 hover:text-purple-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                </a>
+                                <button title="Удалить"
+                                        onclick="deleteUser({{ user.id }}, '{{ user.username }}')"
+                                        class="text-red-500 hover:text-red-700">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Пагинация -->
+        <div class="px-6 py-4 bg-white border-t border-gray-200">
+            <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-700">
+                    Показано с <span class="font-medium">{{ users.start_index }}</span> по
+                    <span class="font-medium">{{ users.end_index }}</span> из
+                    <span class="font-medium">{{ users.paginator.count }}</span> пользователей
+                </div>
+                <div class="flex space-x-2">
+                    {% if users.has_previous %}
+                        <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                           class="px-3 py-1 bg-gray-200 rounded-md text-gray-700 hover:bg-gray-300">
+                            &laquo;
+                        </a>
+                        <a href="?page={{ users.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                           class="px-3 py-1 bg-gray-200 rounded-md text-gray-700 hover:bg-gray-300">
+                            &lsaquo;
+                        </a>
+                    {% endif %}
+
+                    <span class="px-3 py-1 bg-blue-500 text-white rounded-md">
+                        {{ users.number }}
+                    </span>
+
+                    {% if users.has_next %}
+                        <a href="?page={{ users.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                           class="px-3 py-1 bg-gray-200 rounded-md text-gray-700 hover:bg-gray-300">
+                            &rsaquo;
+                        </a>
+                        <a href="?page={{ users.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                           class="px-3 py-1 bg-gray-200 rounded-md text-gray-700 hover:bg-gray-300">
+                            &raquo;
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="p-8 text-center">
+            <svg class="w-16 h-16 mx-auto text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <h3 class="mt-4 text-lg font-medium text-gray-900">Пользователи не найдены</h3>
+            <p class="mt-1 text-sm text-gray-500">Попробуйте изменить критерии поиска</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Функция для удаления пользователя
+function deleteUser(userId, username) {
+    Swal.fire({
+        title: 'Удалить пользователя?',
+        html: `Вы действительно хотите удалить пользователя <b>${username}</b>? Это действие нельзя отменить.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Да, удалить',
+        cancelButtonText: 'Отмена'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const csrfToken = getCookie('csrftoken');
+            const url = "{% url 'staff:delete-user' 0 %}".replace('0', userId);
+
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Ошибка сети');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'Удалено!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    Swal.fire('Ошибка!', data.error || 'Не удалось удалить пользователя', 'error');
+                }
+            })
+            .catch(error => {
+                Swal.fire('Ошибка!', 'Сетевая ошибка: ' + error.message, 'error');
+            });
+        }
+    });
+}
+
+// Функция для получения CSRF токена из куки
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

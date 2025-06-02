@@ -103,7 +103,7 @@
                         <h3 class="text-lg leading-6 font-medium text-gray-900 mb-6" id="modal-title">
                             Бронирование мероприятия
                         </h3>
-                        <form id="bookingForm" method="post" action="{% url 'create_booking' %}">
+                        <form id="bookingForm" method="post" action="{% url 'bookings:create_booking' %}">
                             {% csrf_token %}
                             <input type="hidden" id="event_id" name="event_id">
                             <div class="space-y-4">

@@ -14,24 +14,20 @@ urlpatterns = [
     path('statistics/', views.statistics_view, name='statistics'),
     path('events/', views.events_view, name='events'),
     path('events/create/', views.create_event, name='create-event'),
-    path('events/<int:event_id>/edit/', views.edit_event, name='edit-event'),
+    path('events/edit/<int:event_id>/', views.edit_event, name='edit-event'),
     path('events/<int:event_id>/approve/', views.approve_event, name='approve-event'),
     path('events/<int:event_id>/reject/', views.reject_event, name='reject-event'),
     path('events/<int:event_id>/delete/', views.delete_event, name='delete-event'),
     path('events/<int:event_id>/view/', views.event_view, name='view-event'),
     path('events/<int:event_id>/view-booking/', views.view_booking, name='view-booking'),
-
     path('income-management/', views.income_management, name='income-management'),
     path('income-management/data/', views.income_management_data, name='income-management-data'),
     path('income-management/edit/', views.edit_income, name='edit-income'),
-
     path('shifts/', views.ShiftListView.as_view(), name='shift-list'),
     path('shifts/create/', views.CreateShiftView.as_view(), name='shift-create'),
     path('shifts/<int:pk>/update/', views.UpdateShiftView.as_view(), name='shift-update'),
     path('shifts/<int:pk>/delete/', views.delete_shift, name='shift-delete'),
     path('shifts/get_shift_types/', views.get_shift_types, name='get-shift-types'),
-
-    # Смены и заявки
     path('my-shifts/', views.MyShiftRequestsView.as_view(), name='my-shift-requests'),
     path('shift-request/create/', views.CreateShiftRequestView.as_view(), name='shift-request-create'),
     path('shift-request/<int:pk>/update/', views.UpdateShiftRequestView.as_view(), name='shift-request-update'),
@@ -46,9 +42,8 @@ urlpatterns = [
     path('shifts/get_staff/', views.get_staff, name='get-staff'),
     path('shifts/edit_day/', views.edit_day_shifts, name='edit-day-shifts'),
     path('shifts/<int:pk>/duplicate/', views.duplicate_shift, name='shift-duplicate'),
-
-
-
     path('user/<int:user_id>/children/', views.manage_user_children, name='manage-user-children'),
     path('filter-users/', views.filter_users, name='filter_users'),
+    path('users/', views.users_view, name='users'),
+    path('users/create/', views.create_user, name='create-user'),
 ]

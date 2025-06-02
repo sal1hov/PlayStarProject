@@ -67,6 +67,23 @@
                         <a href="{% url 'staff:admin_shift_approval' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-100">✅ Утверждение</a>
                     </div>
                 </div>
+
+                <!-- Пользователи -->
+                <div x-data="{ open: false }" @mouseenter="open = true" @mouseleave="open = false" class="relative">
+                    <button class="flex items-center w-full p-3 text-gray-700 hover:bg-blue-50 rounded-lg transition-all">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        Пользователи
+                        <svg class="ml-auto w-4 h-4 transform transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div x-show="open" x-transition x-cloak class="absolute left-0 mt-1 w-full bg-white border border-gray-200 shadow-lg rounded-lg py-2 z-50">
+                        <a href="{% url 'staff:users' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-100">👥 Список пользователей</a>
+                        <a href="{% url 'staff:create-user' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-100">➕ Создать пользователя</a>
+                    </div>
+                </div>
             </nav>
         </div>
         <div class="p-6 border-t mt-auto">
@@ -241,6 +258,3 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 </body>
 </html>
-
-
-

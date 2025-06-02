@@ -1,0 +1,61 @@
+{% extends 'staff/base_admin.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="max-w-4xl mx-auto mt-10 bg-white rounded-xl shadow-md p-8">
+  <h1 class="text-3xl font-bold mb-6 text-gray-800">Редактировать мероприятие</h1>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">Название</label>
+      {{ form.name }}
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">Дата и время</label>
+      {{ form.date }}
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">Тип мероприятия</label>
+      {{ form.event_type }}
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">Описание</label>
+      {{ form.description }}
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">Максимальное количество участников</label>
+      {{ form.max_participants }}
+    </div>
+
+    <div class="mb-4">
+      <label class="block text-sm font-medium text-gray-700">Статус модерации</label>
+      {{ form.moderation_status }}
+    </div>
+
+    <div class="flex justify-between items-center">
+      <a href="{% url 'staff:events' %}" class="text-blue-600 hover:underline">← Назад к мероприятиям</a>
+      <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+        Сохранить изменения
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    flatpickr('#id_date', {
+      enableTime: true,
+      dateFormat: "Y-m-d H:i",
+      time_24hr: true,
+      locale: "ru",
+      minDate: "today"
+    });
+  });
+</script>
+{% endblock %}

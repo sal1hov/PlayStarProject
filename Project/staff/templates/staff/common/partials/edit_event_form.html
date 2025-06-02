@@ -12,7 +12,7 @@
   </h2>
 
   <form id="editEventForm" method="post" enctype="multipart/form-data"
-        action="{% if event %}{% url 'edit_event' event.id %}{% else %}{% url 'create_event' %}{% endif %}"
+        action="{% if event %}{% url 'staff:edit-event' event.id %}{% else %}{% url 'staff:create-event' %}{% endif %}"
         class="space-y-5">
     {% csrf_token %}
 
