@@ -72,12 +72,38 @@ def admin_dashboard(request):
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
 
+    # ===== НОВЫЙ КОД ДЛЯ ПАНЕЛЕЙ =====
+    # Кто сегодня работает
+    today = timezone.now().date()
+    shifts_today = Shift.objects.filter(date=today).prefetch_related('staff')
+    staff_working = []
+    for shift in shifts_today:
+        for staff in shift.staff.all():
+            staff_working.append({
+                'staff': staff,
+                'role': shift.get_role_display(),
+                'shift_type': shift.get_shift_type_display(),
+                'time_range': f"{shift.start_time} - {shift.end_time}"
+            })
+
+    # Подтвержденные бронирования на сегодня
+    bookings_today = Booking.objects.filter(
+        event_date__date=today,
+        status='approved'
+    ).select_related('user')
+    # ===== КОНЕЦ НОВОГО КОДА =====
+
     return render(request, 'staff/admin/dashboard.html', {
         'users': page_obj,
         'bookings': bookings,
         'total_users': total_users,
         'total_bookings': total_bookings,
-        'pending_bookings': pending_bookings
+        'pending_bookings': pending_bookings,
+        # ===== НОВЫЕ ПЕРЕМЕННЫЕ =====
+        'staff_working': staff_working,
+        'bookings_today': bookings_today,
+        'today': today.strftime("%d.%m.%Y")
+        # ===== КОНЕЦ НОВЫХ ПЕРЕМЕННЫХ =====
     })
 
 
@@ -630,9 +656,13 @@ class ShiftManagementView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Фильтрация смен
-        shifts = Shift.objects.filter(date__gte=timezone.now().date()).order_by('date')
+        # Получаем параметры фильтрации
         date_filter = self.request.GET.get('date')
+        status_filter = self.request.GET.get('status')
+        date_req_filter = self.request.GET.get('date_req')
+
+        # Фильтрация ВСЕХ смен (а не только будущих)
+        shifts = Shift.objects.all().order_by('date')
         if date_filter:
             try:
                 filter_date = datetime.strptime(date_filter, '%Y-%m-%d').date()
@@ -643,17 +673,21 @@ class ShiftManagementView(TemplateView):
 
         # Фильтрация заявок
         requests = ShiftRequest.objects.select_related('employee').order_by('-created_at')
-        status = self.request.GET.get('status')
-        if status:
-            requests = requests.filter(status=status)
-
-        date_req = self.request.GET.get('date_req')
-        if date_req:
-            requests = requests.filter(date=date_req)
+        if status_filter:
+            requests = requests.filter(status=status_filter)
+        if date_req_filter:
+            requests = requests.filter(date=date_req_filter)
 
         context['requests'] = requests
         context['approved_requests_count'] = ShiftRequest.objects.filter(status='approved').count()
         context['pending_requests_count'] = ShiftRequest.objects.filter(status='pending').count()
+
+        # Сохраняем текущие фильтры для формы
+        context['current_filters'] = {
+            'date': date_filter,
+            'status': status_filter,
+            'date_req': date_req_filter
+        }
 
         return context
 
@@ -1055,10 +1089,35 @@ def edit_shift(request, shift_id):
 def delete_shift(request, pk):
     shift = get_object_or_404(Shift, pk=pk)
 
-    if shift.shiftrequest_set.exists():
-        messages.error(request, 'Нельзя удалить смену с активными заявками')
+    # Проверка наличия связанных заявок по дате, роли и времени
+    existing_requests = ShiftRequest.objects.filter(
+        date=shift.date,
+        role=shift.role,
+        start_time=shift.start_time,
+        end_time=shift.end_time
+    )
+
+    if existing_requests.exists():
+        error_msg = 'Нельзя удалить смену с активными заявками.'
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'error': error_msg}, status=400)
+        messages.error(request, error_msg)
         return redirect('staff:shift-management')
 
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        try:
+            shift.delete()
+            return JsonResponse({
+                'success': True,
+                'message': 'Смена успешно удалена'
+            })
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': str(e)
+            }, status=500)
+
+    # Обычный запрос
     shift.delete()
     messages.success(request, 'Смена успешно удалена')
     return redirect('staff:shift-management')
@@ -1067,10 +1126,16 @@ def delete_shift(request, pk):
 @login_required
 def get_shift_types(request):
     role = request.GET.get('role')
-    form = ShiftForm()
-    types = form.get_shift_type_choices(role)
-    return JsonResponse({'types': types})
 
+    role_to_shift_types = {
+        'animator': [('full', 'Полная смена'), ('morning', 'Утренняя'), ('evening', 'Вечерняя')],
+        'additional': [('full', 'Полная смена'), ('additional_evening', 'Доп. вечерняя')],
+        'vr_operator': [('full', 'Полная смена'), ('vr_evening', 'VR вечерняя')],
+        'cashier': [('full', 'Полная смена')],
+    }
+
+    types = role_to_shift_types.get(role, [])
+    return JsonResponse({'types': types})
 
 @login_required
 def get_staff(request):
@@ -1091,3 +1156,103 @@ def get_staff(request):
         })
 
     return JsonResponse({'staff': staff_data})
+
+@login_required
+@role_required('Admin', 'Manager')
+def edit_day_shifts(request):
+    from .forms import ShiftForm
+    from main.models import CustomUser
+    from .models import Shift
+
+    selected_date = request.GET.get('date')
+    if not selected_date:
+        return HttpResponse("Дата не указана", status=400)
+
+    shifts = Shift.objects.filter(date=selected_date).prefetch_related('staff')
+
+    if request.method == 'POST':
+        for shift in shifts:
+            form = ShiftForm(request.POST, instance=shift, prefix=f'shift_{shift.pk}')
+            if form.is_valid():
+                form.save()
+        messages.success(request, 'Смены успешно обновлены')
+        return redirect('staff:shift-management')
+
+    forms = []
+    for shift in shifts:
+        form = ShiftForm(instance=shift, prefix=f'shift_{shift.pk}')
+        forms.append((shift, form))
+
+    return render(request, 'staff/admin/edit_day_shifts.html', {
+        'date': selected_date,
+        'forms': forms
+    })
+
+@login_required
+@role_required('Admin', 'Manager')
+def duplicate_shift(request, pk):
+    if request.method == 'POST':
+        try:
+            original = get_object_or_404(Shift, pk=pk)
+            new_shift = Shift.objects.create(
+                date=original.date,
+                role=original.role,
+                shift_type=original.shift_type,
+                max_staff=original.max_staff
+            )
+            new_shift.staff.set(original.staff.all())
+
+            from .forms import ShiftForm
+            form = ShiftForm(instance=new_shift, prefix=f'shift_{new_shift.pk}')
+            html = render_to_string('staff/common/partials/shift_card.html', {
+                'shift': new_shift,
+                'form': form
+            }, request=request)
+
+            return JsonResponse({
+                'success': True,
+                'new_shift_html': html
+            })
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    return JsonResponse({'success': False, 'error': 'Метод не разрешен'}, status=405)
+
+@login_required
+def edit_day_shifts_view(request):
+    date_str = request.GET.get('date')
+    if not date_str:
+        return render(request, 'staff/admin/edit_day_shifts.html', {
+            'forms': [],
+            'date': None
+        })
+
+    try:
+        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        target_date = timezone.now().date()
+
+    shifts = Shift.objects.filter(date=target_date)
+
+    if request.method == 'POST':
+        forms = []
+        all_valid = True
+        for shift in shifts:
+            form = ShiftForm(request.POST, instance=shift, prefix=f'shift_{shift.id}')
+            forms.append((shift, form))
+            if not form.is_valid():
+                all_valid = False
+        if all_valid:
+            for _, form in forms:
+                form.save()
+            return render(request, 'staff/admin/edit_day_shifts.html', {
+                'forms': forms,
+                'date': target_date,
+                'success': True
+            })
+    else:
+        forms = [(shift, ShiftForm(instance=shift, prefix=f'shift_{shift.id}')) for shift in shifts]
+
+    return render(request, 'staff/admin/edit_day_shifts.html', {
+        'forms': forms,
+        'date': target_date
+    })

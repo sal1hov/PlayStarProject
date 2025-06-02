@@ -1,0 +1,115 @@
+{% extends 'staff/base_admin.html' %}
+{% load static %}
+{% load widget_tweaks %}
+
+{% block admin_content %}
+<div class="max-w-6xl mx-auto bg-white shadow-xl rounded-xl p-8">
+    <h2 class="text-3xl font-bold text-gray-800 text-center mb-8 border-b pb-4">
+        ✏️ Редактирование смены
+    </h2>
+
+    {% if forms %}
+    <form method="post" class="space-y-10">
+        {% csrf_token %}
+        <div id="shift-container">
+            {% for shift, form in forms %}
+                {% include 'staff/common/partials/shift_card.html' with shift=shift form=form %}
+            {% endfor %}
+        </div>
+
+        <div class="text-right mt-6">
+            <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow transition">
+                💾 Сохранить изменения
+            </button>
+        </div>
+    </form>
+    {% else %}
+    <div class="text-center py-16">
+        <p class="text-gray-500 text-lg">Нет смен на выбранный день.</p>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function confirmDelete(shiftId) {
+    Swal.fire({
+        title: 'Удалить смену?',
+        text: 'Это действие нельзя отменить!',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Удалить',
+        cancelButtonText: 'Отмена'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            fetch(`/staff/shifts/${shiftId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById(`shift-${shiftId}`).remove();
+                    Swal.fire('Удалено!', data.message, 'success');
+                } else {
+                    Swal.fire('Ошибка!', data.error || 'Не удалось удалить смену.', 'error');
+                }
+            });
+        }
+    });
+}
+
+function duplicateShift(shiftId) {
+    fetch(`/staff/shifts/${shiftId}/duplicate/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log("Ответ от сервера:", data);
+        if (data.success && data.new_shift_html) {
+            const parser = new DOMParser();
+            const newBlock = parser.parseFromString(data.new_shift_html, 'text/html').body.firstChild;
+
+            const container = document.getElementById('shift-container');
+            if (!container) {
+                Swal.fire('Ошибка!', 'Контейнер для смен не найден.', 'error');
+                return;
+            }
+
+            container.appendChild(newBlock);
+            Swal.fire('Успешно!', 'Смена продублирована.', 'success');
+        } else if (data.success) {
+            Swal.fire('Успешно!', 'Смена продублирована.', 'success');
+        } else {
+            Swal.fire('Ошибка!', data.error || 'Ошибка при дублировании.', 'error');
+        }
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.slice(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+{% endblock %}

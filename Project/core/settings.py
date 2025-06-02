@@ -29,7 +29,8 @@ INSTALLED_APPS = [
     'bookings',
     'staff',
     'telegram_bot',
-    'social_django'
+    'social_django',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [

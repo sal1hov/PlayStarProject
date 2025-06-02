@@ -1,0 +1,54 @@
+{# staff/common/partials/shift_card.html #}
+{% load widget_tweaks %}
+
+<div id="shift-{{ shift.id }}" class="border border-gray-200 bg-gray-50 rounded-lg shadow p-6 hover:shadow-lg transition duration-200">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-semibold text-gray-800">
+            🕒 Смена #{{ shift.id }} — {{ shift.get_role_display }} ({{ shift.get_shift_type_display }}) — {{ shift.date|date:"d.m.Y" }}
+        </h3>
+
+        <div class="flex gap-2">
+            <button type="button"
+                    onclick="confirmDelete({{ shift.id }})"
+                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm shadow">
+                🗑 Удалить
+            </button>
+            <button type="button"
+                    onclick="duplicateShift({{ shift.id }})"
+                    class="bg-gray-500 hover:bg-gray-600 text-white px-3 py-1.5 rounded text-sm shadow">
+                📄 Дублировать
+            </button>
+        </div>
+    </div>
+
+    {{ form.management_form }}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {% for field in form.visible_fields %}
+        <div>
+            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                {{ field.label }}
+                {% if field.name == "staff" %}
+                <span class="text-xs text-gray-400">(Зажмите Ctrl для выбора нескольких)</span>
+                {% endif %}
+            </label>
+            {% if field.name == "staff" %}
+                <select name="{{ field.html_name }}" id="{{ field.id_for_label }}" multiple
+                        class="w-full h-40 rounded-md border border-gray-300 shadow-sm p-2.5 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+                    {% for choice in field.field.queryset %}
+                    <option value="{{ choice.pk }}" {% if choice in field.value %}selected{% endif %}>
+                        {{ choice.get_full_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            {% elif field.name == "date" %}
+                {% render_field field class="w-full rounded-md border border-gray-300 shadow-sm p-2.5 text-gray-800 bg-gray-100 cursor-not-allowed" readonly="readonly" %}
+            {% else %}
+                {% render_field field class="w-full rounded-md border border-gray-300 shadow-sm p-2.5 text-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none transition" %}
+            {% endif %}
+            {% if field.errors %}
+            <p class="text-red-500 text-sm mt-1">{{ field.errors|striptags }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>

@@ -5,12 +5,10 @@
 <div class="bg-white rounded-lg shadow-md p-6 mx-auto max-w-6xl">
     <div class="flex justify-between items-center mb-6">
         <h2 class="text-2xl font-bold text-gray-800">Управление сменами и заявками</h2>
-        
         <div class="flex items-center space-x-4">
-            <a href="{% url 'staff:shift-create' %}" 
-               class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            <a href="{% url 'staff:shift-create' %}" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 flex items-center">
+                <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 6v6m0 0v6m0-6h6m-6 0H6" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" />
                 </svg>
                 Создать смену
             </a>
@@ -18,215 +16,170 @@
     </div>
 
     <!-- Фильтры -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-gray-50 p-4 rounded-lg">
+    <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-gray-50 p-4 rounded-lg">
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Дата смены</label>
-            <input type="date" name="date" class="w-full p-2 border rounded-lg"
-                   value="{{ request.GET.date }}">
+            <input type="date" name="date" class="w-full p-2 border rounded-lg" value="{{ current_filters.date|default:'' }}">
         </div>
-        
+
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Статус заявки</label>
             <select name="status" class="w-full p-2 border rounded-lg">
                 <option value="">Все статусы</option>
-                <option value="pending" {% if request.GET.status == "pending" %}selected{% endif %}>На рассмотрении</option>
-                <option value="approved" {% if request.GET.status == "approved" %}selected{% endif %}>Утверждено</option>
-                <option value="rejected" {% if request.GET.status == "rejected" %}selected{% endif %}>Отклонено</option>
+                <option value="pending" {% if current_filters.status == "pending" %}selected{% endif %}>На рассмотрении</option>
+                <option value="approved" {% if current_filters.status == "approved" %}selected{% endif %}>Утверждено</option>
+                <option value="rejected" {% if current_filters.status == "rejected" %}selected{% endif %}>Отклонено</option>
             </select>
         </div>
-        
+
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Дата заявки</label>
-            <input type="date" name="date_req" class="w-full p-2 border rounded-lg"
-                   value="{{ request.GET.date_req }}">
+            <input type="date" name="date_req" class="w-full p-2 border rounded-lg" value="{{ current_filters.date_req|default:'' }}">
         </div>
-        
+
         <div class="md:col-span-3 flex justify-end space-x-2">
-            <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
-                Применить фильтры
-            </button>
-            <a href="{% url 'staff:shift-management' %}" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 flex items-center">
-                Сбросить
-            </a>
+            <button type="submit" class="bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700">Применить фильтры</button>
+            <a href="{% url 'staff:shift-management' %}" class="bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 flex items-center">Сбросить</a>
         </div>
-    </div>
+    </form>
 
-    <!-- Таблицы -->
-    <div class="grid grid-cols-1 gap-8">
-        <!-- Секция смен -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <div class="bg-gray-50 px-4 py-3 border-b">
-                <h3 class="text-lg font-medium text-gray-800">Запланированные смены</h3>
-            </div>
-            
-            {% if shifts %}
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Роль</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Тип смены</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Сотрудники</th>
-                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for shift in shifts %}
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                {{ shift.date|date:"d.m.Y" }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                {{ shift.get_role_display }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                {{ shift.get_shift_type_display }}
-                            </td>
-                            <td class="px-6 py-4">
-                                <ul class="list-disc pl-5">
-                                    {% for staff in shift.staff.all %}
-                                    <li>{{ staff.get_full_name }}</li>
-                                    {% empty %}
-                                    <li class="text-gray-500">Сотрудники не назначены</li>
-                                    {% endfor %}
-                                </ul>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center space-x-2">
-                                <a href="{% url 'staff:shift-update' shift.pk %}" 
-                                   class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 inline-block">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                    </svg>
-                                </a>
-                                <a href="{% url 'staff:shift-delete' shift.pk %}" 
-                                   class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 inline-block">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                    </svg>
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="text-center py-12 bg-gray-50 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>
-                </svg>
-                <h3 class="mt-4 text-xl font-medium text-gray-900">Смены не найдены</h3>
-                <p class="mt-2 text-gray-500">
-                    Запланированные смены отсутствуют
-                </p>
-            </div>
-            {% endif %}
+    <!-- Секция смен -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-gray-50 px-4 py-3 border-b">
+            <h3 class="text-lg font-medium text-gray-800">Запланированные смены</h3>
         </div>
 
-        <!-- Секция заявок -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <div class="bg-gray-50 px-4 py-3 border-b">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-medium text-gray-800">Заявки на смены</h3>
-                    <div class="flex space-x-2">
-                        <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm">
-                            Утверждено: {{ approved_requests_count }}
-                        </span>
-                        <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-sm">
-                            На рассмотрении: {{ pending_requests_count }}
-                        </span>
+        {% if shifts %}
+        {% regroup shifts by date as grouped_shifts %}
+
+        <div class="divide-y divide-gray-200">
+            {% for group in grouped_shifts %}
+            <div class="mb-4 border rounded-lg shadow-sm bg-gray-50">
+                <div class="flex items-center justify-between p-4 bg-gray-100 rounded-t-lg">
+                    <div class="text-lg font-semibold text-gray-800">
+                        {{ group.grouper|date:"d E Y" }} — {{ group.list|length }} смен{% if group.list|length > 1 %}ы{% else %}а{% endif %}
                     </div>
+                    <a href="{% url 'staff:edit-day-shifts' %}?date={{ group.grouper|date:'Y-m-d' }}"
+                       class="inline-block bg-yellow-500 hover:bg-yellow-600 text-white text-sm py-1 px-3 rounded transition">
+                        Редактировать день
+                    </a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full table-auto">
+                        <thead class="bg-gray-200 text-sm text-gray-600 uppercase">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Роль</th>
+                                <th class="px-4 py-2 text-left">Тип смены</th>
+                                <th class="px-4 py-2 text-left">Сотрудники</th>
+                                <th class="px-4 py-2 text-center">Действия</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-100">
+                            {% for shift in group.list %}
+                            <tr class="hover:bg-gray-50" data-shift-id="{{ shift.pk }}">
+                                <td class="px-4 py-3 whitespace-nowrap">{{ shift.get_role_display }}</td>
+                                <td class="px-4 py-3 whitespace-nowrap">{{ shift.get_shift_type_display }}</td>
+                                <td class="px-4 py-3">
+                                    {% if shift.staff.exists %}
+                                    <ul class="list-disc list-inside text-gray-800">
+                                        {% for staff in shift.staff.all %}
+                                        <li>{{ staff.get_full_name }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                    {% else %}
+                                    <span class="text-gray-500">Сотрудники не назначены</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 text-center">
+                                    <button title="Удалить смену"
+                                            onclick="deleteShift({{ shift.pk }}, '{% url 'staff:shift-delete' shift.pk %}')"
+                                            class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-100 transition">
+                                        <svg class="h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
-            
-            {% if requests %}
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-100">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Сотрудник</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Дата</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Время</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Роль</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Статус</th>
-                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for request in requests %}
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10">
-                                        <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
-                                            {{ request.employee.first_name|first }}{{ request.employee.last_name|first }}
-                                        </div>
-                                    </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">{{ request.employee.get_full_name }}</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ request.date|date:"d.m.Y" }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ request.start_time|time:"H:i" }} - {{ request.end_time|time:"H:i" }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ request.get_role_display }}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full
-                                    {% if request.status == 'approved' %}bg-green-100 text-green-800
-                                    {% elif request.status == 'rejected' %}bg-red-100 text-red-800
-                                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
-                                    {{ request.get_status_display }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm space-x-2">
-                                {% if request.status == 'pending' %}
-                                <a href="{% url 'staff:approve-shift-request' request.pk %}"
-                                   class="text-green-600 hover:text-green-800 p-2 rounded-lg hover:bg-green-50 inline-block"
-                                   title="Утвердить">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                </a>
-                                <a href="{% url 'staff:reject-shift-request' request.pk %}"
-                                   class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 inline-block"
-                                   title="Отклонить">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </a>
-                                {% endif %}
-                                <a href="{% url 'staff:shift-request-details' request.pk %}"
-                                   class="text-blue-600 hover:text-blue-800 p-2 rounded-lg hover:bg-blue-50 inline-block"
-                                   title="Подробнее">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="text-center py-12 bg-gray-50 rounded-lg">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>
-                </svg>
-                <h3 class="mt-4 text-xl font-medium text-gray-900">Заявки не найдены</h3>
-                <p class="mt-2 text-gray-500">
-                    Активные заявки на смены отсутствуют
-                </p>
-            </div>
-            {% endif %}
+            {% endfor %}
         </div>
+
+        {% else %}
+        <div class="text-center py-12 bg-gray-50 rounded-lg">
+            <svg class="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 5a2 2 0 002 2h2a2 2 0 002-2"/>
+            </svg>
+            <h3 class="mt-4 text-xl font-medium text-gray-900">Смены не найдены</h3>
+            <p class="mt-2 text-gray-500">Запланированные смены отсутствуют</p>
+        </div>
+        {% endif %}
     </div>
+
+    <!-- Секция заявок -->
+    {{ block.super }}
 </div>
+
+<script>
+function deleteShift(shiftId, deleteUrl) {
+    Swal.fire({
+        title: 'Вы уверены?',
+        text: "Вы действительно хотите удалить смену? Это действие нельзя отменить!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#3085d6',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Да, удалить!',
+        cancelButtonText: 'Отмена'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const csrfToken = getCookie('csrftoken');
+            fetch(deleteUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Ошибка сети');
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    Swal.fire('Удалено!', data.message, 'success');
+                    const row = document.querySelector(`tr[data-shift-id="${shiftId}"]`);
+                    if (row) row.remove();
+                } else {
+                    Swal.fire('Ошибка!', data.error || 'Ошибка при удалении', 'error');
+                }
+            })
+            .catch(error => {
+                Swal.fire('Ошибка!', 'Сетевая ошибка: ' + error.message, 'error');
+            });
+        }
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
 {% endblock admin_content %}

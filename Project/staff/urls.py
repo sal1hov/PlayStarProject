@@ -40,8 +40,14 @@ urlpatterns = [
     path('admin/shift-approval/', views.AdminShiftApprovalView.as_view(), name='admin_shift_approval'),
     path('admin/shift-approval/<int:pk>/approve/', views.approve_shift_request, name='approve-shift-request'),
     path('admin/shift-approval/<int:pk>/reject/', views.reject_shift_request, name='reject-shift-request'),
+    path('shifts/get_staff/', views.get_staff, name='get-staff'),
+    path('shift-management/', views.ShiftManagementView.as_view(), name='shift-management'),
     path('shifts/get_shift_types/', views.get_shift_types, name='get-shift-types'),
     path('shifts/get_staff/', views.get_staff, name='get-staff'),
+    path('shifts/edit_day/', views.edit_day_shifts, name='edit-day-shifts'),
+    path('shifts/<int:pk>/duplicate/', views.duplicate_shift, name='shift-duplicate'),
+
+
 
     path('user/<int:user_id>/children/', views.manage_user_children, name='manage-user-children'),
     path('filter-users/', views.filter_users, name='filter_users'),
