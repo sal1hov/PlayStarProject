@@ -2,7 +2,7 @@ from django.urls import path
 from accounts.views import (
     profile, profile_edit, add_child, delete_child, change_password,
     change_email, social_accounts, disconnect_social_account,
-    verify_telegram_code, telegram_login, login_view, start_telegram_login
+    verify_telegram_code, telegram_login, start_telegram_login, login_view
 )
 from django.contrib.auth.views import LogoutView
 

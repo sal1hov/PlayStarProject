@@ -1,3 +1,5 @@
+# staff/models.py
+
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.db.models.signals import post_migrate
@@ -5,8 +7,14 @@ from django.dispatch import receiver
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+
+# Если у вас CustomUser лежит в main.models
 from main.models import CustomUser
 
+
+# ------------------------------------------------------------
+# Существующие модели для StaffProfile, SiteSettings, Event, Shift, ShiftRequest
+# ------------------------------------------------------------
 
 class StaffProfile(models.Model):
     user = models.OneToOneField(get_user_model(), on_delete=models.CASCADE)
@@ -127,7 +135,7 @@ class Shift(models.Model):
     role = models.CharField(
         max_length=20,
         choices=ROLE_CHOICES,
-        default='animator',  # ДОБАВЛЕНО ЗНАЧЕНИЕ ПО УМОЛЧАНИЮ
+        default='animator',
         verbose_name="Роль сотрудника"
     )
     shift_type = models.CharField(
@@ -153,11 +161,10 @@ class Shift(models.Model):
         return ", ".join([staff.get_full_name() for staff in self.staff.all()])
 
     def clean(self):
-        # Для кассиров доступен только полный день
+        # Кассир может работать только полный день
         if self.role == 'cashier' and self.shift_type != 'full':
             raise ValidationError("Кассиры могут работать только полный день")
 
-        # Проверка доступных типов смен для ролей
         valid_combinations = {
             'animator': ['full', 'morning', 'evening'],
             'additional': ['full', 'additional_evening'],
@@ -267,3 +274,138 @@ def verify_groups_exist(sender, **kwargs):
     for group_name in required_groups:
         if not Group.objects.filter(name=group_name).exists():
             print(f'Внимание: требуемая группа "{group_name}" не найдена! Создайте её в админке.')
+
+
+# ------------------------------------------------------------
+# Ниже – модели для раздела «Price Settings»
+# ------------------------------------------------------------
+
+# 1) Детский городок
+class ChildCityItem(models.Model):
+    name = models.CharField("Услуга", max_length=100)
+    weekday_before_17 = models.PositiveIntegerField("Цена (будни до 17:00)", default=0)
+    weekday_after_17_weekends = models.PositiveIntegerField("Цена (будни после 17:00 и выходные)", default=0)
+    description = models.TextField("Описание", blank=True)
+
+    class Meta:
+        verbose_name = "Услуга Детского городка"
+        verbose_name_plural = "Услуги Детского городка"
+
+    def __str__(self):
+        return self.name
+
+
+# 2) Игровые автоматы (жетоны)
+class ArcadeMachineItem(models.Model):
+    name = models.CharField("Автомат/Зона", max_length=100)
+    weekday_before_17 = models.PositiveIntegerField("Цена (будни до 17:00)", default=0)
+    weekday_after_17_weekends = models.PositiveIntegerField("Цена (будни после 17:00 и выходные)", default=0)
+    description = models.TextField("Описание", blank=True)
+
+    class Meta:
+        verbose_name = "Игровой автомат (жетон)"
+        verbose_name_plural = "Игровые автоматы (жетоны)"
+
+    def __str__(self):
+        return self.name
+
+
+# 3) VR-арена (сеансы)
+class VRArenaItem(models.Model):
+    DURATION_CHOICES = [
+        (30, "30 минут"),
+        (60, "60 минут"),
+    ]
+    duration = models.PositiveSmallIntegerField("Длительность (в мин.)", choices=DURATION_CHOICES)
+    weekday_before_17 = models.PositiveIntegerField("Цена (будни до 17:00)", default=0)
+    weekday_after_17_weekends = models.PositiveIntegerField("Цена (будни после 17:00 и выходные)", default=0)
+    description = models.TextField("Описание", blank=True)
+
+    class Meta:
+        verbose_name = "Сеанс VR-арены"
+        verbose_name_plural = "Сеансы VR-арены"
+
+    def __str__(self):
+        return f"{self.get_duration_display()}"
+
+
+# 4) Пакеты ко Дню Рождения
+class BirthdayPackage(models.Model):
+    name = models.CharField("Название пакета", max_length=100)
+    price_mon_thu = models.PositiveIntegerField("Цена (Пн–Чт)", default=0)
+    price_fri_sun = models.PositiveIntegerField("Цена (Пт–Вс)", default=0)
+    extra_person = models.PositiveIntegerField("Доп. игрок / ребёнок (₽)", default=0)
+    description = models.TextField("Описание", blank=True)
+
+    class Meta:
+        verbose_name = "Пакет ко Дню Рождения"
+        verbose_name_plural = "Пакеты ко Дню Рождения"
+
+    def __str__(self):
+        return self.name
+
+
+# 5) Пакеты VR
+class VRPackage(models.Model):
+    name = models.CharField("Название пакета", max_length=100)
+    price_mon_thu = models.PositiveIntegerField("Цена (Пн–Чт)", default=0)
+    price_fri_sun = models.PositiveIntegerField("Цена (Пт–Вс)", default=0)
+    extra_person = models.PositiveIntegerField("Доп. игрок / ребёнок (₽)", default=0)
+    description = models.TextField("Описание", blank=True)
+
+    class Meta:
+        verbose_name = "Пакет VR"
+        verbose_name_plural = "Пакеты VR"
+
+    def __str__(self):
+        return self.name
+
+
+# 6) Обычные пакеты услуг
+class StandardPackage(models.Model):
+    name = models.CharField("Название пакета", max_length=100)
+    price_mon_thu = models.PositiveIntegerField("Цена (Пн–Чт)", default=0)
+    price_fri_sun = models.PositiveIntegerField("Цена (Пт–Вс)", default=0)
+    extra_person = models.PositiveIntegerField("Доп. игрок / ребёнок (₽)", default=0)
+    description = models.TextField("Описание", blank=True)
+
+    class Meta:
+        verbose_name = "Обычный пакет услуг"
+        verbose_name_plural = "Обычные пакеты услуг"
+
+    def __str__(self):
+        return self.name
+
+
+# 7) Зона PlayStation (слоты по времени)
+class PlayStationSlot(models.Model):
+    DURATION_CHOICES = [
+        (30, "30 минут"),
+        (60, "60 минут"),
+    ]
+    duration = models.PositiveSmallIntegerField("Длительность (в мин.)", choices=DURATION_CHOICES)
+    weekday_before_17 = models.PositiveIntegerField("Цена (будни до 17:00)", default=0)
+    weekday_after_17_weekends = models.PositiveIntegerField("Цена (будни после 17:00 и выходные)", default=0)
+    description = models.TextField("Описание", blank=True)
+
+    class Meta:
+        verbose_name = "Слот PlayStation"
+        verbose_name_plural = "Слоты PlayStation"
+
+    def __str__(self):
+        return f"{self.get_duration_display()}"
+
+
+# 8) VR-аттракционы
+class VRRide(models.Model):
+    name = models.CharField("Название аттракциона", max_length=100)
+    weekday_before_17 = models.PositiveIntegerField("Цена (будни до 17:00)", default=0)
+    weekday_after_17_weekends = models.PositiveIntegerField("Цена (будни после 17:00 и выходные)", default=0)
+    description = models.TextField("Описание", blank=True)
+
+    class Meta:
+        verbose_name = "VR-аттракцион"
+        verbose_name_plural = "VR-аттракционы"
+
+    def __str__(self):
+        return self.name

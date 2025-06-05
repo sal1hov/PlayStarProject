@@ -88,6 +88,8 @@ function duplicateShift(shiftId) {
             }
 
             container.appendChild(newBlock);
+            // Повторно привязываем валидацию к новым селектам
+            attachStaffValidation();
             Swal.fire('Успешно!', 'Смена продублирована.', 'success');
         } else if (data.success) {
             Swal.fire('Успешно!', 'Смена продублирована.', 'success');
@@ -111,5 +113,44 @@ function getCookie(name) {
     }
     return cookieValue;
 }
+
+// -------------------------
+// Валидация: один сотрудник — одна роль
+// -------------------------
+function attachStaffValidation() {
+    // Найдем все селекты, где выбирается сотрудник.
+    const staffSelects = document.querySelectorAll('#shift-container select[name*="staff"]');
+
+    staffSelects.forEach(select => {
+        // Избегаем повторного навешивания
+        if (select.dataset.validationAttached) return;
+
+        select.addEventListener('change', function() {
+            const allSelects = Array.from(document.querySelectorAll('#shift-container select[name*="staff"]'));
+            const chosen = this.value; // id текущего выбранного
+            if (!chosen) return; // если ничего не выбрано — ничего не проверяем
+
+            // Проверим, не выбрал ли кто-то уже тот же id
+            const duplicates = allSelects.filter(s => s !== this && s.value === chosen);
+            if (duplicates.length > 0) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Неверно',
+                    text: 'Один и тот же сотрудник не может быть назначен сразу на две разные роли.'
+                }).then(() => {
+                    // Сбросим выбор в текущем селекте
+                    this.value = "";
+                });
+            }
+        });
+
+        select.dataset.validationAttached = "true";
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Привяжем валидацию сразу после загрузки страницы
+    attachStaffValidation();
+});
 </script>
 {% endblock %}

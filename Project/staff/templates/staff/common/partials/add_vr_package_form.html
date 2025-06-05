@@ -1,0 +1,64 @@
+<form method="post" action="{% url 'staff:add_vr_package' %}">
+  {% csrf_token %}
+  <div class="mb-4">
+    <label for="name" class="block text-sm font-medium text-gray-700">Название пакета VR</label>
+    <input
+      type="text"
+      name="name"
+      id="name"
+      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      placeholder="Введите название VR-пакета"
+      required
+    >
+  </div>
+  <div class="mb-4">
+    <label for="price_mon_thu" class="block text-sm font-medium text-gray-700">Цена (Пн–Чт)</label>
+    <input
+      type="number"
+      name="price_mon_thu"
+      id="price_mon_thu"
+      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      placeholder="0"
+      required
+    >
+  </div>
+  <div class="mb-4">
+    <label for="price_fri_sun" class="block text-sm font-medium text-gray-700">Цена (Пт–Вс)</label>
+    <input
+      type="number"
+      name="price_fri_sun"
+      id="price_fri_sun"
+      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      placeholder="0"
+      required
+    >
+  </div>
+  <div class="mb-4">
+    <label for="extra_person" class="block text-sm font-medium text-gray-700">Доп. игрок / ребёнок</label>
+    <input
+      type="number"
+      name="extra_person"
+      id="extra_person"
+      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      placeholder="0"
+      required
+    >
+  </div>
+  <div class="mb-4">
+    <label for="description" class="block text-sm font-medium text-gray-700">Описание</label>
+    <textarea
+      name="description"
+      id="description"
+      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+      rows="2"
+    ></textarea>
+  </div>
+  <div class="flex justify-end">
+    <button
+      type="submit"
+      class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
+    >
+      Добавить
+    </button>
+  </div>
+</form>

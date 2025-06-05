@@ -1,43 +1,39 @@
+{# bookings/edit_booking.html #}
 {% extends 'base.html' %}
 
 {% block title %}Редактирование бронирования{% endblock %}
 
 {% block content %}
-<div class="max-w-md w-full bg-white p-6 rounded-lg shadow-2xl transform transition-all hover:scale-105 mx-auto mt-44">
+<div class="max-w-md w-full bg-white p-6 rounded-lg shadow-md mx-auto mt-20">
     <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">Редактирование бронирования</h2>
 
-    <!-- Уведомление -->
-    <div id="notification" class="hidden mb-4 p-3 rounded-lg text-white text-center"></div>
+    {# Блок для общих (non_field) ошибок #}
+    <div id="non_field_errors" class="hidden mb-4 p-3 rounded-lg text-white text-center"></div>
 
     <form id="booking-form" method="post">
         {% csrf_token %}
-        <div class="space-y-4">
-            <div>
-                <label for="{{ form.event_name.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">
-                    Название мероприятия:
+        {# Поля самой формы #}
+        {% for field in form.visible_fields %}
+            <div class="mb-4">
+                <label for="{{ field.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-1">
+                    {{ field.label }}
                 </label>
-                {{ form.event_name }}
+                {{ field }}
+                {% if field.help_text %}
+                    <p class="text-gray-500 text-xs italic">{{ field.help_text }}</p>
+                {% endif %}
+                <div class="text-red-500 text-sm mt-1 error-container" data-field="{{ field.name }}"></div>
             </div>
-            <div>
-                <label for="event_date" class="block text-gray-700 text-sm font-bold mb-2">
-                    Дата и время мероприятия:
-                </label>
-                <input type="datetime-local" id="event_date" name="event_date"
-                       value="{{ form.event_date.value|default:'' }}"
-                       min="{{ today }}" class="border p-2 rounded w-full">
-            </div>
-        </div>
+        {% endfor %}
 
-        {% if booking.status == "Отклонено" or booking.status == "Прошло" %}
-            <p class="text-red-500 text-center">Редактирование невозможно для отклонённых или прошедших бронирований.</p>
+        {% if booking.status == "rejected" or booking.status == "completed" %}
+            <p class="text-red-500 text-center">Редактирование невозможно для отклонённых или завершённых бронирований.</p>
         {% else %}
             <button type="submit"
-                    class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-4 rounded-lg
-                           hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 mt-4">
+                    class="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition mt-4">
                 Сохранить изменения
             </button>
         {% endif %}
-
     </form>
 
     <a href="{% url 'profile' %}" class="mt-4 block text-center text-gray-600 hover:underline">
@@ -46,54 +42,88 @@
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", () => {
     const form = document.getElementById("booking-form");
-    const notification = document.getElementById("notification");
+    const nonFieldErrorsDiv = document.getElementById("non_field_errors");
 
-    // Устанавливаем минимально допустимую дату и время (сегодня)
-    const now = new Date();
-    const todayWithTime = now.toISOString().slice(0, 16); // До минут
-    document.getElementById("event_date").setAttribute("min", todayWithTime);
+    // Установим текущую минимальную дату для <input type="datetime-local">
+    const eventDateInput = document.querySelector('input[name="event_date"]');
+    if (eventDateInput) {
+        const now = new Date().toISOString().slice(0, 16);
+        eventDateInput.setAttribute("min", now);
+    }
 
-    form.addEventListener("submit", function (event) {
+    form.addEventListener("submit", event => {
         event.preventDefault();
+
+        // Удаляем старые ошибки
+        document.querySelectorAll(".error-message").forEach(el => el.remove());
+        nonFieldErrorsDiv.innerHTML = "";
+        nonFieldErrorsDiv.classList.add("hidden");
+
         const formData = new FormData(form);
 
-        // Перед отправкой форматируем дату
-        const eventDateInput = document.getElementById("event_date");
-        const eventDateValue = new Date(eventDateInput.value).toISOString().slice(0, 16);
-        eventDateInput.value = eventDateValue;
-
-        fetch("{% url 'edit_booking' booking.id %}", {
+        fetch("{% url 'bookings:edit_booking' booking.id %}", {
             method: "POST",
             body: formData,
             headers: { "X-Requested-With": "XMLHttpRequest" },
         })
-        .then(response => response.json())
-        .then(data => {
-            notification.textContent = data.message;
-            notification.classList.remove("hidden");
-            notification.classList.add(data.success ? "bg-green-500" : "bg-red-500");
+        .then(response => {
+            return response.json().then(data => {
+                return { status: response.status, body: data };
+            });
+        })
+        .then(({ status, body }) => {
+            console.log("RESPONSE STATUS:", status);
+            console.log("RESPONSE BODY:", body);
+            console.log("RESPONSE ERRORS:", body.errors);
 
-            // Удаляем старые ошибки
-            document.querySelectorAll(".error-message").forEach(el => el.remove());
-
-            if (data.success) {
-                setTimeout(() => window.location.href = "{% url 'profile' %}", 1500);
-            } else if (data.errors) {
-                for (const [field, messages] of Object.entries(data.errors)) {
-                    const input = document.querySelector(`[name="${field}"]`);
-                    if (input) {
-                        const errorDiv = document.createElement("div");
-                        errorDiv.className = "error-message text-red-500 text-sm mt-1";
-                        errorDiv.textContent = messages.join(", ");
-                        input.parentNode.appendChild(errorDiv);
-                    }
+            if (body.success) {
+                // Успешно
+                nonFieldErrorsDiv.textContent = body.message || "Сохранено!";
+                nonFieldErrorsDiv.classList.remove("hidden");
+                nonFieldErrorsDiv.classList.remove("bg-red-500");
+                nonFieldErrorsDiv.classList.add("bg-green-500");
+                setTimeout(() => window.location.href = "{% url 'profile' %}", 1000);
+            } else {
+                // 1) показ non_field_errors (если они есть)
+                if (body.errors && body.errors.__all__) {
+                    nonFieldErrorsDiv.innerHTML = body.errors.__all__.join("<br>");
+                    nonFieldErrorsDiv.classList.remove("hidden");
+                    nonFieldErrorsDiv.classList.remove("bg-green-500");
+                    nonFieldErrorsDiv.classList.add("bg-red-500");
+                }
+                // 2) показ ошибок по конкретным полям
+                if (body.errors) {
+                    Object.entries(body.errors).forEach(([fieldName, messages]) => {
+                        const container = document.querySelector(`.error-container[data-field="${fieldName}"]`);
+                        if (container) {
+                            messages.forEach(msg => {
+                                const div = document.createElement("div");
+                                div.className = "error-message text-red-500 text-sm";
+                                div.textContent = msg;
+                                container.appendChild(div);
+                            });
+                        }
+                    });
+                }
+                // 3) или просто вывести общее сообщение (если нет body.errors)
+                if (body.message && !body.errors) {
+                    nonFieldErrorsDiv.textContent = body.message;
+                    nonFieldErrorsDiv.classList.remove("hidden");
+                    nonFieldErrorsDiv.classList.remove("bg-green-500");
+                    nonFieldErrorsDiv.classList.add("bg-red-500");
                 }
             }
+        })
+        .catch(error => {
+            console.error("Fetch Error:", error);
+            nonFieldErrorsDiv.textContent = "Сетевая ошибка при отправке данных";
+            nonFieldErrorsDiv.classList.remove("hidden");
+            nonFieldErrorsDiv.classList.remove("bg-green-500");
+            nonFieldErrorsDiv.classList.add("bg-red-500");
         });
     });
 });
 </script>
-
 {% endblock %}

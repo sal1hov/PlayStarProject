@@ -1,3 +1,5 @@
+# main/views.py
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
@@ -8,8 +10,17 @@ from django.contrib.auth.models import Group
 from main.models import CustomUser
 from bookings.models import Booking
 from bookings.forms import BookingForm
-from django.shortcuts import render
-from staff.models import Event
+from staff.models import (
+    Event,
+    ChildCityItem,
+    ArcadeMachineItem,
+    VRArenaItem,
+    BirthdayPackage,
+    VRPackage,
+    StandardPackage,
+    PlayStationSlot,
+    VRRide
+)
 from django.core.paginator import Paginator
 import logging
 
@@ -164,3 +175,30 @@ def logout_view(request):
 def events_list(request):
     events = Event.objects.filter(moderation_status='approved').order_by('date')
     return render(request, 'main/events.html', {'events': events})
+
+
+@login_required
+def prices_view(request):
+    """
+    Собираем все объекты из моделей цены и передаём их в шаблон для отображения актуальных значений.
+    """
+    child_city_items  = ChildCityItem.objects.all()
+    arcade_items      = ArcadeMachineItem.objects.all()
+    vr_arena_items    = VRArenaItem.objects.all()
+    birthday_packages = BirthdayPackage.objects.all()
+    vr_packages       = VRPackage.objects.all()
+    standard_packages = StandardPackage.objects.all()
+    playstation_slots = PlayStationSlot.objects.all()
+    vr_rides          = VRRide.objects.all()
+
+    context = {
+        'child_city_items':  child_city_items,
+        'arcade_items':      arcade_items,
+        'vr_arena_items':    vr_arena_items,
+        'birthday_packages': birthday_packages,
+        'vr_packages':       vr_packages,
+        'standard_packages': standard_packages,
+        'playstation_slots': playstation_slots,
+        'vr_rides':          vr_rides,
+    }
+    return render(request, 'main/prices.html', context)

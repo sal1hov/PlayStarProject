@@ -14,12 +14,12 @@
                     </svg>
                     Личная информация
                 </a>
-                <a href="#social-accounts" class="flex items-center p-2 text-gray-700 hover:bg-blue-50 rounded-lg transition group">
-                    <svg class="w-5 h-5 mr-3 text-green-600 group-hover:text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
-                    </svg>
-                    Привязанные аккаунты
-                </a>
+<!--                <a href="#social-accounts" class="flex items-center p-2 text-gray-700 hover:bg-blue-50 rounded-lg transition group">-->
+<!--                    <svg class="w-5 h-5 mr-3 text-green-600 group-hover:text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">-->
+<!--                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>-->
+<!--                    </svg>-->
+<!--                    Привязанные аккаунты-->
+<!--                </a>-->
                 <a href="#children" class="flex items-center p-2 text-gray-700 hover:bg-blue-50 rounded-lg transition group">
                     <svg class="w-5 h-5 mr-3 text-pink-600 group-hover:text-pink-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
@@ -89,47 +89,47 @@
                 </section>
 
                 <!-- Привязанные аккаунты -->
-                <section id="social-accounts" class="scroll-mt-20">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
-                        Привязанные аккаунты
-                    </h2>
-                    <div class="space-y-4">
-                        <div class="border border-gray-200 rounded-lg p-4" id="telegram-account-container">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <div class="bg-blue-100 text-blue-600 rounded-full p-2 mr-3">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <h3 class="font-medium text-gray-800">Telegram</h3>
-                                        <p class="text-sm text-gray-500" id="telegram-status">
-                                            {% if telegram_account %}
-                                            Привязан: @{{ telegram_account.get_telegram_username }}
-                                            {% else %}
-                                            Не привязан
-                                            {% endif %}
-                                        </p>
-                                    </div>
-                                </div>
-                                {% if telegram_account %}
-                                <button onclick="disconnectTelegram({{ telegram_account.id }})"
-                                        class="text-red-600 hover:text-red-800 text-sm font-medium py-1.5 px-3 rounded-lg border border-red-200 hover:border-red-300 transition">
-                                    Отвязать
-                                </button>
-                                {% else %}
-                                <button onclick="openModal('telegramModal')" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition">
-                                    Привязать
-                                </button>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                </section>
+<!--                <section id="social-accounts" class="scroll-mt-20">-->
+<!--                    <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">-->
+<!--                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">-->
+<!--                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />-->
+<!--                        </svg>-->
+<!--                        Привязанные аккаунты-->
+<!--                    </h2>-->
+<!--                    <div class="space-y-4">-->
+<!--                        <div class="border border-gray-200 rounded-lg p-4" id="telegram-account-container">-->
+<!--                            <div class="flex items-center justify-between">-->
+<!--                                <div class="flex items-center">-->
+<!--                                    <div class="bg-blue-100 text-blue-600 rounded-full p-2 mr-3">-->
+<!--                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">-->
+<!--                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />-->
+<!--                                        </svg>-->
+<!--                                    </div>-->
+<!--                                    <div>-->
+<!--                                        <h3 class="font-medium text-gray-800">Telegram</h3>-->
+<!--                                        <p class="text-sm text-gray-500" id="telegram-status">-->
+<!--                                            {% if telegram_account %}-->
+<!--                                            Привязан: @{{ telegram_account.get_telegram_username }}-->
+<!--                                            {% else %}-->
+<!--                                            Не привязан-->
+<!--                                            {% endif %}-->
+<!--                                        </p>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                                {% if telegram_account %}-->
+<!--                                <button onclick="disconnectTelegram({{ telegram_account.id }})"-->
+<!--                                        class="text-red-600 hover:text-red-800 text-sm font-medium py-1.5 px-3 rounded-lg border border-red-200 hover:border-red-300 transition">-->
+<!--                                    Отвязать-->
+<!--                                </button>-->
+<!--                                {% else %}-->
+<!--                                <button onclick="openModal('telegramModal')" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-1.5 px-3 rounded-lg transition">-->
+<!--                                    Привязать-->
+<!--                                </button>-->
+<!--                                {% endif %}-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </section>-->
 
                 <!-- Дети -->
                 <section id="children" class="scroll-mt-20">
@@ -249,7 +249,8 @@
                 <h3 class="text-xl font-bold text-gray-800">Добавить ребенка</h3>
                 <button onclick="closeModal('addChildModal')" class="text-gray-400 hover:text-gray-500">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M6 18L18 6M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
@@ -258,17 +259,19 @@
                 {% csrf_token %}
                 <div class="space-y-4">
                     {% for field in child_form %}
-                    <div>
-                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
-                            {{ field.label }}
-                        </label>
-                        {{ field }}
-                        {% if field.errors %}
-                        <div class="mt-1 text-sm text-red-600">
-                            {{ field.errors|join:", " }}
-                        </div>
+                        {% if field.name != 'birthdate' %}
+                            <div>
+                                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                                    {{ field.label }}
+                                </label>
+                                {{ field }}
+                                {% if field.errors %}
+                                    <div class="mt-1 text-sm text-red-600">
+                                        {{ field.errors|join:", " }}
+                                    </div>
+                                {% endif %}
+                            </div>
                         {% endif %}
-                    </div>
                     {% endfor %}
                 </div>
 
@@ -278,7 +281,8 @@
                     </button>
                     <button type="submit" class="flex-1 bg-pink-500 hover:bg-pink-600 text-white font-medium py-2 px-4 rounded-lg transition flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                         </svg>
                         Добавить
                     </button>
@@ -287,6 +291,7 @@
         </div>
     </div>
 </div>
+
 
 <!-- Модальное окно смены пароля -->
 <div id="changePasswordModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex justify-center items-center p-4 z-50">

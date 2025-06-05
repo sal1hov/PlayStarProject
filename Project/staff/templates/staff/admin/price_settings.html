@@ -1,0 +1,1417 @@
+{# Project/staff/templates/staff/admin/price_settings.html #}
+
+{% extends 'staff/base_admin.html' %}
+{% load static %}
+
+{% block admin_content %}
+<div class="max-w-7xl mx-auto py-8">
+  <h1 class="text-3xl font-bold text-gray-900 mb-6">Настройки прайс-листа</h1>
+
+  {# Навигация по секциям (# якоря) #}
+  <nav class="mb-8">
+    <ul class="flex flex-wrap space-x-4 text-sm font-medium">
+      <li><a href="#child_city" class="text-blue-600 hover:underline">Детский городок</a></li>
+      <li><a href="#arcade_machines" class="text-blue-600 hover:underline">Игровые автоматы</a></li>
+      <li><a href="#vr_arena" class="text-blue-600 hover:underline">VR-арена</a></li>
+      <li><a href="#birthday_packages" class="text-blue-600 hover:underline">Пакеты к ДР</a></li>
+      <li><a href="#vr_packages" class="text-blue-600 hover:underline">Пакеты VR</a></li>
+      <li><a href="#standard_packages" class="text-blue-600 hover:underline">Обычные пакеты</a></li>
+      <li><a href="#playstation" class="text-blue-600 hover:underline">Зона PlayStation</a></li>
+      <li><a href="#vr_rides" class="text-blue-600 hover:underline">VR-аттракционы</a></li>
+    </ul>
+  </nav>
+
+  {# ************************* 1. Детский городок ************************* #}
+  <section id="child_city" class="mb-12">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-2xl font-semibold text-gray-800">Детский городок</h2>
+      <button data-type="child_city" class="open-modal bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+        Добавить услугу
+      </button>
+    </div>
+
+    <form id="form-child_city" class="save-form" data-save-url="{% url 'staff:save_child_city_prices' %}">
+      {% csrf_token %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <span class="text-lg font-semibold text-gray-800">Всего записей: <span id="count-child_city">{{ child_city_items|length }}</span></span>
+        </div>
+        <div class="p-6 overflow-x-auto">
+          <table class="w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Услуга</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Будни до 17:00</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Будни после 17:00 / Выходные</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Описание</th>
+                <th class="px-4 py-2 text-center text-sm font-medium text-gray-600 uppercase">Удалить</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-child_city" class="bg-white divide-y divide-gray-200">
+              {% for item in child_city_items %}
+                <tr data-id="{{ item.id }}">
+                  <td class="px-4 py-2 text-sm text-gray-800">{{ item.name }}</td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="child_city_{{ item.id }}_before_17"
+                           value="{{ item.weekday_before_17 }}"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="child_city_{{ item.id }}_after_17"
+                           value="{{ item.weekday_after_17_weekends }}"
+                           placeholder="—"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <textarea name="child_city_{{ item.id }}_desc"
+                              rows="2"
+                              class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">{{ item.description }}</textarea>
+                  </td>
+                  <td class="px-4 py-2 text-center">
+                    <button type="button"
+                            class="delete-item text-red-500 hover:text-red-700"
+                            data-type="child_city"
+                            data-id="{{ item.id }}"
+                            data-url="{% url 'staff:delete_child_city_item' item.id %}">
+                      Удалить
+                    </button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="px-4 py-2 text-center text-gray-500">Нет записей</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button type="submit"
+                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+          Сохранить изменения
+        </button>
+      </div>
+    </form>
+  </section>
+
+  {# ************************* 2. Игровые автоматы ************************* #}
+  <section id="arcade_machines" class="mb-12">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-2xl font-semibold text-gray-800">Игровые автоматы (жетоны)</h2>
+      <button data-type="arcade_machines" class="open-modal bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+        Добавить автомат
+      </button>
+    </div>
+
+    <form id="form-arcade_machines" class="save-form" data-save-url="{% url 'staff:save_arcade_prices' %}">
+      {% csrf_token %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <span class="text-lg font-semibold text-gray-800">Всего записей: <span id="count-arcade_machines">{{ arcade_machines_items|length }}</span></span>
+        </div>
+        <div class="p-6 overflow-x-auto">
+          <table class="w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Автомат / Зона</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Будни до 17:00</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Будни после 17:00 / Выходные</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Описание</th>
+                <th class="px-4 py-2 text-center text-sm font-medium text-gray-600 uppercase">Удалить</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-arcade_machines" class="bg-white divide-y divide-gray-200">
+              {% for machine in arcade_machines_items %}
+                <tr data-id="{{ machine.id }}">
+                  <td class="px-4 py-2 text-sm text-gray-800">{{ machine.name }}</td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="arcade_{{ machine.id }}_before_17"
+                           value="{{ machine.weekday_before_17 }}"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="arcade_{{ machine.id }}_after_17"
+                           value="{{ machine.weekday_after_17_weekends }}"
+                           placeholder="—"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <textarea name="arcade_{{ machine.id }}_desc"
+                              rows="2"
+                              class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">{{ machine.description }}</textarea>
+                  </td>
+                  <td class="px-4 py-2 text-center">
+                    <button type="button"
+                            class="delete-item text-red-500 hover:text-red-700"
+                            data-type="arcade_machines"
+                            data-id="{{ machine.id }}"
+                            data-url="{% url 'staff:delete_arcade_machine_item' machine.id %}">
+                      Удалить
+                    </button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="px-4 py-2 text-center text-gray-500">Нет записей</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button type="submit"
+                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+          Сохранить изменения
+        </button>
+      </div>
+    </form>
+  </section>
+
+  {# ************************* 3. VR-арена ************************* #}
+  <section id="vr_arena" class="mb-12">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-2xl font-semibold text-gray-800">VR-арена</h2>
+      <button data-type="vr_arena" class="open-modal bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+        Добавить сеанс
+      </button>
+    </div>
+
+    <form id="form-vr_arena" class="save-form" data-save-url="{% url 'staff:save_vr_arena_prices' %}">
+      {% csrf_token %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <span class="text-lg font-semibold text-gray-800">Всего записей: <span id="count-vr_arena">{{ vr_arena_items|length }}</span></span>
+        </div>
+        <div class="p-6 overflow-x-auto">
+          <table class="w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Сеанс</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Будни до 17:00</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Будни после 17:00 / Выходные</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Описание</th>
+                <th class="px-4 py-2 text-center text-sm font-medium text-gray-600 uppercase">Удалить</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-vr_arena" class="bg-white divide-y divide-gray-200">
+              {% for session in vr_arena_items %}
+                <tr data-id="{{ session.id }}">
+                  <td class="px-4 py-2 text-sm text-gray-800">{{ session.get_duration_display }}</td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="vr_arena_{{ session.id }}_before_17"
+                           value="{{ session.weekday_before_17 }}"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="vr_arena_{{ session.id }}_after_17"
+                           value="{{ session.weekday_after_17_weekends }}"
+                           placeholder="—"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <textarea name="vr_arena_{{ session.id }}_desc"
+                              rows="2"
+                              class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">{{ session.description }}</textarea>
+                  </td>
+                  <td class="px-4 py-2 text-center">
+                    <button type="button"
+                            class="delete-item text-red-500 hover:text-red-700"
+                            data-type="vr_arena"
+                            data-id="{{ session.id }}"
+                            data-url="{% url 'staff:delete_vr_arena_item' session.id %}">
+                      Удалить
+                    </button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="px-4 py-2 text-center text-gray-500">Нет записей</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button type="submit"
+                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+          Сохранить изменения
+        </button>
+      </div>
+    </form>
+  </section>
+
+  {# ************************* 4. Пакеты ко Дню Рождения ************************* #}
+  <section id="birthday_packages" class="mb-12">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-2xl font-semibold text-gray-800">Пакеты ко Дню Рождения</h2>
+      <button data-type="birthday_packages" class="open-modal bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+        Добавить пакет
+      </button>
+    </div>
+
+    <form id="form-birthday_packages" class="save-form" data-save-url="{% url 'staff:save_birthday_packages' %}">
+      {% csrf_token %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <span class="text-lg font-semibold text-gray-800">Всего записей: <span id="count-birthday_packages">{{ birthday_packages_items|length }}</span></span>
+        </div>
+        <div class="p-6 overflow-x-auto">
+          <table class="w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Название пакета</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Цена (Пн–Чт)</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Цена (Пт–Вс)</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Доп. игрок / ребёнок</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Описание</th>
+                <th class="px-4 py-2 text-center text-sm font-medium text-gray-600 uppercase">Удалить</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-birthday_packages" class="bg-white divide-y divide-gray-200">
+              {% for pkg in birthday_packages_items %}
+                <tr data-id="{{ pkg.id }}">
+                  <td class="px-4 py-2 text-sm text-gray-800">{{ pkg.name }}</td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="birthday_pkg_{{ pkg.id }}_price_mon_thu"
+                           value="{{ pkg.price_mon_thu }}"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="birthday_pkg_{{ pkg.id }}_price_fri_sun"
+                           value="{{ pkg.price_fri_sun }}"
+                           placeholder="—"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="birthday_pkg_{{ pkg.id }}_extra_person"
+                           value="{{ pkg.extra_person }}"
+                           class="w-20 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <textarea name="birthday_pkg_{{ pkg.id }}_desc"
+                              rows="2"
+                              class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">{{ pkg.description }}</textarea>
+                  </td>
+                  <td class="px-4 py-2 text-center">
+                    <button type="button"
+                            class="delete-item text-red-500 hover:text-red-700"
+                            data-type="birthday_packages"
+                            data-id="{{ pkg.id }}"
+                            data-url="{% url 'staff:delete_birthday_package' pkg.id %}">
+                      Удалить
+                    </button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="px-4 py-2 text-center text-gray-500">Нет записей</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button type="submit"
+                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+          Сохранить изменения
+        </button>
+      </div>
+    </form>
+  </section>
+
+  {# ************************* 5. Пакеты VR ************************* #}
+  <section id="vr_packages" class="mb-12">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-2xl font-semibold text-gray-800">Пакеты VR</h2>
+      <button data-type="vr_packages" class="open-modal bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+        Добавить пакет
+      </button>
+    </div>
+
+    <form id="form-vr_packages" class="save-form" data-save-url="{% url 'staff:save_vr_packages' %}">
+      {% csrf_token %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <span class="text-lg font-semibold text-gray-800">Всего записей: <span id="count-vr_packages">{{ vr_packages_items|length }}</span></span>
+        </div>
+        <div class="p-6 overflow-x-auto">
+          <table class="w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Название пакета</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Цена (Пн–Чт)</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Цена (Пт–Вс)</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Доп. игрок / ребёнок</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Описание</th>
+                <th class="px-4 py-2 text-center text-sm font-medium text-gray-600 uppercase">Удалить</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-vr_packages" class="bg-white divide-y divide-gray-200">
+              {% for pkg in vr_packages_items %}
+                <tr data-id="{{ pkg.id }}">
+                  <td class="px-4 py-2 text-sm text-gray-800">{{ pkg.name }}</td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="vr_pkg_{{ pkg.id }}_price_mon_thu"
+                           value="{{ pkg.price_mon_thu }}"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="vr_pkg_{{ pkg.id }}_price_fri_sun"
+                           value="{{ pkg.price_fri_sun }}"
+                           placeholder="—"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="vr_pkg_{{ pkg.id }}_extra_person"
+                           value="{{ pkg.extra_person }}"
+                           class="w-20 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <textarea name="vr_pkg_{{ pkg.id }}_desc"
+                              rows="2"
+                              class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">{{ pkg.description }}</textarea>
+                  </td>
+                  <td class="px-4 py-2 text-center">
+                    <button type="button"
+                            class="delete-item text-red-500 hover:text-red-700"
+                            data-type="vr_packages"
+                            data-id="{{ pkg.id }}"
+                            data-url="{% url 'staff:delete_vr_package' pkg.id %}">
+                      Удалить
+                    </button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="px-4 py-2 text-center text-gray-500">Нет записей</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button type="submit"
+                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+          Сохранить изменения
+        </button>
+      </div>
+    </form>
+  </section>
+
+  {# ************************* 6. Обычные пакеты ************************* #}
+  <section id="standard_packages" class="mb-12">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-2xl font-semibold text-gray-800">Обычные пакеты услуг</h2>
+      <button data-type="standard_packages" class="open-modal bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+        Добавить пакет
+      </button>
+    </div>
+
+    <form id="form-standard_packages" class="save-form" data-save-url="{% url 'staff:save_standard_packages' %}">
+      {% csrf_token %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <span class="text-lg font-semibold text-gray-800">Всего записей: <span id="count-standard_packages">{{ standard_packages_items|length }}</span></span>
+        </div>
+        <div class="p-6 overflow-x-auto">
+          <table class="w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Название пакета</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Цена (Пн–Чт)</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Цена (Пт–Вс)</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Доп. игрок / ребёнок</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Описание</th>
+                <th class="px-4 py-2 text-center text-sm font-medium text-gray-600 uppercase">Удалить</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-standard_packages" class="bg-white divide-y divide-gray-200">
+              {% for pkg in standard_packages_items %}
+                <tr data-id="{{ pkg.id }}">
+                  <td class="px-4 py-2 text-sm text-gray-800">{{ pkg.name }}</td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="std_pkg_{{ pkg.id }}_price_mon_thu"
+                           value="{{ pkg.price_mon_thu }}"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="std_pkg_{{ pkg.id }}_price_fri_sun"
+                           value="{{ pkg.price_fri_sun }}"
+                           placeholder="—"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="std_pkg_{{ pkg.id }}_extra_person"
+                           value="{{ pkg.extra_person }}"
+                           class="w-20 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <textarea name="std_pkg_{{ pkg.id }}_desc"
+                              rows="2"
+                              class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">{{ pkg.description }}</textarea>
+                  </td>
+                  <td class="px-4 py-2 text-center">
+                    <button type="button"
+                            class="delete-item text-red-500 hover:text-red-700"
+                            data-type="standard_packages"
+                            data-id="{{ pkg.id }}"
+                            data-url="{% url 'staff:delete_standard_package' pkg.id %}">
+                      Удалить
+                    </button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="6" class="px-4 py-2 text-center text-gray-500">Нет записей</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button type="submit"
+                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+          Сохранить изменения
+        </button>
+      </div>
+    </form>
+  </section>
+
+  {# ************************* 7. Зона PlayStation ************************* #}
+  <section id="playstation" class="mb-12">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-2xl font-semibold text-gray-800">Зона PlayStation</h2>
+      <button data-type="playstation" class="open-modal bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+        Добавить слот
+      </button>
+    </div>
+
+    <form id="form-playstation" class="save-form" data-save-url="{% url 'staff:save_playstation_prices' %}">
+      {% csrf_token %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <span class="text-lg font-semibold text-gray-800">Всего записей: <span id="count-playstation">{{ playstation_items|length }}</span></span>
+        </div>
+        <div class="p-6 overflow-x-auto">
+          <table class="w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Время игры</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Будни до 17:00</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Будни после 17:00 / Выходные</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Описание</th>
+                <th class="px-4 py-2 text-center text-sm font-medium text-gray-600 uppercase">Удалить</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-playstation" class="bg-white divide-y divide-gray-200">
+              {% for slot in playstation_items %}
+                <tr data-id="{{ slot.id }}">
+                  <td class="px-4 py-2 text-sm text-gray-800">{{ slot.get_duration_display }}</td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="ps_{{ slot.id }}_before_17"
+                           value="{{ slot.weekday_before_17 }}"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="ps_{{ slot.id }}_after_17"
+                           value="{{ slot.weekday_after_17_weekends }}"
+                           placeholder="—"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <textarea name="ps_{{ slot.id }}_desc"
+                              rows="2"
+                              class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">{{ slot.description }}</textarea>
+                  </td>
+                  <td class="px-4 py-2 text-center">
+                    <button type="button"
+                            class="delete-item text-red-500 hover:text-red-700"
+                            data-type="playstation"
+                            data-id="{{ slot.id }}"
+                            data-url="{% url 'staff:delete_playstation_slot' slot.id %}">
+                      Удалить
+                    </button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="px-4 py-2 text-center text-gray-500">Нет записей</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button type="submit"
+                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+          Сохранить изменения
+        </button>
+      </div>
+    </form>
+  </section>
+
+  {# ************************* 8. VR-аттракционы ************************* #}
+  <section id="vr_rides" class="mb-12">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-2xl font-semibold text-gray-800">VR-аттракционы</h2>
+      <button data-type="vr_rides" class="open-modal bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+        Добавить аттракцион
+      </button>
+    </div>
+
+    <form id="form-vr_rides" class="save-form" data-save-url="{% url 'staff:save_vr_rides' %}">
+      {% csrf_token %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div class="bg-blue-50 px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+          <span class="text-lg font-semibold text-gray-800">Всего записей: <span id="count-vr_rides">{{ vr_rides_items|length }}</span></span>
+        </div>
+        <div class="p-6 overflow-x-auto">
+          <table class="w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Аттракцион</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Будни до 17:00</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Будни после 17:00 / Выходные</th>
+                <th class="px-4 py-2 text-left text-sm font-medium text-gray-600 uppercase">Описание</th>
+                <th class="px-4 py-2 text-center text-sm font-medium text-gray-600 uppercase">Удалить</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-vr_rides" class="bg-white divide-y divide-gray-200">
+              {% for ride in vr_rides_items %}
+                <tr data-id="{{ ride.id }}">
+                  <td class="px-4 py-2 text-sm text-gray-800">{{ ride.name }}</td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="vr_ride_{{ ride.id }}_before_17"
+                           value="{{ ride.weekday_before_17 }}"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <input type="number"
+                           name="vr_ride_{{ ride.id }}_after_17"
+                           value="{{ ride.weekday_after_17_weekends }}"
+                           placeholder="—"
+                           class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                  </td>
+                  <td class="px-4 py-2">
+                    <textarea name="vr_ride_{{ ride.id }}_desc"
+                              rows="2"
+                              class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">{{ ride.description }}</textarea>
+                  </td>
+                  <td class="px-4 py-2 text-center">
+                    <button type="button"
+                            class="delete-item text-red-500 hover:text-red-700"
+                            data-type="vr_rides"
+                            data-id="{{ ride.id }}"
+                            data-url="{% url 'staff:delete_vr_ride' ride.id %}">
+                      Удалить
+                    </button>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="5" class="px-4 py-2 text-center text-gray-500">Нет записей</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex justify-end mt-4">
+        <button type="submit"
+                class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+          Сохранить изменения
+        </button>
+      </div>
+    </form>
+  </section>
+</div>
+
+{# ************************* Модальные окна для добавления нового элемента ************************* #}
+{# Для каждой категории: в модалке своя форма Add, полей ровно столько, сколько нужно отправить на сервер. #}
+{# Все модалки скрыты за класс .hidden, их показываем по клику на кнопку «Добавить …» #}
+
+<!-- Модальное окно (общая обёртка) -->
+<div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+  <div id="modal-window" class="bg-white rounded-lg w-1/3 p-6">
+    <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-4"></h3>
+    <form id="modal-form" class="space-y-4">
+      {% csrf_token %}
+      <!-- Поля будут подставлены в JS -->
+      <div id="modal-fields" class="space-y-2"></div>
+      <div class="mt-6 flex justify-end space-x-4">
+        <button type="button" id="modal-cancel" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">
+          Отмена
+        </button>
+        <button type="submit" id="modal-submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+          Добавить
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // -----------------------------------------------
+  // Основные утилиты для AJAX и работы с модалками
+  // -----------------------------------------------
+
+  // Берём csrftoken из cookie
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let c of cookies) {
+        const cookie = c.trim();
+        if (cookie.startsWith(name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  const CSRF_TOKEN = getCookie('csrftoken');
+
+  // Показываем модалку:
+  function showModal(category) {
+    const overlay = document.getElementById('modal-overlay');
+    const titleEl = document.getElementById('modal-title');
+    const fieldsContainer = document.getElementById('modal-fields');
+    const form = document.getElementById('modal-form');
+
+    // Очищаем предыдущие поля
+    fieldsContainer.innerHTML = '';
+    form.removeAttribute('data-action');  // очистим URL
+
+    // В зависимости от категории рисуем поля:
+    switch(category) {
+      case 'child_city':
+        titleEl.textContent = 'Добавить услугу «Детский городок»';
+        form.setAttribute('data-action', "{% url 'staff:add_child_city_item' %}");
+        fieldsContainer.innerHTML = `
+          <div>
+            <label class="block text-gray-700">Название услуги:</label>
+            <input type="text" name="name" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Будни до 17:00):</label>
+            <input type="number" name="weekday_before_17" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Будни после 17:00 / Выходные):</label>
+            <input type="number" name="weekday_after_17_weekends" placeholder="—" class="w-full p-2 border border-gray-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-gray-700">Описание:</label>
+            <textarea name="description" rows="2" class="w-full p-2 border border-gray-300 rounded-lg"></textarea>
+          </div>
+        `;
+        break;
+
+      case 'arcade_machines':
+        titleEl.textContent = 'Добавить игровой автомат';
+        form.setAttribute('data-action', "{% url 'staff:add_arcade_machine_item' %}");
+        fieldsContainer.innerHTML = `
+          <div>
+            <label class="block text-gray-700">Название автомата:</label>
+            <input type="text" name="name" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Будни до 17:00):</label>
+            <input type="number" name="weekday_before_17" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Будни после 17:00 / Выходные):</label>
+            <input type="number" name="weekday_after_17_weekends" placeholder="—" class="w-full p-2 border border-gray-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-gray-700">Описание:</label>
+            <textarea name="description" rows="2" class="w-full p-2 border border-gray-300 rounded-lg"></textarea>
+          </div>
+        `;
+        break;
+
+      case 'vr_arena':
+        titleEl.textContent = 'Добавить сеанс VR-арены';
+        form.setAttribute('data-action', "{% url 'staff:add_vr_arena_item' %}");
+        fieldsContainer.innerHTML = `
+          <div>
+            <label class="block text-gray-700">Длительность сеанса:</label>
+            <input type="text" name="duration" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Будни до 17:00):</label>
+            <input type="number" name="weekday_before_17" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Будни после 17:00 / Выходные):</label>
+            <input type="number" name="weekday_after_17_weekends" placeholder="—" class="w-full p-2 border border-gray-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-gray-700">Описание:</label>
+            <textarea name="description" rows="2" class="w-full p-2 border border-gray-300 rounded-lg"></textarea>
+          </div>
+        `;
+        break;
+
+      case 'birthday_packages':
+        titleEl.textContent = 'Добавить пакет ко Дню Рождения';
+        form.setAttribute('data-action', "{% url 'staff:add_birthday_package' %}");
+        fieldsContainer.innerHTML = `
+          <div>
+            <label class="block text-gray-700">Название пакета:</label>
+            <input type="text" name="name" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Пн–Чт):</label>
+            <input type="number" name="price_mon_thu" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Пт–Вс):</label>
+            <input type="number" name="price_fri_sun" placeholder="—" class="w-full p-2 border border-gray-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-gray-700">Доп. игрок / ребёнок:</label>
+            <input type="number" name="extra_person" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Описание:</label>
+            <textarea name="description" rows="2" class="w-full p-2 border border-gray-300 rounded-lg"></textarea>
+          </div>
+        `;
+        break;
+
+      case 'vr_packages':
+        titleEl.textContent = 'Добавить VR-пакет';
+        form.setAttribute('data-action', "{% url 'staff:add_vr_package' %}");
+        fieldsContainer.innerHTML = `
+          <div>
+            <label class="block text-gray-700">Название VR-пакета:</label>
+            <input type="text" name="name" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Пн–Чт):</label>
+            <input type="number" name="price_mon_thu" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Пт–Вс):</label>
+            <input type="number" name="price_fri_sun" placeholder="—" class="w-full p-2 border border-gray-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-gray-700">Доп. игрок / ребёнок:</label>
+            <input type="number" name="extra_person" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Описание:</label>
+            <textarea name="description" rows="2" class="w-full p-2 border border-gray-300 rounded-lg"></textarea>
+          </div>
+        `;
+        break;
+
+      case 'standard_packages':
+        titleEl.textContent = 'Добавить обычный пакет';
+        form.setAttribute('data-action', "{% url 'staff:add_standard_package' %}");
+        fieldsContainer.innerHTML = `
+          <div>
+            <label class="block text-gray-700">Название пакета:</label>
+            <input type="text" name="name" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Пн–Чт):</label>
+            <input type="number" name="price_mon_thu" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Пт–Вс):</label>
+            <input type="number" name="price_fri_sun" placeholder="—" class="w-full p-2 border border-gray-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-gray-700">Доп. игрок / ребёнок:</label>
+            <input type="number" name="extra_person" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Описание:</label>
+            <textarea name="description" rows="2" class="w-full p-2 border border-gray-300 rounded-lg"></textarea>
+          </div>
+        `;
+        break;
+
+      case 'playstation':
+        titleEl.textContent = 'Добавить слот PlayStation';
+        form.setAttribute('data-action', "{% url 'staff:add_playstation_slot' %}");
+        fieldsContainer.innerHTML = `
+          <div>
+            <label class="block text-gray-700">Продолжительность:</label>
+            <input type="text" name="duration" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Будни до 17:00):</label>
+            <input type="number" name="weekday_before_17" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Будни после 17:00 / Выходные):</label>
+            <input type="number" name="weekday_after_17_weekends" placeholder="—" class="w-full p-2 border border-gray-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-gray-700">Описание:</label>
+            <textarea name="description" rows="2" class="w-full p-2 border border-gray-300 rounded-lg"></textarea>
+          </div>
+        `;
+        break;
+
+      case 'vr_rides':
+        titleEl.textContent = 'Добавить VR-аттракцион';
+        form.setAttribute('data-action', "{% url 'staff:add_vr_ride' %}");
+        fieldsContainer.innerHTML = `
+          <div>
+            <label class="block text-gray-700">Название аттракциона:</label>
+            <input type="text" name="name" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Будни до 17:00):</label>
+            <input type="number" name="weekday_before_17" class="w-full p-2 border border-gray-300 rounded-lg" required>
+          </div>
+          <div>
+            <label class="block text-gray-700">Цена (Будни после 17:00 / Выходные):</label>
+            <input type="number" name="weekday_after_17_weekends" placeholder="—" class="w-full p-2 border border-gray-300 rounded-lg">
+          </div>
+          <div>
+            <label class="block text-gray-700">Описание:</label>
+            <textarea name="description" rows="2" class="w-full p-2 border border-gray-300 rounded-lg"></textarea>
+          </div>
+        `;
+        break;
+
+      default:
+        return;  // неизвестная категория
+    }
+
+    // Показываем оверлей и модалку
+    overlay.classList.remove('hidden');
+    overlay.classList.add('flex');
+  }
+
+  // Скрываем модалку
+  function hideModal() {
+    const overlay = document.getElementById('modal-overlay');
+    overlay.classList.add('hidden');
+    overlay.classList.remove('flex');
+
+    // Очистим поля формы
+    const form = document.getElementById('modal-form');
+    form.reset();
+    form.removeAttribute('data-action');
+  }
+
+  // Формируем HTML строки для новой записи и добавляем в таблицу
+  function appendRow(category, item) {
+    // item — объект JSON, возвращённый сервером, содержащий все нужные поля, включая id, name, цены и description
+    // Мы создаём <tr data-id="...">...</tr> и добавляем в конец <tbody id="tbody-{category}">
+    const tbody = document.getElementById(`tbody-${category}`);
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-id', item.id);
+
+    // В зависимости от категории — разные колонки
+    let innerHTML = '';
+    switch(category) {
+      case 'child_city':
+        innerHTML = `
+          <td class="px-4 py-2 text-sm text-gray-800">${item.name}</td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="child_city_${item.id}_before_17"
+                   value="${item.weekday_before_17}"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="child_city_${item.id}_after_17"
+                   value="${item.weekday_after_17_weekends ?? ''}"
+                   placeholder="—"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <textarea name="child_city_${item.id}_desc"
+                      rows="2"
+                      class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">${item.description ?? ''}</textarea>
+          </td>
+          <td class="px-4 py-2 text-center">
+            <button type="button"
+                    class="delete-item text-red-500 hover:text-red-700"
+                    data-type="child_city"
+                    data-id="${item.id}"
+                    data-url="${item.delete_url}">
+              Удалить
+            </button>
+          </td>
+        `;
+        break;
+
+      case 'arcade_machines':
+        innerHTML = `
+          <td class="px-4 py-2 text-sm text-gray-800">${item.name}</td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="arcade_${item.id}_before_17"
+                   value="${item.weekday_before_17}"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="arcade_${item.id}_after_17"
+                   value="${item.weekday_after_17_weekends ?? ''}"
+                   placeholder="—"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <textarea name="arcade_${item.id}_desc"
+                      rows="2"
+                      class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">${item.description ?? ''}</textarea>
+          </td>
+          <td class="px-4 py-2 text-center">
+            <button type="button"
+                    class="delete-item text-red-500 hover:text-red-700"
+                    data-type="arcade_machines"
+                    data-id="${item.id}"
+                    data-url="${item.delete_url}">
+              Удалить
+            </button>
+          </td>
+        `;
+        break;
+
+      case 'vr_arena':
+        innerHTML = `
+          <td class="px-4 py-2 text-sm text-gray-800">${item.duration_display}</td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="vr_arena_${item.id}_before_17"
+                   value="${item.weekday_before_17}"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="vr_arena_${item.id}_after_17"
+                   value="${item.weekday_after_17_weekends ?? ''}"
+                   placeholder="—"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <textarea name="vr_arena_${item.id}_desc"
+                      rows="2"
+                      class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">${item.description ?? ''}</textarea>
+          </td>
+          <td class="px-4 py-2 text-center">
+            <button type="button"
+                    class="delete-item text-red-500 hover:text-red-700"
+                    data-type="vr_arena"
+                    data-id="${item.id}"
+                    data-url="${item.delete_url}">
+              Удалить
+            </button>
+          </td>
+        `;
+        break;
+
+      case 'birthday_packages':
+        innerHTML = `
+          <td class="px-4 py-2 text-sm text-gray-800">${item.name}</td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="birthday_pkg_${item.id}_price_mon_thu"
+                   value="${item.price_mon_thu}"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="birthday_pkg_${item.id}_price_fri_sun"
+                   value="${item.price_fri_sun ?? ''}"
+                   placeholder="—"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="birthday_pkg_${item.id}_extra_person"
+                   value="${item.extra_person}"
+                   class="w-20 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <textarea name="birthday_pkg_${item.id}_desc"
+                      rows="2"
+                      class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">${item.description ?? ''}</textarea>
+          </td>
+          <td class="px-4 py-2 text-center">
+            <button type="button"
+                    class="delete-item text-red-500 hover:text-red-700"
+                    data-type="birthday_packages"
+                    data-id="${item.id}"
+                    data-url="${item.delete_url}">
+              Удалить
+            </button>
+          </td>
+        `;
+        break;
+
+      case 'vr_packages':
+        innerHTML = `
+          <td class="px-4 py-2 text-sm text-gray-800">${item.name}</td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="vr_pkg_${item.id}_price_mon_thu"
+                   value="${item.price_mon_thu}"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="vr_pkg_${item.id}_price_fri_sun"
+                   value="${item.price_fri_sun ?? ''}"
+                   placeholder="—"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="vr_pkg_${item.id}_extra_person"
+                   value="${item.extra_person}"
+                   class="w-20 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <textarea name="vr_pkg_${item.id}_desc"
+                      rows="2"
+                      class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">${item.description ?? ''}</textarea>
+          </td>
+          <td class="px-4 py-2 text-center">
+            <button type="button"
+                    class="delete-item text-red-500 hover:text-red-700"
+                    data-type="vr_packages"
+                    data-id="${item.id}"
+                    data-url="${item.delete_url}">
+              Удалить
+            </button>
+          </td>
+        `;
+        break;
+
+      case 'standard_packages':
+        innerHTML = `
+          <td class="px-4 py-2 text-sm text-gray-800">${item.name}</td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="std_pkg_${item.id}_price_mon_thu"
+                   value="${item.price_mon_thu}"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="std_pkg_${item.id}_price_fri_sun"
+                   value="${item.price_fri_sun ?? ''}"
+                   placeholder="—"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="std_pkg_${item.id}_extra_person"
+                   value="${item.extra_person}"
+                   class="w-20 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <textarea name="std_pkg_${item.id}_desc"
+                      rows="2"
+                      class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">${item.description ?? ''}</textarea>
+          </td>
+          <td class="px-4 py-2 text-center">
+            <button type="button"
+                    class="delete-item text-red-500 hover:text-red-700"
+                    data-type="standard_packages"
+                    data-id="${item.id}"
+                    data-url="${item.delete_url}">
+              Удалить
+            </button>
+          </td>
+        `;
+        break;
+
+      case 'playstation':
+        innerHTML = `
+          <td class="px-4 py-2 text-sm text-gray-800">${item.duration_display}</td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="ps_${item.id}_before_17"
+                   value="${item.weekday_before_17}"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="ps_${item.id}_after_17"
+                   value="${item.weekday_after_17_weekends ?? ''}"
+                   placeholder="—"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <textarea name="ps_${item.id}_desc"
+                      rows="2"
+                      class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">${item.description ?? ''}</textarea>
+          </td>
+          <td class="px-4 py-2 text-center">
+            <button type="button"
+                    class="delete-item text-red-500 hover:text-red-700"
+                    data-type="playstation"
+                    data-id="${item.id}"
+                    data-url="${item.delete_url}">
+              Удалить
+            </button>
+          </td>
+        `;
+        break;
+
+      case 'vr_rides':
+        innerHTML = `
+          <td class="px-4 py-2 text-sm text-gray-800">${item.name}</td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="vr_ride_${item.id}_before_17"
+                   value="${item.weekday_before_17}"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <input type="number"
+                   name="vr_ride_${item.id}_after_17"
+                   value="${item.weekday_after_17_weekends ?? ''}"
+                   placeholder="—"
+                   class="w-24 p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+          </td>
+          <td class="px-4 py-2">
+            <textarea name="vr_ride_${item.id}_desc"
+                      rows="2"
+                      class="w-full p-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">${item.description ?? ''}</textarea>
+          </td>
+          <td class="px-4 py-2 text-center">
+            <button type="button"
+                    class="delete-item text-red-500 hover:text-red-700"
+                    data-type="vr_rides"
+                    data-id="${item.id}"
+                    data-url="${item.delete_url}">
+              Удалить
+            </button>
+          </td>
+        `;
+        break;
+
+      default:
+        return;
+    }
+
+    tr.innerHTML = innerHTML;
+    tbody.appendChild(tr);
+
+    // Обновляем счётчик
+    const countEl = document.getElementById(`count-${category}`);
+    if (countEl) {
+      const current = parseInt(countEl.textContent, 10) || 0;
+      countEl.textContent = current + 1;
+    }
+  }
+
+  // Перестраиваем всю таблицу из массива JSON (при сохранении «Сохранить изменения»)
+  function rebuildTable(category, items) {
+    const tbody = document.getElementById(`tbody-${category}`);
+    tbody.innerHTML = ''; // очистили тело
+
+    // Для каждого item (из массива items) создаём строку точно так же, как в appendRow
+    items.forEach(item => {
+      appendRow(category, item);
+    });
+
+    // Если нет ни одной записи, покажем строку «Нет записей»
+    if (items.length === 0) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td colspan="5" class="px-4 py-2 text-center text-gray-500">Нет записей</td>`;
+      if (category === 'birthday_packages' || category === 'vr_packages' || category === 'standard_packages') {
+        tr.innerHTML = `<td colspan="6" class="px-4 py-2 text-center text-gray-500">Нет записей</td>`;
+      } else if (category === 'playstation' || category === 'vr_rides') {
+        tr.innerHTML = `<td colspan="5" class="px-4 py-2 text-center text-gray-500">Нет записей</td>`;
+      }
+      tbody.appendChild(tr);
+    }
+
+    // Обновляем счётчик
+    const countEl = document.getElementById(`count-${category}`);
+    if (countEl) {
+      countEl.textContent = items.length;
+    }
+  }
+
+  // -----------------------------------------------
+  // Обработчики событий
+  // -----------------------------------------------
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Навигация плавный скролл
+    document.querySelectorAll('nav a[href^="#"]').forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        const targetId = link.getAttribute('href').substring(1);
+        const targetEl = document.getElementById(targetId);
+        if (targetEl) {
+          window.scrollTo({
+            top: targetEl.getBoundingClientRect().top + window.pageYOffset - 20,
+            behavior: 'smooth'
+          });
+        }
+      });
+    });
+
+    // Открытие модалки
+    document.querySelectorAll('.open-modal').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const category = btn.getAttribute('data-type');
+        showModal(category);
+      });
+    });
+
+    // Закрытие модалки при клике «Отмена» или вне окна
+    document.getElementById('modal-cancel').addEventListener('click', hideModal);
+    document.getElementById('modal-overlay').addEventListener('click', e => {
+      if (e.target.id === 'modal-overlay') {
+        hideModal();
+      }
+    });
+
+    // Отправка формы модалки (Добавить новую запись)
+    document.getElementById('modal-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const form = e.target;
+      const actionUrl = form.getAttribute('data-action');
+      if (!actionUrl) return;
+
+      const formData = new FormData(form);
+      formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
+
+      try {
+        const res = await fetch(actionUrl, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: formData
+        });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || `Status ${res.status}`);
+        }
+        const data = await res.json();
+        if (data.success && data.item) {
+          // Добавляем новую строку в таблицу
+          appendRow(data.category, data.item);
+          hideModal();
+          alert('Добавлено');
+        } else {
+          alert(data.error || 'Не удалось добавить');
+        }
+      } catch (err) {
+        console.error('Ошибка добавления:', err);
+        alert('Сетевая ошибка: ' + err.message);
+      }
+    });
+
+    // Обработчик «Сохранить изменения» (у каждой формы class="save-form")
+    document.querySelectorAll('.save-form').forEach(form => {
+      form.addEventListener('submit', async e => {
+        e.preventDefault();
+        const saveUrl = form.getAttribute('data-save-url');
+        const category = form.id.replace('form-', '');
+        const formData = new FormData(form);
+        formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
+
+        try {
+          const res = await fetch(saveUrl, {
+            method: 'POST',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            body: formData
+          });
+          if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || `Status ${res.status}`);
+          }
+          const data = await res.json();
+          if (data.success && Array.isArray(data.updated)) {
+            rebuildTable(category, data.updated);
+            alert('Изменения сохранены');
+          } else {
+            alert(data.error || 'Не удалось сохранить');
+          }
+        } catch (err) {
+          console.error('Ошибка сохранения:', err);
+          alert('Сетевая ошибка: ' + err.message);
+        }
+      });
+    });
+
+    // Обработчик удаления (кнопки class="delete-item")
+    document.body.addEventListener('click', async e => {
+      if (!e.target.classList.contains('delete-item')) return;
+      const btn = e.target;
+      const category = btn.getAttribute('data-type');
+      const itemId = btn.getAttribute('data-id');
+      const deleteUrl = btn.getAttribute('data-url');
+
+      if (!confirm('Удалить запись?')) return;
+
+      try {
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', CSRF_TOKEN);
+        const res = await fetch(deleteUrl, {
+          method: 'POST',
+          headers: { 'X-Requested-With': 'XMLHttpRequest' },
+          body: formData
+        });
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || `Status ${res.status}`);
+        }
+        const data = await res.json();
+        if (data.success) {
+          // Удаляем строку из DOM
+          const tr = document.querySelector(`#tbody-${category} tr[data-id="${itemId}"]`);
+          if (tr) tr.remove();
+          // Корректируем счётчик
+          const countEl = document.getElementById(`count-${category}`);
+          if (countEl) {
+            const current = parseInt(countEl.textContent, 10) || 1;
+            countEl.textContent = current - 1;
+          }
+          alert('Удалено');
+        } else {
+          alert(data.error || 'Не удалось удалить');
+        }
+      } catch (err) {
+        console.error('Ошибка удаления:', err);
+        alert('Сетевая ошибка: ' + err.message);
+      }
+    });
+  });
+</script>
+{% endblock %}

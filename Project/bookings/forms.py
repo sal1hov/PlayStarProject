@@ -1,5 +1,4 @@
 from django import forms
-from django.core.exceptions import ValidationError
 from django.utils import timezone
 from .models import Booking
 
@@ -42,8 +41,7 @@ class BookingForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.enforce_future_date = kwargs.pop('enforce_future_date', True)
         super().__init__(*args, **kwargs)
-
-        # Установка минимальной даты
+        # Обновляем минимальную дату прямо в виджете, чтобы не устаревала
         self.fields['event_date'].widget.attrs['min'] = timezone.now().strftime('%Y-%m-%dT%H:%M')
 
         # Настройка обязательных полей

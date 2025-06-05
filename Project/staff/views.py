@@ -4,39 +4,45 @@ import logging
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from django.http import HttpResponse, JsonResponse, HttpResponseForbidden
-from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse, HttpResponseForbidden
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.core.paginator import Paginator
 from django.db.models import Count, Sum, Avg, F, Q
-from django.db.models.functions import TruncMonth, TruncDay
+from django.db.models.functions import TruncMonth
 from django.template.loader import render_to_string
-from .models import Event, Shift, ShiftRequest
-from .forms import EventForm, ShiftRequestForm
-from datetime import datetime, timedelta
+from .models import (
+    Event, Shift, ShiftRequest,
+    ChildCityItem, ArcadeMachineItem, VRArenaItem,
+    BirthdayPackage, VRPackage, StandardPackage,
+    PlayStationSlot, VRRide
+)
+from .forms import EventForm, ShiftRequestForm, ShiftForm
+from datetime import datetime
 from django.utils import timezone
 from decimal import Decimal
 from django.views.generic import ListView, CreateView, UpdateView, DetailView, TemplateView
+from django.views import View
 from django.urls import reverse_lazy
 from django.contrib.auth import update_session_auth_hash
 import traceback
 from django.conf import settings
-from django.views.decorators.csrf import ensure_csrf_cookie
-from .forms import ShiftForm
-from django.views import View
 from django.db import transaction
-
+from django.urls import reverse
 
 logger = logging.getLogger(__name__)
 
 
 def role_required(*group_names):
+    """
+    Декоратор: пользователь должен быть в одной из групп group_names или superuser.
+    """
     def in_groups(user):
         if user.is_authenticated:
             if bool(user.groups.filter(name__in=group_names)) or user.is_superuser:
                 return True
         return False
 
-    return user_passes_test(in_groups)
+    return lambda u: user_passes_test(in_groups)(u)
 
 
 @login_required
@@ -55,38 +61,36 @@ def admin_dashboard(request):
         users = users.filter(role=role_filter)
 
     total_users = all_users.count()
-    bookings = Booking.objects.all()
+    bookings_qs = Booking.objects.all()
     booking_search = request.GET.get('booking_search')
 
     if booking_search:
-        bookings = bookings.filter(event_name__icontains=booking_search)
+        bookings_qs = bookings_qs.filter(event_name__icontains=booking_search)
 
     booking_status = request.GET.get('booking_status')
     if booking_status:
-        bookings = bookings.filter(status=booking_status)
+        bookings_qs = bookings_qs.filter(status=booking_status)
 
-    total_bookings = bookings.count()
-    pending_bookings = bookings.filter(status='pending').count()
+    total_bookings = bookings_qs.count()
+    pending_bookings = bookings_qs.filter(status='pending').count()
 
     paginator = Paginator(users, 5)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
 
     # ===== НОВЫЙ КОД ДЛЯ ПАНЕЛЕЙ =====
-    # Кто сегодня работает
     today = timezone.now().date()
     shifts_today = Shift.objects.filter(date=today).prefetch_related('staff')
     staff_working = []
     for shift in shifts_today:
-        for staff in shift.staff.all():
+        for staff_member in shift.staff.all():
             staff_working.append({
-                'staff': staff,
+                'staff': staff_member,
                 'role': shift.get_role_display(),
                 'shift_type': shift.get_shift_type_display(),
                 'time_range': f"{shift.start_time} - {shift.end_time}"
             })
 
-    # Подтвержденные бронирования на сегодня
     bookings_today = Booking.objects.filter(
         event_date__date=today,
         status='approved'
@@ -95,7 +99,7 @@ def admin_dashboard(request):
 
     return render(request, 'staff/admin/dashboard.html', {
         'users': page_obj,
-        'bookings': bookings,
+        'bookings': bookings_qs,
         'total_users': total_users,
         'total_bookings': total_bookings,
         'pending_bookings': pending_bookings,
@@ -117,7 +121,7 @@ def edit_user(request, user_id):
     if request.method == 'POST':
         try:
             user_to_edit.role = request.POST.get('role')
-            user_to_edit.professional_role = request.POST.get('professional_role', 'none')  # Добавлено
+            user_to_edit.professional_role = request.POST.get('professional_role', 'none')
             user_to_edit.first_name = request.POST.get('first_name')
             user_to_edit.last_name = request.POST.get('last_name')
             user_to_edit.email = request.POST.get('email')
@@ -144,7 +148,7 @@ def edit_user(request, user_id):
         'profile': profile,
         'children': children,
         'role_choices': CustomUser.ROLE_CHOICES,
-        'professional_roles': CustomUser.PROFESSIONAL_ROLES  # Добавлено
+        'professional_roles': CustomUser.PROFESSIONAL_ROLES
     })
 
 
@@ -157,14 +161,12 @@ def delete_user(request, user_id):
             username = user_to_delete.username
             user_to_delete.delete()
 
-            # Для AJAX-запросов возвращаем JSON
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': True,
                     'message': f'Пользователь {username} успешно удалён'
                 })
 
-            # Для обычных запросов сохраняем сообщение и редиректим
             messages.success(request, 'Пользователь успешно удален.')
             return redirect('staff:admin-dashboard')
 
@@ -172,18 +174,15 @@ def delete_user(request, user_id):
             error_msg = f'Ошибка при удалении пользователя: {str(e)}'
             logger.error(error_msg)
 
-            # Для AJAX-запросов возвращаем ошибку
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': False,
                     'error': error_msg
                 }, status=500)
 
-            # Для обычных запросов сохраняем ошибку и редиректим
             messages.error(request, error_msg)
             return redirect('staff:admin-dashboard')
 
-    # Блокируем GET-запросы к этому эндпоинту
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({
             'success': False,
@@ -216,7 +215,6 @@ def manager_dashboard(request):
 @login_required
 @role_required('Staff')
 def employee_dashboard(request):
-    # Исправленный путь к шаблону
     return render(request, 'staff/employee/dashboard.html')
 
 
@@ -370,7 +368,7 @@ def event_view(request, event_id):
 
 
 @login_required
-@role_required('Admin')
+@role_required('Admin', 'Manager')
 def create_event(request):
     if request.method == 'POST':
         form = EventForm(request.POST, request.FILES)
@@ -402,14 +400,12 @@ def edit_event(request, event_id):
     if request.method == 'GET':
         form = EventForm(instance=event)
 
-        # Для AJAX-запросов возвращаем только форму
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             html = render_to_string('staff/common/partials/edit_event_form.html',
                                     {'form': form, 'event': event},
                                     request=request)
             return JsonResponse({'html': html})
 
-        # Для обычных запросов возвращаем полную страницу
         return render(request, 'staff/admin/edit_event.html', {
             'form': form,
             'event': event
@@ -420,16 +416,13 @@ def edit_event(request, event_id):
         if form.is_valid():
             form.save()
 
-            # Для AJAX-запросов возвращаем JSON
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': True, 'message': 'Мероприятие успешно обновлено.'})
 
-            # Для обычных запросов делаем редирект
             messages.success(request, 'Мероприятие успешно обновлено.')
             return redirect('staff:events')
 
         else:
-            # Обработка ошибок валидации
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, 'errors': form.errors}, status=400)
 
@@ -509,15 +502,15 @@ def income_management(request):
 
         total_income = bookings.aggregate(
             total=Sum(F('prepayment') + F('cashier_payment') + F('paid_amount'))
-        )['total'] or Decimal('0.00')
+        )['total'] or 0.00
 
         avg_income = bookings.aggregate(
             avg=Avg(F('prepayment') + F('cashier_payment') + F('paid_amount'))
-        )['avg'] or Decimal('0.00')
+        )['avg'] or 0.00
 
         total_prepayments = bookings.aggregate(
             total=Sum('prepayment')
-        )['total'] or Decimal('0.00')
+        )['total'] or 0.00
 
         earnings_by_month = (
             bookings.annotate(month=TruncMonth('created_at'))
@@ -549,7 +542,7 @@ def income_management(request):
                         'total_payment': float(b.total_payment),
                         'prepayment': float(b.prepayment),
                         'status': b.status,
-                        'status_display': b.status_display
+                        'status_display': b.get_status_display()
                     }
                     for b in bookings
                 ],
@@ -581,10 +574,10 @@ def edit_income(request):
     if request.method == 'POST':
         try:
             booking = Booking.objects.get(id=request.POST.get('booking_id'))
-            prepayment = request.POST.get('prepayment') == 'true'
+            prepayment_flag = request.POST.get('prepayment') == 'true'
             paid_amount = Decimal(request.POST.get('paid_amount', '0'))
 
-            if prepayment:
+            if prepayment_flag:
                 booking.prepayment = max(paid_amount, Decimal('1000.00'))
                 booking.paid_amount = Decimal('0.00')
             else:
@@ -633,8 +626,7 @@ def income_management_data(request):
 
         total_income = bookings.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
         avg_income = bookings.aggregate(avg=Avg('paid_amount'))['avg'] or Decimal('0.00')
-        total_prepayments = bookings.filter(prepayment=True).aggregate(total=Sum('paid_amount'))['total'] or Decimal(
-            '0.00')
+        total_prepayments = bookings.filter(prepayment=True).aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
         total_earnings = bookings.aggregate(total=Sum('paid_amount'))['total'] or Decimal('0.00')
 
         earnings_by_month = bookings.annotate(
@@ -660,8 +652,8 @@ def income_management_data(request):
             'prepayment',
             'status'
         ))
-        for booking in bookings_data:
-            booking['status_display'] = dict(Booking.STATUS_CHOICES).get(booking['status'], booking['status'])
+        for b in bookings_data:
+            b['status_display'] = dict(Booking.STATUS_CHOICES).get(b['status'], b['status'])
 
         return JsonResponse({
             'success': True,
@@ -681,12 +673,10 @@ class ShiftManagementView(TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
 
-        # Получаем параметры фильтрации
         date_filter = self.request.GET.get('date')
         status_filter = self.request.GET.get('status')
         date_req_filter = self.request.GET.get('date_req')
 
-        # Фильтрация ВСЕХ смен (а не только будущих)
         shifts = Shift.objects.all().order_by('date')
         if date_filter:
             try:
@@ -696,7 +686,6 @@ class ShiftManagementView(TemplateView):
                 pass
         context['shifts'] = shifts
 
-        # Фильтрация заявок
         requests = ShiftRequest.objects.select_related('employee').order_by('-created_at')
         if status_filter:
             requests = requests.filter(status=status_filter)
@@ -707,7 +696,6 @@ class ShiftManagementView(TemplateView):
         context['approved_requests_count'] = ShiftRequest.objects.filter(status='approved').count()
         context['pending_requests_count'] = ShiftRequest.objects.filter(status='pending').count()
 
-        # Сохраняем текущие фильтры для формы
         context['current_filters'] = {
             'date': date_filter,
             'status': status_filter,
@@ -715,6 +703,7 @@ class ShiftManagementView(TemplateView):
         }
 
         return context
+
 
 class ShiftListView(ListView):
     model = Shift
@@ -724,8 +713,6 @@ class ShiftListView(ListView):
 
     def get_queryset(self):
         queryset = Shift.objects.filter(date__gte=timezone.now().date()).order_by('date')
-
-        # Фильтрация по дате
         date_filter = self.request.GET.get('date')
         if date_filter:
             try:
@@ -733,7 +720,6 @@ class ShiftListView(ListView):
                 queryset = queryset.filter(date=filter_date)
             except ValueError:
                 pass
-
         return queryset
 
 
@@ -751,19 +737,15 @@ class CreateShiftView(View):
                 messages.error(request, "Не указана дата начала недели")
                 return render(request, self.template_name)
 
-            # Собираем данные по дням
             dates = request.POST.getlist('dates[]')
             staff_data = {}
 
-            # Собираем данные по сотрудникам
             for key in request.POST:
                 if key.startswith('staff['):
-                    # Формат ключа: staff[day_index][staff_index]
                     parts = key.split('[')
                     day_index = int(parts[1].split(']')[0])
                     staff_index = int(parts[2].split(']')[0])
 
-                    # Получаем связанные данные
                     role = request.POST.get(f'role[{day_index}][{staff_index}]')
                     shift_type = request.POST.get(f'shift_type[{day_index}][{staff_index}]')
                     staff_id = request.POST.get(key)
@@ -780,7 +762,6 @@ class CreateShiftView(View):
                         'staff_id': staff_id
                     })
 
-            # Создаем смены
             created_shifts = 0
             for day_index, staff_list in staff_data.items():
                 if day_index >= len(dates):
@@ -797,7 +778,6 @@ class CreateShiftView(View):
                     except CustomUser.DoesNotExist:
                         continue
 
-                    # Создаем смену
                     shift = Shift.objects.create(
                         date=date,
                         role=staff_info['role'],
@@ -815,6 +795,7 @@ class CreateShiftView(View):
             messages.error(request, f"Ошибка при создании смен: {str(e)}")
             return render(request, self.template_name)
 
+
 class UpdateShiftView(UpdateView):
     model = Shift
     form_class = ShiftForm
@@ -825,6 +806,7 @@ class UpdateShiftView(UpdateView):
         messages.success(self.request, 'Смена успешно обновлена')
         return super().form_valid(form)
 
+
 class MyShiftRequestsView(ListView):
     model = ShiftRequest
     template_name = 'staff/employee/shifts/my_shift_requests.html'
@@ -832,6 +814,7 @@ class MyShiftRequestsView(ListView):
 
     def get_queryset(self):
         return ShiftRequest.objects.filter(employee=self.request.user).order_by('-date')
+
 
 class CreateShiftRequestView(CreateView):
     model = ShiftRequest
@@ -848,6 +831,7 @@ class CreateShiftRequestView(CreateView):
         form.instance.employee = self.request.user
         messages.success(self.request, 'Заявка на смену успешно создана!')
         return super().form_valid(form)
+
 
 class UpdateShiftRequestView(UpdateView):
     model = ShiftRequest
@@ -923,7 +907,6 @@ class ShiftRequestDetailView(DetailView):
 def approve_shift_request(request, pk):
     shift_request = get_object_or_404(ShiftRequest, pk=pk)
 
-    # Проверяем, существует ли уже смена на эту дату и роль
     shift, created = Shift.objects.get_or_create(
         date=shift_request.date,
         role=shift_request.role,
@@ -933,11 +916,9 @@ def approve_shift_request(request, pk):
         }
     )
 
-    # Добавляем сотрудника в смену
     if shift_request.employee not in shift.staff.all():
         shift.staff.add(shift_request.employee)
 
-    # Обновляем статус заявки
     shift_request.status = 'approved'
     shift_request.save()
 
@@ -972,7 +953,7 @@ def delete_shift_request(request, pk):
 @role_required('Admin', 'Manager')
 def manage_user_children(request, user_id):
     user = get_object_or_404(CustomUser, id=user_id)
-    profile = Profile.objects.get_or_create(user=user)[0]
+    profile, _ = Profile.objects.get_or_create(user=user)
     children = Child.objects.filter(profile=profile)
 
     if request.method == 'POST':
@@ -1010,9 +991,9 @@ def manage_user_children(request, user_id):
     })
 
 
+@ensure_csrf_cookie
 @login_required
 @role_required('Admin', 'Manager')
-@ensure_csrf_cookie
 def delete_booking_admin(request, booking_id):
     if not request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return JsonResponse({'error': 'Требуется AJAX запрос'}, status=400)
@@ -1022,20 +1003,16 @@ def delete_booking_admin(request, booking_id):
 
     try:
         booking = Booking.objects.get(id=booking_id)
-        Event.objects.filter(booking=booking).delete()
         booking.delete()
-
         return JsonResponse({
             'success': True,
             'message': 'Бронирование успешно удалено'
         })
-
     except Booking.DoesNotExist:
         return JsonResponse({
             'success': False,
             'error': 'Бронирование не найдено'
         }, status=404)
-
     except Exception as e:
         logger.error(f"Ошибка при удалении: {str(e)}", exc_info=True)
         return JsonResponse({
@@ -1054,7 +1031,12 @@ def filter_users(request):
     users = CustomUser.objects.all().order_by('-date_joined')
 
     if search_query:
-        users = users.filter(username__icontains=search_query)
+        users = users.filter(
+            Q(username__icontains=search_query) |
+            Q(email__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query)
+        )
 
     if role_filter:
         users = users.filter(role=role_filter)
@@ -1086,7 +1068,7 @@ def create_shift(request):
                 end_time=end_time
             )
             messages.success(request, 'Смена успешно создана')
-            return redirect('staff:shift_list')
+            return redirect('staff:shift-list')
         except Exception as e:
             messages.error(request, f'Ошибка при создании смены: {str(e)}')
 
@@ -1104,7 +1086,7 @@ def edit_shift(request, shift_id):
         shift.end_time = request.POST.get('end_time')
         shift.save()
         messages.success(request, 'Смена успешно обновлена')
-        return redirect('staff:shift_list')
+        return redirect('staff:shift-list')
 
     return render(request, 'staff/admin/edit_shift.html', {'shift': shift})
 
@@ -1114,7 +1096,6 @@ def edit_shift(request, shift_id):
 def delete_shift(request, pk):
     shift = get_object_or_404(Shift, pk=pk)
 
-    # Проверка наличия связанных заявок по дате, роли и времени
     existing_requests = ShiftRequest.objects.filter(
         date=shift.date,
         role=shift.role,
@@ -1142,7 +1123,6 @@ def delete_shift(request, pk):
                 'error': str(e)
             }, status=500)
 
-    # Обычный запрос
     shift.delete()
     messages.success(request, 'Смена успешно удалена')
     return redirect('staff:shift-management')
@@ -1151,16 +1131,15 @@ def delete_shift(request, pk):
 @login_required
 def get_shift_types(request):
     role = request.GET.get('role')
-
     role_to_shift_types = {
         'animator': [('full', 'Полная смена'), ('morning', 'Утренняя'), ('evening', 'Вечерняя')],
         'additional': [('full', 'Полная смена'), ('additional_evening', 'Доп. вечерняя')],
         'vr_operator': [('full', 'Полная смена'), ('vr_evening', 'VR вечерняя')],
         'cashier': [('full', 'Полная смена')],
     }
-
     types = role_to_shift_types.get(role, [])
     return JsonResponse({'types': types})
+
 
 @login_required
 def get_staff(request):
@@ -1182,13 +1161,10 @@ def get_staff(request):
 
     return JsonResponse({'staff': staff_data})
 
+
 @login_required
 @role_required('Admin', 'Manager')
 def edit_day_shifts(request):
-    from .forms import ShiftForm
-    from main.models import CustomUser
-    from .models import Shift
-
     selected_date = request.GET.get('date')
     if not selected_date:
         return HttpResponse("Дата не указана", status=400)
@@ -1213,6 +1189,7 @@ def edit_day_shifts(request):
         'forms': forms
     })
 
+
 @login_required
 @role_required('Admin', 'Manager')
 def duplicate_shift(request, pk):
@@ -1227,7 +1204,6 @@ def duplicate_shift(request, pk):
             )
             new_shift.staff.set(original.staff.all())
 
-            from .forms import ShiftForm
             form = ShiftForm(instance=new_shift, prefix=f'shift_{new_shift.pk}')
             html = render_to_string('staff/common/partials/shift_card.html', {
                 'shift': new_shift,
@@ -1241,6 +1217,7 @@ def duplicate_shift(request, pk):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)}, status=500)
     return JsonResponse({'success': False, 'error': 'Метод не разрешен'}, status=405)
+
 
 @login_required
 def edit_day_shifts_view(request):
@@ -1286,10 +1263,8 @@ def edit_day_shifts_view(request):
 @login_required
 @role_required('Admin', 'Manager')
 def users_view(request):
-    # Фильтрация пользователей
     users = CustomUser.objects.all().order_by('-date_joined')
 
-    # Поиск по имени/почте
     search_query = request.GET.get('search')
     if search_query:
         users = users.filter(
@@ -1299,17 +1274,14 @@ def users_view(request):
             Q(last_name__icontains=search_query)
         )
 
-    # Фильтр по роли
     role_filter = request.GET.get('role')
     if role_filter:
         users = users.filter(role=role_filter)
 
-    # Фильтр по активности
     is_active_filter = request.GET.get('is_active')
     if is_active_filter:
         users = users.filter(is_active=bool(int(is_active_filter)))
 
-    # Пагинация
     paginator = Paginator(users, 15)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
@@ -1324,7 +1296,6 @@ def users_view(request):
 def create_user(request):
     if request.method == 'POST':
         try:
-            # Создаем пользователя
             user = CustomUser.objects.create_user(
                 username=request.POST.get('username'),
                 email=request.POST.get('email'),
@@ -1337,7 +1308,6 @@ def create_user(request):
                 is_active='is_active' in request.POST
             )
 
-            # Создаем профиль
             profile = Profile.objects.create(
                 user=user,
                 bonuses=request.POST.get('bonuses', 0)
@@ -1353,3 +1323,1148 @@ def create_user(request):
         'role_choices': CustomUser.ROLE_CHOICES,
         'professional_roles': CustomUser.PROFESSIONAL_ROLES
     })
+
+
+# ------------------------------------------------------------
+# Ниже идут view-функции для «Price Settings»
+# ------------------------------------------------------------
+
+@login_required
+@role_required('Admin', 'Manager')
+def price_settings(request):
+    """
+    Загружает все объекты из моделей цены и отдаёт их в шаблон для редактирования.
+    Преобразовывает QuerySet в списки словарей, чтобы они были JSON-сериализуемы.
+    """
+    # Преобразуем каждый QuerySet в список словарей
+    child_city_items = list(
+        ChildCityItem.objects.all().values(
+            'id', 'name',
+            'weekday_before_17',
+            'weekday_after_17_weekends',
+            'description'
+        )
+    )
+    arcade_machines_items = list(
+        ArcadeMachineItem.objects.all().values(
+            'id', 'name',
+            'weekday_before_17',
+            'weekday_after_17_weekends',
+            'description'
+        )
+    )
+    vr_arena_items = list(
+        VRArenaItem.objects.all().values(
+            'id', 'duration',
+            'weekday_before_17',
+            'weekday_after_17_weekends',
+            'description'
+        )
+    )
+    birthday_packages_items = list(
+        BirthdayPackage.objects.all().values(
+            'id', 'name',
+            'price_mon_thu',
+            'price_fri_sun',
+            'extra_person',
+            'description'
+        )
+    )
+    vr_packages_items = list(
+        VRPackage.objects.all().values(
+            'id', 'name',
+            'price_mon_thu',
+            'price_fri_sun',
+            'extra_person',
+            'description'
+        )
+    )
+    standard_packages_items = list(
+        StandardPackage.objects.all().values(
+            'id', 'name',
+            'price_mon_thu',
+            'price_fri_sun',
+            'extra_person',
+            'description'
+        )
+    )
+    playstation_items = list(
+        PlayStationSlot.objects.all().values(
+            'id', 'duration',
+            'weekday_before_17',
+            'weekday_after_17_weekends',
+            'description'
+        )
+    )
+    vr_rides_items = list(
+        VRRide.objects.all().values(
+            'id', 'name',
+            'weekday_before_17',
+            'weekday_after_17_weekends',
+            'description'
+        )
+    )
+
+    context = {
+        'child_city_items': child_city_items,
+        'arcade_machines_items': arcade_machines_items,
+        'vr_arena_items': vr_arena_items,
+        'birthday_packages_items': birthday_packages_items,
+        'vr_packages_items': vr_packages_items,
+        'standard_packages_items': standard_packages_items,
+        'playstation_items': playstation_items,
+        'vr_rides_items': vr_rides_items,
+    }
+    return render(request, 'staff/admin/price_settings.html', context)
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def save_child_city_prices(request):
+    """
+    Обработка POST-запроса из вкладки 'Детский городок'.
+    Если AJAX, возвращаем JSON с обновленным списком.
+    """
+    if request.method == 'POST':
+        for item in ChildCityItem.objects.all():
+            prefix = f'child_city_{item.id}_'
+            before_17 = request.POST.get(prefix + 'before_17')
+            after_17 = request.POST.get(prefix + 'after_17')
+            desc = request.POST.get(prefix + 'desc', '').strip()
+
+            try:
+                item.weekday_before_17 = int(before_17)
+            except (TypeError, ValueError):
+                item.weekday_before_17 = 0
+            try:
+                item.weekday_after_17_weekends = int(after_17)
+            except (TypeError, ValueError):
+                item.weekday_after_17_weekends = 0
+            item.description = desc
+            item.save()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            updated = list(
+                ChildCityItem.objects.all().values(
+                    'id', 'name',
+                    'weekday_before_17',
+                    'weekday_after_17_weekends',
+                    'description'
+                )
+            )
+            return JsonResponse({'success': True, 'updated': updated})
+
+        messages.success(request, 'Цены Детского городка обновлены.')
+        return redirect(request.META.get('HTTP_REFERER', 'staff:price-settings'))
+
+    return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def save_arcade_prices(request):
+    """
+    Обработка POST-запроса из вкладки 'Игровые автоматы (жетоны)'.
+    Если AJAX, возвращаем JSON с обновленным списком.
+    """
+    if request.method == 'POST':
+        for machine in ArcadeMachineItem.objects.all():
+            prefix = f'arcade_{machine.id}_'
+            before_17 = request.POST.get(prefix + 'before_17')
+            after_17 = request.POST.get(prefix + 'after_17')
+            desc = request.POST.get(prefix + 'desc', '').strip()
+
+            try:
+                machine.weekday_before_17 = int(before_17)
+            except (TypeError, ValueError):
+                machine.weekday_before_17 = 0
+            try:
+                machine.weekday_after_17_weekends = int(after_17)
+            except (TypeError, ValueError):
+                machine.weekday_after_17_weekends = 0
+            machine.description = desc
+            machine.save()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            updated = list(
+                ArcadeMachineItem.objects.all().values(
+                    'id', 'name',
+                    'weekday_before_17',
+                    'weekday_after_17_weekends',
+                    'description'
+                )
+            )
+            return JsonResponse({'success': True, 'updated': updated})
+
+        messages.success(request, 'Цены Игровых автоматов обновлены.')
+        return redirect(request.META.get('HTTP_REFERER', 'staff:price-settings'))
+
+    return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def save_vr_arena_prices(request):
+    """
+    Обработка POST-запроса из вкладки 'VR-арена'.
+    Если AJAX, возвращаем JSON с обновленным списком.
+    """
+    if request.method == 'POST':
+        for session in VRArenaItem.objects.all():
+            prefix = f'vr_arena_{session.id}_'
+            before_17 = request.POST.get(prefix + 'before_17')
+            after_17 = request.POST.get(prefix + 'after_17')
+            desc = request.POST.get(prefix + 'desc', '').strip()
+
+            try:
+                session.weekday_before_17 = int(before_17)
+            except (TypeError, ValueError):
+                session.weekday_before_17 = 0
+            try:
+                session.weekday_after_17_weekends = int(after_17)
+            except (TypeError, ValueError):
+                session.weekday_after_17_weekends = 0
+            session.description = desc
+            session.save()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            updated = list(
+                VRArenaItem.objects.all().values(
+                    'id', 'duration',
+                    'weekday_before_17',
+                    'weekday_after_17_weekends',
+                    'description'
+                )
+            )
+            return JsonResponse({'success': True, 'updated': updated})
+
+        messages.success(request, 'Цены VR-арены обновлены.')
+        return redirect(request.META.get('HTTP_REFERER', 'staff:price-settings'))
+
+    return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def save_birthday_packages(request):
+    """
+    Обработка POST-запроса из вкладки 'Пакеты ко Дню Рождения'.
+    Если AJAX, возвращаем JSON с обновленным списком.
+    """
+    if request.method == 'POST':
+        for pkg in BirthdayPackage.objects.all():
+            prefix = f'birthday_pkg_{pkg.id}_'
+            price_mon_thu = request.POST.get(prefix + 'price_mon_thu')
+            price_fri_sun = request.POST.get(prefix + 'price_fri_sun')
+            extra = request.POST.get(prefix + 'extra_person')
+            desc = request.POST.get(prefix + 'desc', '').strip()
+
+            try:
+                pkg.price_mon_thu = int(price_mon_thu)
+            except (TypeError, ValueError):
+                pkg.price_mon_thu = 0
+            try:
+                pkg.price_fri_sun = int(price_fri_sun)
+            except (TypeError, ValueError):
+                pkg.price_fri_sun = 0
+            try:
+                pkg.extra_person = int(extra)
+            except (TypeError, ValueError):
+                pkg.extra_person = 0
+            pkg.description = desc
+            pkg.save()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            updated = list(
+                BirthdayPackage.objects.all().values(
+                    'id', 'name',
+                    'price_mon_thu',
+                    'price_fri_sun',
+                    'extra_person',
+                    'description'
+                )
+            )
+            return JsonResponse({'success': True, 'updated': updated})
+
+        messages.success(request, 'Коэффициенты и цены пакетов ДР обновлены.')
+        return redirect(request.META.get('HTTP_REFERER', 'staff:price-settings'))
+
+    return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def save_vr_packages(request):
+    """
+    Обработка POST-запроса из вкладки 'Пакеты VR'.
+    Если AJAX, возвращаем JSON с обновленным списком.
+    """
+    if request.method == 'POST':
+        for pkg in VRPackage.objects.all():
+            prefix = f'vr_pkg_{pkg.id}_'
+            price_mon_thu = request.POST.get(prefix + 'price_mon_thu')
+            price_fri_sun = request.POST.get(prefix + 'price_fri_sun')
+            extra = request.POST.get(prefix + 'extra_person')
+            desc = request.POST.get(prefix + 'desc', '').strip()
+
+            try:
+                pkg.price_mon_thu = int(price_mon_thu)
+            except (TypeError, ValueError):
+                pkg.price_mon_thu = 0
+            try:
+                pkg.price_fri_sun = int(price_fri_sun)
+            except (TypeError, ValueError):
+                pkg.price_fri_sun = 0
+            try:
+                pkg.extra_person = int(extra)
+            except (TypeError, ValueError):
+                pkg.extra_person = 0
+            pkg.description = desc
+            pkg.save()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            updated = list(
+                VRPackage.objects.all().values(
+                    'id', 'name',
+                    'price_mon_thu',
+                    'price_fri_sun',
+                    'extra_person',
+                    'description'
+                )
+            )
+            return JsonResponse({'success': True, 'updated': updated})
+
+        messages.success(request, 'Цены пакетов VR обновлены.')
+        return redirect(request.META.get('HTTP_REFERER', 'staff:price-settings'))
+
+    return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def save_standard_packages(request):
+    """
+    Обработка POST-запроса из вкладки 'Обычные пакеты услуг'.
+    Если AJAX, возвращаем JSON с обновленным списком.
+    """
+    if request.method == 'POST':
+        for pkg in StandardPackage.objects.all():
+            prefix = f'std_pkg_{pkg.id}_'
+            price_mon_thu = request.POST.get(prefix + 'price_mon_thu')
+            price_fri_sun = request.POST.get(prefix + 'price_fri_sun')
+            extra = request.POST.get(prefix + 'extra_person')
+            desc = request.POST.get(prefix + 'desc', '').strip()
+
+            try:
+                pkg.price_mon_thu = int(price_mon_thu)
+            except (TypeError, ValueError):
+                pkg.price_mon_thu = 0
+            try:
+                pkg.price_fri_sun = int(price_fri_sun)
+            except (TypeError, ValueError):
+                pkg.price_fri_sun = 0
+            try:
+                pkg.extra_person = int(extra)
+            except (TypeError, ValueError):
+                pkg.extra_person = 0
+            pkg.description = desc
+            pkg.save()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            updated = list(
+                StandardPackage.objects.all().values(
+                    'id', 'name',
+                    'price_mon_thu',
+                    'price_fri_sun',
+                    'extra_person',
+                    'description'
+                )
+            )
+            return JsonResponse({'success': True, 'updated': updated})
+
+        messages.success(request, 'Цены обычных пакетов обновлены.')
+        return redirect(request.META.get('HTTP_REFERER', 'staff:price-settings'))
+
+    return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def save_playstation_prices(request):
+    """
+    Обработка POST-запроса из вкладки 'Зона PlayStation'.
+    Если AJAX, возвращаем JSON с обновленным списком.
+    """
+    if request.method == 'POST':
+        for slot in PlayStationSlot.objects.all():
+            prefix = f'ps_{slot.id}_'
+            before_17 = request.POST.get(prefix + 'before_17')
+            after_17 = request.POST.get(prefix + 'after_17')
+            desc = request.POST.get(prefix + 'desc', '').strip()
+
+            try:
+                slot.weekday_before_17 = int(before_17)
+            except (TypeError, ValueError):
+                slot.weekday_before_17 = 0
+            try:
+                slot.weekday_after_17_weekends = int(after_17)
+            except (TypeError, ValueError):
+                slot.weekday_after_17_weekends = 0
+            slot.description = desc
+            slot.save()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            updated = list(
+                PlayStationSlot.objects.all().values(
+                    'id', 'duration',
+                    'weekday_before_17',
+                    'weekday_after_17_weekends',
+                    'description'
+                )
+            )
+            return JsonResponse({'success': True, 'updated': updated})
+
+        messages.success(request, 'Цены зоны PlayStation обновлены.')
+        return redirect(request.META.get('HTTP_REFERER', 'staff:price-settings'))
+
+    return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def save_vr_rides(request):
+    """
+    Обработка POST-запроса из вкладки 'VR-аттракционы'.
+    Если AJAX, возвращаем JSON с обновленным списком.
+    """
+    if request.method == 'POST':
+        for ride in VRRide.objects.all():
+            prefix = f'vr_ride_{ride.id}_'
+            before_17 = request.POST.get(prefix + 'before_17')
+            after_17 = request.POST.get(prefix + 'after_17')
+            desc = request.POST.get(prefix + 'desc', '').strip()
+
+            try:
+                ride.weekday_before_17 = int(before_17)
+            except (TypeError, ValueError):
+                ride.weekday_before_17 = 0
+            try:
+                ride.weekday_after_17_weekends = int(after_17)
+            except (TypeError, ValueError):
+                ride.weekday_after_17_weekends = 0
+            ride.description = desc
+            ride.save()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            updated = list(
+                VRRide.objects.all().values(
+                    'id', 'name',
+                    'weekday_before_17',
+                    'weekday_after_17_weekends',
+                    'description'
+                )
+            )
+            return JsonResponse({'success': True, 'updated': updated})
+
+        messages.success(request, 'Цены VR-аттракционов обновлены.')
+        return redirect(request.META.get('HTTP_REFERER', 'staff:price-settings'))
+
+    return redirect('staff:price-settings')
+
+
+# --------------------------------------------
+# Добавленные view-функции «Добавить/Удалить»
+# --------------------------------------------
+
+@login_required
+@role_required('Admin', 'Manager')
+def add_child_city_item(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        before_17 = request.POST.get('weekday_before_17', '').strip()
+        after_17 = request.POST.get('weekday_after_17_weekends', '').strip()
+        description = request.POST.get('description', '').strip()
+
+        if name:
+            try:
+                weekday_before_17 = int(before_17) if before_17 else 0
+            except ValueError:
+                weekday_before_17 = 0
+
+            try:
+                weekday_after_17_weekends = int(after_17) if after_17 else 0
+            except ValueError:
+                weekday_after_17_weekends = 0
+
+            item = ChildCityItem.objects.create(
+                name=name,
+                weekday_before_17=weekday_before_17,
+                weekday_after_17_weekends=weekday_after_17_weekends,
+                description=description
+            )
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                item_data = {
+                    'id': item.id,
+                    'name': item.name,
+                    'weekday_before_17': item.weekday_before_17,
+                    'weekday_after_17_weekends': item.weekday_after_17_weekends,
+                    'description': item.description
+                }
+                return JsonResponse({'success': True, 'item': item_data})
+
+            messages.success(request, 'Услуга «Детский городок» добавлена.')
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Название услуги обязательно!'}, status=400)
+            messages.error(request, 'Название услуги обязательно!')
+
+        return redirect('staff:price-settings')
+
+    html = render_to_string('staff/common/partials/add_child_city_item_form.html', {}, request)
+    return JsonResponse({'html': html})
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def delete_child_city_item(request, pk):
+    try:
+        item = get_object_or_404(ChildCityItem, pk=pk)
+        item_name = item.name
+        item.delete()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'Услуга «{item_name}» удалена.'
+            })
+
+        messages.success(request, f'Услуга «{item_name}» удалена.')
+        return redirect('staff:price-settings')
+
+    except Exception as e:
+        error_msg = f'Ошибка удаления: {str(e)}'
+        logger.error(error_msg)
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': error_msg
+            }, status=500)
+
+        messages.error(request, error_msg)
+        return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def delete_arcade_machine_item(request, pk):
+    try:
+        machine = get_object_or_404(ArcadeMachineItem, pk=pk)
+        machine_name = machine.name
+        machine.delete()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'Автомат «{machine_name}» удалён.'
+            })
+
+        messages.success(request, f'Автомат «{machine_name}» удалён.')
+        return redirect('staff:price-settings')
+
+    except Exception as e:
+        error_msg = f'Ошибка удаления: {str(e)}'
+        logger.error(error_msg)
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': error_msg
+            }, status=500)
+
+        messages.error(request, error_msg)
+        return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def delete_vr_arena_item(request, pk):
+    try:
+        session = get_object_or_404(VRArenaItem, pk=pk)
+        session_duration = session.get_duration_display()
+        session.delete()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'Сеанс {session_duration} удалён.'
+            })
+
+        messages.success(request, f'Сеанс {session_duration} удалён.')
+        return redirect('staff:price-settings')
+
+    except Exception as e:
+        error_msg = f'Ошибка удаления: {str(e)}'
+        logger.error(error_msg)
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': error_msg
+            }, status=500)
+
+        messages.error(request, error_msg)
+        return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def delete_birthday_package(request, pk):
+    try:
+        pkg = get_object_or_404(BirthdayPackage, pk=pk)
+        pkg_name = pkg.name
+        pkg.delete()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'Пакет «{pkg_name}» удалён.'
+            })
+
+        messages.success(request, f'Пакет «{pkg_name}» удалён.')
+        return redirect('staff:price-settings')
+
+    except Exception as e:
+        error_msg = f'Ошибка удаления: {str(e)}'
+        logger.error(error_msg)
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': error_msg
+            }, status=500)
+
+        messages.error(request, error_msg)
+        return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def delete_vr_package(request, pk):
+    try:
+        pkg = get_object_or_404(VRPackage, pk=pk)
+        pkg_name = pkg.name
+        pkg.delete()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'Пакет «{pkg_name}» удалён.'
+            })
+
+        messages.success(request, f'Пакет «{pkg_name}» удалён.')
+        return redirect('staff:price-settings')
+
+    except Exception as e:
+        error_msg = f'Ошибка удаления: {str(e)}'
+        logger.error(error_msg)
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': error_msg
+            }, status=500)
+
+        messages.error(request, error_msg)
+        return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def delete_standard_package(request, pk):
+    try:
+        pkg = get_object_or_404(StandardPackage, pk=pk)
+        pkg_name = pkg.name
+        pkg.delete()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'Пакет «{pkg_name}» удалён.'
+            })
+
+        messages.success(request, f'Пакет «{pkg_name}» удалён.')
+        return redirect('staff:price-settings')
+
+    except Exception as e:
+        error_msg = f'Ошибка удаления: {str(e)}'
+        logger.error(error_msg)
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': error_msg
+            }, status=500)
+
+        messages.error(request, error_msg)
+        return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def delete_playstation_slot(request, pk):
+    try:
+        slot = get_object_or_404(PlayStationSlot, pk=pk)
+        slot_duration = slot.get_duration_display()
+        slot.delete()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'Слот {slot_duration} удалён.'
+            })
+
+        messages.success(request, f'Слот {slot_duration} удалён.')
+        return redirect('staff:price-settings')
+
+    except Exception as e:
+        error_msg = f'Ошибка удаления: {str(e)}'
+        logger.error(error_msg)
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': error_msg
+            }, status=500)
+
+        messages.error(request, error_msg)
+        return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def delete_vr_ride(request, pk):
+    try:
+        ride = get_object_or_404(VRRide, pk=pk)
+        ride_name = ride.name
+        ride.delete()
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f'Аттракцион «{ride_name}» удалён.'
+            })
+
+        messages.success(request, f'Аттракцион «{ride_name}» удалён.')
+        return redirect('staff:price-settings')
+
+    except Exception as e:
+        error_msg = f'Ошибка удаления: {str(e)}'
+        logger.error(error_msg)
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'error': error_msg
+            }, status=500)
+
+        messages.error(request, error_msg)
+        return redirect('staff:price-settings')
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def add_arcade_machine_item(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        before_17 = request.POST.get('weekday_before_17', '').strip()
+        after_17 = request.POST.get('weekday_after_17_weekends', '').strip()
+        description = request.POST.get('description', '').strip()
+
+        if name:
+            try:
+                weekday_before_17 = int(before_17) if before_17 else 0
+            except ValueError:
+                weekday_before_17 = 0
+
+            try:
+                weekday_after_17_weekends = int(after_17) if after_17 else 0
+            except ValueError:
+                weekday_after_17_weekends = 0
+
+            machine = ArcadeMachineItem.objects.create(
+                name=name,
+                weekday_before_17=weekday_before_17,
+                weekday_after_17_weekends=weekday_after_17_weekends,
+                description=description
+            )
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                machine_data = {
+                    'id': machine.id,
+                    'name': machine.name,
+                    'weekday_before_17': machine.weekday_before_17,
+                    'weekday_after_17_weekends': machine.weekday_after_17_weekends,
+                    'description': machine.description
+                }
+                return JsonResponse({'success': True, 'item': machine_data})
+
+            messages.success(request, 'Игровой автомат добавлен.')
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Название автомата обязательно!'}, status=400)
+            messages.error(request, 'Название автомата обязательно!')
+
+        return redirect('staff:price-settings')
+
+    html = render_to_string('staff/common/partials/add_arcade_machine_item_form.html', {}, request)
+    return JsonResponse({'html': html})
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def add_vr_arena_item(request):
+    if request.method == 'POST':
+        duration = request.POST.get('duration', '').strip()
+        before_17 = request.POST.get('weekday_before_17', '').strip()
+        after_17 = request.POST.get('weekday_after_17_weekends', '').strip()
+        description = request.POST.get('description', '').strip()
+
+        if duration:
+            try:
+                weekday_before_17 = int(before_17) if before_17 else 0
+            except ValueError:
+                weekday_before_17 = 0
+
+            try:
+                weekday_after_17_weekends = int(after_17) if after_17 else 0
+            except ValueError:
+                weekday_after_17_weekends = 0
+
+            session = VRArenaItem.objects.create(
+                duration=int(duration),
+                weekday_before_17=weekday_before_17,
+                weekday_after_17_weekends=weekday_after_17_weekends,
+                description=description
+            )
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                session_data = {
+                    'id': session.id,
+                    'duration': session.duration,
+                    'weekday_before_17': session.weekday_before_17,
+                    'weekday_after_17_weekends': session.weekday_after_17_weekends,
+                    'description': session.description
+                }
+                return JsonResponse({'success': True, 'item': session_data})
+
+            messages.success(request, 'Сеанс VR-арены добавлен.')
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Продолжительность сеанса обязательна!'}, status=400)
+            messages.error(request, 'Продолжительность сеанса обязательна!')
+
+        return redirect('staff:price-settings')
+
+    html = render_to_string('staff/common/partials/add_vr_arena_item_form.html', {}, request)
+    return JsonResponse({'html': html})
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def add_birthday_package(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        price_mon_thu = request.POST.get('price_mon_thu', '').strip()
+        price_fri_sun = request.POST.get('price_fri_sun', '').strip()
+        extra_person = request.POST.get('extra_person', '').strip()
+        description = request.POST.get('description', '').strip()
+
+        if name:
+            try:
+                mon_thu_price = int(price_mon_thu) if price_mon_thu else 0
+            except ValueError:
+                mon_thu_price = 0
+
+            try:
+                fri_sun_price = int(price_fri_sun) if price_fri_sun else 0
+            except ValueError:
+                fri_sun_price = 0
+
+            try:
+                extra_price = int(extra_person) if extra_person else 0
+            except ValueError:
+                extra_price = 0
+
+            pkg = BirthdayPackage.objects.create(
+                name=name,
+                price_mon_thu=mon_thu_price,
+                price_fri_sun=fri_sun_price,
+                extra_person=extra_price,
+                description=description
+            )
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                pkg_data = {
+                    'id': pkg.id,
+                    'name': pkg.name,
+                    'price_mon_thu': pkg.price_mon_thu,
+                    'price_fri_sun': pkg.price_fri_sun,
+                    'extra_person': pkg.extra_person,
+                    'description': pkg.description
+                }
+                return JsonResponse({'success': True, 'item': pkg_data})
+
+            messages.success(request, 'Пакет ко Дню Рождения добавлен.')
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Название пакета обязательно!'}, status=400)
+            messages.error(request, 'Название пакета обязательно!')
+
+        return redirect('staff:price-settings')
+
+    html = render_to_string('staff/common/partials/add_birthday_package_form.html', {}, request)
+    return JsonResponse({'html': html})
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def add_vr_package(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        price_mon_thu = request.POST.get('price_mon_thu', '').strip()
+        price_fri_sun = request.POST.get('price_fri_sun', '').strip()
+        extra_person = request.POST.get('extra_person', '').strip()
+        description = request.POST.get('description', '').strip()
+
+        if name:
+            try:
+                mon_thu_price = int(price_mon_thu) if price_mon_thu else 0
+            except ValueError:
+                mon_thu_price = 0
+
+            try:
+                fri_sun_price = int(price_fri_sun) if price_fri_sun else 0
+            except ValueError:
+                fri_sun_price = 0
+
+            try:
+                extra_price = int(extra_person) if extra_person else 0
+            except ValueError:
+                extra_price = 0
+
+            pkg = VRPackage.objects.create(
+                name=name,
+                price_mon_thu=mon_thu_price,
+                price_fri_sun=fri_sun_price,
+                extra_person=extra_price,
+                description=description
+            )
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                pkg_data = {
+                    'id': pkg.id,
+                    'name': pkg.name,
+                    'price_mon_thu': pkg.price_mon_thu,
+                    'price_fri_sun': pkg.price_fri_sun,
+                    'extra_person': pkg.extra_person,
+                    'description': pkg.description
+                }
+                return JsonResponse({'success': True, 'item': pkg_data})
+
+            messages.success(request, 'VR пакет добавлен.')
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Название пакета обязательно!'}, status=400)
+            messages.error(request, 'Название пакета обязательно!')
+
+        return redirect('staff:price-settings')
+
+    html = render_to_string('staff/common/partials/add_vr_package_form.html', {}, request)
+    return JsonResponse({'html': html})
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def add_standard_package(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        price_mon_thu = request.POST.get('price_mon_thu', '').strip()
+        price_fri_sun = request.POST.get('price_fri_sun', '').strip()
+        extra_person = request.POST.get('extra_person', '').strip()
+        description = request.POST.get('description', '').strip()
+
+        if name:
+            try:
+                mon_thu_price = int(price_mon_thu) if price_mon_thu else 0
+            except ValueError:
+                mon_thu_price = 0
+
+            try:
+                fri_sun_price = int(price_fri_sun) if price_fri_sun else 0
+            except ValueError:
+                fri_sun_price = 0
+
+            try:
+                extra_price = int(extra_person) if extra_person else 0
+            except ValueError:
+                extra_price = 0
+
+            pkg = StandardPackage.objects.create(
+                name=name,
+                price_mon_thu=mon_thu_price,
+                price_fri_sun=fri_sun_price,
+                extra_person=extra_price,
+                description=description
+            )
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                pkg_data = {
+                    'id': pkg.id,
+                    'name': pkg.name,
+                    'price_mon_thu': pkg.price_mon_thu,
+                    'price_fri_sun': pkg.price_fri_sun,
+                    'extra_person': pkg.extra_person,
+                    'description': pkg.description
+                }
+                return JsonResponse({'success': True, 'item': pkg_data})
+
+            messages.success(request, 'Стандартный пакет добавлен.')
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Название пакета обязательно!'}, status=400)
+            messages.error(request, 'Название пакета обязательно!')
+
+        return redirect('staff:price-settings')
+
+    html = render_to_string('staff/common/partials/add_standard_package_form.html', {}, request)
+    return JsonResponse({'html': html})
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def add_playstation_slot(request):
+    if request.method == 'POST':
+        duration = request.POST.get('duration', '').strip()
+        before_17 = request.POST.get('weekday_before_17', '').strip()
+        after_17 = request.POST.get('weekday_after_17_weekends', '').strip()
+        description = request.POST.get('description', '').strip()
+
+        # проверяем, что duration не пустая строка
+        if not duration:
+            # если AJAX-запрос — вернем JSON-ошибку
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse(
+                    {'success': False, 'error': 'Продолжительность слота обязательна!'},
+                    status=400
+                )
+            # иначе редиректим с сообщением
+            messages.error(request, 'Продолжительность слота обязательна!')
+            return redirect('staff:price-settings')
+
+        # пытаемся преобразовать duration в int
+        try:
+            duration_int = int(duration)
+        except ValueError:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse(
+                    {'success': False, 'error': 'Неверный формат длительности (должно быть число).'},
+                    status=400
+                )
+            messages.error(request, 'Неверный формат длительности (должно быть число).')
+            return redirect('staff:price-settings')
+
+        # разбираем цены (если не число — делаем 0)
+        try:
+            weekday_before_17 = int(before_17) if before_17 else 0
+        except ValueError:
+            weekday_before_17 = 0
+
+        try:
+            weekday_after_17_weekends = int(after_17) if after_17 else 0
+        except ValueError:
+            weekday_after_17_weekends = 0
+
+        # создаем запись
+        slot = PlayStationSlot.objects.create(
+            duration=duration_int,
+            weekday_before_17=weekday_before_17,
+            weekday_after_17_weekends=weekday_after_17_weekends,
+            description=description
+        )
+
+        # если AJAX — возвращаем весь JSON, который ждет JS
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            slot_data = {
+                'id': slot.id,
+                # вместо “duration” отдаем “duration_display”, чтобы клиент мог сразу показать текст
+                'duration_display': slot.get_duration_display(),
+                'weekday_before_17': slot.weekday_before_17,
+                'weekday_after_17_weekends': slot.weekday_after_17_weekends,
+                'description': slot.description,
+                # ссылка для удаления (JS берет data-url из item.delete_url)
+                'delete_url': reverse('staff:delete_playstation_slot', args=[slot.id]),
+            }
+            return JsonResponse({
+                'success': True,
+                'category': 'playstation',      # обязательно указываем, к какой категории относится
+                'item': slot_data
+            })
+
+        # если это не AJAX, просто редирект с сообщением
+        messages.success(request, 'Слот PlayStation добавлен.')
+        return redirect('staff:price-settings')
+
+    # на GET возвращаем JSON с HTML-формой (не используем сейчас, но оставляем на всякий)
+    html = render_to_string('staff/common/partials/add_playstation_slot_form.html', {}, request)
+    return JsonResponse({'html': html})
+
+
+@login_required
+@role_required('Admin', 'Manager')
+def add_vr_ride(request):
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        before_17 = request.POST.get('weekday_before_17', '').strip()
+        after_17 = request.POST.get('weekday_after_17_weekends', '').strip()
+        description = request.POST.get('description', '').strip()
+
+        if name:
+            try:
+                weekday_before_17 = int(before_17) if before_17 else 0
+            except ValueError:
+                weekday_before_17 = 0
+
+            try:
+                weekday_after_17_weekends = int(after_17) if after_17 else 0
+            except ValueError:
+                weekday_after_17_weekends = 0
+
+            ride = VRRide.objects.create(
+                name=name,
+                weekday_before_17=weekday_before_17,
+                weekday_after_17_weekends=weekday_after_17_weekends,
+                description=description
+            )
+
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                ride_data = {
+                    'id': ride.id,
+                    'name': ride.name,
+                    'weekday_before_17': ride.weekday_before_17,
+                    'weekday_after_17_weekends': ride.weekday_after_17_weekends,
+                    'description': ride.description
+                }
+                return JsonResponse({'success': True, 'item': ride_data})
+
+            messages.success(request, 'VR аттракцион добавлен.')
+        else:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Название аттракциона обязательно!'}, status=400)
+            messages.error(request, 'Название аттракциона обязательно!')
+
+        return redirect('staff:price-settings')
+
+    html = render_to_string('staff/common/partials/add_vr_ride_form.html', {}, request)
+    return JsonResponse({'html': html})

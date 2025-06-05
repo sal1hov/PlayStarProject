@@ -158,7 +158,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Обновляем данные
         newDay.dataset.day = nextDayIndex;
-        newDay.querySelector('.day-row td:first-child').textContent = weekDays[nextDayIndex];
+        newDay.querySelector('td:first-child').textContent = weekDays[nextDayIndex];
 
         // Обновляем имена полей
         const staffFields = newDay.querySelectorAll('.staff-field');
@@ -318,6 +318,38 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // *** НОВАЯ ВАЛИДАЦИЯ: запрет на одного и того же сотрудника в одной роли в рамках одного дня ***
+    daysContainer.addEventListener('change', function(e) {
+        // Если поменяли выбор конкретного сотрудника
+        if (e.target.classList.contains('user-select')) {
+            const changedSelect = e.target;
+            const staffField = changedSelect.closest('.staff-field');
+            const chosenStaffId = changedSelect.value;
+            const chosenRole = staffField.querySelector('.role-select').value;
+            const dayRow = staffField.closest('.day-row');
+            const allStaffFields = Array.from(dayRow.querySelectorAll('.staff-field'));
+
+            if (!chosenStaffId || !chosenRole) {
+                return; // если выбрано пусто или роль не выбрана
+            }
+
+            // Проверяем остальные поля этого дня
+            for (let otherField of allStaffFields) {
+                if (otherField === staffField) continue;
+
+                const otherRole = otherField.querySelector('.role-select').value;
+                const otherStaff = otherField.querySelector('.user-select').value;
+
+                if (otherRole === chosenRole && otherStaff === chosenStaffId) {
+                    // Нашли повтор: одна и та же роль + тот же сотрудник
+                    alert('Невозможно назначить одного и того же сотрудника дважды на одну и ту же роль в одном дне.');
+                    changedSelect.value = ''; // сбросим выбор
+                    return;
+                }
+            }
+        }
+    });
+
     // Обновление дат на основе выбранной недели
     function updateDates() {
         if (!weekStartInput.value) return;
@@ -341,7 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         dayRows.forEach((row, index) => {
             row.dataset.day = index;
-            row.querySelector('.day-row td:first-child').textContent = weekDays[index];
+            row.querySelector('td:first-child').textContent = weekDays[index];
 
             // Обновляем имена полей сотрудников
             const staffFields = row.querySelectorAll('.staff-field');

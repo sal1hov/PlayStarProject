@@ -1,0 +1,489 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Прайс-лист услуг | PlayStar{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 py-12">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+
+    <!-- Заголовок -->
+    <div class="text-center mb-12">
+      <h1 class="text-5xl font-extrabold text-gray-900 mb-4">Прайс-лист услуг</h1>
+      <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+        Актуальные цены на все развлечения и пакеты — удобно и наглядно
+      </p>
+    </div>
+
+    <!-- Кнопки-фильтры категорий -->
+    <div class="mb-8 flex flex-wrap justify-center gap-3">
+      <button class="category-tab px-5 py-2 rounded-lg bg-blue-600 text-white font-semibold shadow hover:bg-blue-700 transition"
+              data-category="all">Все категории</button>
+      <button class="category-tab px-5 py-2 rounded-lg bg-white text-gray-700 border border-gray-200 hover:bg-blue-100 hover:text-blue-700 font-semibold transition"
+              data-category="child_city">Детский городок</button>
+      <button class="category-tab px-5 py-2 rounded-lg bg-white text-gray-700 border border-gray-200 hover:bg-blue-100 hover:text-blue-700 font-semibold transition"
+              data-category="arcade_machines">Игровые автоматы (жетоны)</button>
+      <button class="category-tab px-5 py-2 rounded-lg bg-white text-gray-700 border border-gray-200 hover:bg-blue-100 hover:text-blue-700 font-semibold transition"
+              data-category="vr_arena">VR-арена</button>
+      <button class="category-tab px-5 py-2 rounded-lg bg-white text-gray-700 border border-gray-200 hover:bg-blue-100 hover:text-blue-700 font-semibold transition"
+              data-category="birthday_packages">Пакеты ДР</button>
+      <button class="category-tab px-5 py-2 rounded-lg bg-white text-gray-700 border border-gray-200 hover:bg-blue-100 hover:text-blue-700 font-semibold transition"
+              data-category="vr_packages">Пакеты VR</button>
+      <button class="category-tab px-5 py-2 rounded-lg bg-white text-gray-700 border border-gray-200 hover:bg-blue-100 hover:text-blue-700 font-semibold transition"
+              data-category="standard_packages">Обычные пакеты</button>
+      <button class="category-tab px-5 py-2 rounded-lg bg-white text-gray-700 border border-gray-200 hover:bg-blue-100 hover:text-blue-700 font-semibold transition"
+              data-category="playstation">Зона PlayStation</button>
+      <button class="category-tab px-5 py-2 rounded-lg bg-white text-gray-700 border border-gray-200 hover:bg-blue-100 hover:text-blue-700 font-semibold transition"
+              data-category="vr_rides">VR-аттракционы</button>
+    </div>
+
+    <div id="prices-container">
+      <!-- Категории -->
+
+      <!-- 1. Детский городок -->
+      <div class="mb-12 category-section" data-category="child_city">
+        <h2 class="text-3xl font-bold text-gray-900 mb-6">Детский городок</h2>
+
+        {% if child_city_items.exists %}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for item in child_city_items %}
+            <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden">
+              <div class="px-6 py-5 bg-blue-50 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-blue-700">{{ item.name }}</h3>
+              </div>
+              <div class="p-6 space-y-2">
+                <p class="text-gray-700">
+                  <span class="font-medium">Будни до 17:00:</span>
+                  {{ item.weekday_before_17 }} ₽
+                </p>
+                {% if item.weekday_after_17_weekends %}
+                <p class="text-gray-700">
+                  <span class="font-medium">Будни после 17:00 / Выходные:</span>
+                  {{ item.weekday_after_17_weekends }} ₽
+                </p>
+                {% endif %}
+                <button class="mt-4 inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition"
+                        data-name="{{ item.name }}"
+                        data-prices="{% if item.weekday_after_17_weekends %}Будни до 17:00: {{ item.weekday_before_17 }} ₽; Будни после 17:00 / Выходные: {{ item.weekday_after_17_weekends }} ₽{% else %}Будни до 17:00: {{ item.weekday_before_17 }} ₽{% endif %}"
+                        data-desc="{% if item.description %}{{ item.description }}{% else %}Описание отсутствует.{% endif %}">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                  </svg>
+                  Подробнее
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="bg-white rounded-xl shadow-md p-8 text-center text-gray-600">
+            Цены пока не обновлены или не добавлены.
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- 2. Игровые автоматы (жетоны) -->
+      <div class="mb-12 category-section hidden" data-category="arcade_machines">
+        <h2 class="text-3xl font-bold text-gray-900 mb-6">Игровые автоматы (жетоны)</h2>
+
+        {% if arcade_items.exists %}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for machine in arcade_items %}
+            <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden">
+              <div class="px-6 py-5 bg-blue-50 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-blue-700">{{ machine.name }}</h3>
+              </div>
+              <div class="p-6 space-y-2">
+                <p class="text-gray-700">
+                  <span class="font-medium">Будни до 17:00 (цена за жетон):</span>
+                  {{ machine.weekday_before_17 }} ₽
+                </p>
+                {% if machine.weekday_after_17_weekends %}
+                <p class="text-gray-700">
+                  <span class="font-medium">Будни после 17:00 / Выходные (цена за жетон):</span>
+                  {{ machine.weekday_after_17_weekends }} ₽
+                </p>
+                {% endif %}
+                <button class="mt-4 inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition"
+                        data-name="{{ machine.name }}"
+                        data-prices="{% if machine.weekday_after_17_weekends %}Будни до 17:00: {{ machine.weekday_before_17 }} ₽; Будни после 17:00 / Выходные: {{ machine.weekday_after_17_weekends }} ₽{% else %}Будни до 17:00: {{ machine.weekday_before_17 }} ₽{% endif %}"
+                        data-desc="{% if machine.description %}{{ machine.description }}{% else %}Описание отсутствует.{% endif %}">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                  </svg>
+                  Подробнее
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="bg-white rounded-xl shadow-md p-8 text-center text-gray-600">
+            Цены пока не обновлены или не добавлены.
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- 3. VR-арена -->
+      <div class="mb-12 category-section hidden" data-category="vr_arena">
+        <h2 class="text-3xl font-bold text-gray-900 mb-6">VR-арена</h2>
+
+        {% if vr_arena_items.exists %}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for session in vr_arena_items %}
+            <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden">
+              <div class="px-6 py-5 bg-blue-50 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-blue-700">{{ session.get_duration_display }}</h3>
+              </div>
+              <div class="p-6 space-y-2">
+                <p class="text-gray-700">
+                  <span class="font-medium">Будни до 17:00:</span>
+                  {{ session.weekday_before_17 }} ₽
+                </p>
+                {% if session.weekday_after_17_weekends %}
+                <p class="text-gray-700">
+                  <span class="font-medium">Будни после 17:00 / Выходные:</span>
+                  {{ session.weekday_after_17_weekends }} ₽
+                </p>
+                {% endif %}
+                <button class="mt-4 inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition"
+                        data-name="{{ session.get_duration_display }}"
+                        data-prices="{% if session.weekday_after_17_weekends %}Будни до 17:00: {{ session.weekday_before_17 }} ₽; Будни после 17:00 / Выходные: {{ session.weekday_after_17_weekends }} ₽{% else %}Будни до 17:00: {{ session.weekday_before_17 }} ₽{% endif %}"
+                        data-desc="{% if session.description %}{{ session.description }}{% else %}Описание отсутствует.{% endif %}">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                  </svg>
+                  Подробнее
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="bg-white rounded-xl shadow-md p-8 text-center text-gray-600">
+            Цены пока не обновлены или не добавлены.
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- 4. Пакеты по Дню Рождения -->
+      <div class="mb-12 category-section hidden" data-category="birthday_packages">
+        <h2 class="text-3xl font-bold text-gray-900 mb-6">Пакеты ко Дню Рождения</h2>
+
+        {% if birthday_packages.exists %}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for pkg in birthday_packages %}
+            <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden">
+              <div class="px-6 py-5 bg-blue-50 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-blue-700">{{ pkg.name }}</h3>
+              </div>
+              <div class="p-6 space-y-2">
+                <p class="text-gray-700">
+                  <span class="font-medium">Цена (Пн–Чт):</span>
+                  {{ pkg.price_mon_thu }} ₽
+                </p>
+                {% if pkg.price_fri_sun %}
+                <p class="text-gray-700">
+                  <span class="font-medium">Цена (Пт–Вс):</span>
+                  {{ pkg.price_fri_sun }} ₽
+                </p>
+                {% endif %}
+                <p class="text-gray-700">
+                  <span class="font-medium">Доп. игрок/ребёнок:</span>
+                  {{ pkg.extra_person }} ₽
+                </p>
+                <button class="mt-4 inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition"
+                        data-name="{{ pkg.name }}"
+                        data-prices="{% if pkg.price_fri_sun %}Пн–Чт: {{ pkg.price_mon_thu }} ₽; Пт–Вс: {{ pkg.price_fri_sun }} ₽; Доп. игрок: {{ pkg.extra_person }} ₽{% else %}Пн–Чт: {{ pkg.price_mon_thu }} ₽; Доп. игрок: {{ pkg.extra_person }} ₽{% endif %}"
+                        data-desc="{% if pkg.description %}{{ pkg.description }}{% else %}Описание отсутствует.{% endif %}">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                  </svg>
+                  Подробнее
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="bg-white rounded-xl shadow-md p-8 text-center text-gray-600">
+            Цены пока не обновлены или не добавлены.
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- 5. Пакеты VR -->
+      <div class="mb-12 category-section hidden" data-category="vr_packages">
+        <h2 class="text-3xl font-bold text-gray-900 mb-6">Пакеты VR</h2>
+
+        {% if vr_packages.exists %}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for pkg in vr_packages %}
+            <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden">
+              <div class="px-6 py-5 bg-blue-50 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-blue-700">{{ pkg.name }}</h3>
+              </div>
+              <div class="p-6 space-y-2">
+                <p class="text-gray-700">
+                  <span class="font-medium">Цена (Пн–Чт):</span>
+                  {{ pkg.price_mon_thu }} ₽
+                </p>
+                {% if pkg.price_fri_sun %}
+                <p class="text-gray-700">
+                  <span class="font-medium">Цена (Пт–Вс):</span>
+                  {{ pkg.price_fri_sun }} ₽
+                </p>
+                {% endif %}
+                <p class="text-gray-700">
+                  <span class="font-medium">Доп. игрок/ребёнок:</span>
+                  {{ pkg.extra_person }} ₽
+                </p>
+                <button class="mt-4 inline-flex	items-center text-blue-600 hover:text-blue-800 font-medium transition"
+                        data-name="{{ pkg.name }}"
+                        data-prices="{% if pkg.price_fri_sun %}Пн–Чт: {{ pkg.price_mon_thu }} ₽; Пт–Вс: {{ pkg.price_fri_sun }} ₽; Доп. игрок: {{ pkg.extra_person }} ₽{% else %}Пн–Чт: {{ pkg.price_mon_thu }} ₽; Доп. игрок: {{ pkg.extra_person }} ₽{% endif %}"
+                        data-desc="{% if pkg.description %}{{ pkg.description }}{% else %}Описание отсутствует.{% endif %}">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                  </svg>
+                  Подробнее
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="bg-white rounded-xl shadow-md p-8 text-center text-gray-600">
+            Цены пока не обновлены или не добавлены.
+          </div>
+        {% endif %}
+      </div>
+
+            <!-- 6. Обычные пакеты услуг -->
+      <div class="mb-12 category-section hidden" data-category="standard_packages">
+        <h2 class="text-3xl font-bold text-gray-900 mb-6">Обычные пакеты услуг</h2>
+
+        {% if standard_packages.exists %}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for pkg in standard_packages %}
+            <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden">
+              <div class="px-6 py-5 bg-blue-50 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-blue-700">{{ pkg.name }}</h3>
+              </div>
+              <div class="p-6 space-y-2">
+                <p class="text-gray-700">
+                  <span class="font-medium">Цена (Пн–Чт):</span>
+                  {{ pkg.price_mon_thu }} ₽
+                </p>
+                {% if pkg.price_fri_sun %}
+                <p class="text-gray-700">
+                  <span class="font-medium">Цена (Пт–Вс):</span>
+                  {{ pkg.price_fri_sun }} ₽
+                </p>
+                {% endif %}
+                <button class="mt-4 inline-flex items-center text-blue-600 hover:text-blue-800 font-medium transition"
+                        data-name="{{ pkg.name }}"
+                        data-prices="{% if pkg.price_fri_sun %}Пн–Чт: {{ pkg.price_mon_thu }} ₽; Пт–Вс: {{ pkg.price_fri_sun }} ₽{% else %}Пн–Чт: {{ pkg.price_mon_thu }} ₽{% endif %}"
+                        data-desc="{% if pkg.description %}{{ pkg.description }}{% else %}Описание отсутствует.{% endif %}">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                  </svg>
+                  Подробнее
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="bg-white rounded-xl shadow-md p-8 text-center text-gray-600">
+            Цены пока не обновлены или не добавлены.
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- 7. Зона PlayStation -->
+      <div class="mb-12 category-section hidden" data-category="playstation">
+        <h2 class="text-3xl font-bold text-gray-900 mb-6">Зона PlayStation</h2>
+
+        {% if playstation_slots.exists %}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for slot in playstation_slots %}
+            <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden">
+              <div class="px-6 py-5 bg-blue-50 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-blue-700">{{ slot.get_duration_display }}</h3>
+              </div>
+              <div class="p-6 space-y-2">
+                <p class="text-gray-700">
+                  <span class="font-medium">Будни до 17:00:</span>
+                  {{ slot.weekday_before_17 }} ₽
+                </p>
+                {% if slot.weekday_after_17_weekends %}
+                <p class="text-gray-700">
+                  <span class="font-medium">Будни после 17:00 / Выходные:</span>
+                  {{ slot.weekday_after_17_weekends }} ₽
+                </p>
+                {% endif %}
+                <button class="mt-4 inline-flex	items-center text-blue-600 hover:text-blue-800 font-medium transition"
+                        data-name="{{ slot.get_duration_display }}"
+                        data-prices="{% if slot.weekday_after_17_weekends %}Будни до 17:00: {{ slot.weekday_before_17 }} ₽; Будни после 17:00 / Выходные: {{ slot.weekday_after_17_weekends }} ₽{% else %}Будни до 17:00: {{ slot.weekday_before_17 }} ₽{% endif %}"
+                        data-desc="{% if slot.description %}{{ slot.description }}{% else %}Описание отсутствует.{% endif %}">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                  </svg>
+                  Подробнее
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="bg-white rounded-xl shadow-md p-8 text-center text-gray-600">
+            Цены пока не обновлены или не добавлены.
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- 8. VR-аттракционы -->
+      <div class="mb-12 category-section hidden" data-category="vr_rides">
+        <h2 class="text-3xl font-bold text-gray-900 mb-6">VR-аттракционы</h2>
+
+        {% if vr_rides.exists %}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for ride in vr_rides %}
+            <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden">
+              <div class="px-6 py-5 bg-blue-50 border-b border-gray-200">
+                <h3 class="text-xl font-semibold text-blue-700">{{ ride.name }}</h3>
+              </div>
+              <div class="p-6 space-y-2">
+                <p class="text-gray-700">
+                  <span class="font-medium">Будни до 17:00:</span>
+                  {{ ride.weekday_before_17 }} ₽
+                </p>
+                {% if ride.weekday_after_17_weekends %}
+                <p class="text-gray-700">
+                  <span class="font-medium">Будни после 17:00 / Выходные:</span>
+                  {{ ride.weekday_after_17_weekends }} ₽
+                </p>
+                {% endif %}
+                <button class="mt-4 inline-flex	items-center text-blue-600 hover:text-blue-800 font-medium transition"
+                        data-name="{{ ride.name }}"
+                        data-prices="{% if ride.weekday_after_17_weekends %}Будни до 17:00: {{ ride.weekday_before_17 }} ₽; Будни после 17:00 / Выходные: {{ ride.weekday_after_17_weekends }} ₽{% else %}Будни до 17:00: {{ ride.weekday_before_17 }} ₽{% endif %}"
+                        data-desc="{% if ride.description %}{{ ride.description }}{% else %}Описание отсутствует.{% endif %}">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z" />
+                  </svg>
+                  Подробнее
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="bg-white rounded-xl shadow-md p-8 text-center text-gray-600">
+            Цены пока не обновлены или не добавлены.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Модальное окно «Подробнее» -->
+    <div id="priceModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+      <div class="bg-white rounded-2xl w-11/12 sm:w-3/4 md:w-2/3 lg:w-1/2 overflow-hidden shadow-2xl">
+        <!-- Заголовок модального окна -->
+        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex justify-between items-center">
+          <h3 id="modal-title" class="text-2xl font-bold text-white">Название услуги</h3>
+          <button onclick="closePriceModal()" class="text-white hover:text-gray-200 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <!-- Содержимое модального окна -->
+        <div class="p-6 space-y-6">
+          <!-- Блок с ценами -->
+          <div id="modal-prices" class="bg-gray-100 rounded-lg p-4">
+            <h4 class="text-lg font-semibold text-gray-800 mb-2">Цены</h4>
+            <p id="modal-prices-text" class="text-gray-700">Будни до 17:00: 0 ₽;</p>
+            <p id="modal-prices-after" class="text-gray-700 hidden">Будни после 17:00 / Выходные: 0 ₽</p>
+          </div>
+          <!-- Блок с описанием -->
+          <div id="modal-desc-section">
+            <h4 class="text-lg font-semibold text-gray-800 mb-2">Описание</h4>
+            <p id="modal-desc" class="text-gray-700 whitespace-pre-line">
+              Информация об услуге...
+            </p>
+          </div>
+        </div>
+        <!-- Кнопка закрыть -->
+        <div class="bg-gray-50 px-6 py-4 text-right">
+          <button onclick="closePriceModal()"
+                  class="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition">
+            Закрыть
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Переключение категорий
+  document.addEventListener('DOMContentLoaded', () => {
+    const tabs = document.querySelectorAll('.category-tab');
+    const sections = document.querySelectorAll('.category-section');
+
+    function activateCategory(category) {
+      tabs.forEach(btn => {
+        if (btn.dataset.category === category) {
+          btn.classList.remove('bg-white', 'text-gray-700', 'border', 'border-gray-200');
+          btn.classList.add('bg-blue-600', 'text-white');
+        } else {
+          btn.classList.remove('bg-blue-600', 'text-white');
+          btn.classList.add('bg-white', 'text-gray-700', 'border', 'border-gray-200');
+        }
+      });
+      sections.forEach(section => {
+        if (category === 'all' || section.dataset.category === category) {
+          section.classList.remove('hidden');
+        } else {
+          section.classList.add('hidden');
+        }
+      });
+    }
+
+    // По умолчанию показываем «all»
+    activateCategory('all');
+
+    tabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        activateCategory(btn.dataset.category);
+      });
+    });
+
+    // Открытие модального окна «Подробнее»
+    document.querySelectorAll('button[data-name]').forEach(btn => {
+      btn.addEventListener('click', function() {
+        document.getElementById('modal-title').textContent = this.dataset.name;
+        // разбираем data-prices: разделяем по ";" на две части, если вторая есть — показываем блок
+        const prices = this.dataset.prices.split(';').map(s => s.trim());
+        document.getElementById('modal-prices-text').textContent = prices[0] + ' ₽';
+        if (prices.length > 1) {
+          document.getElementById('modal-prices-after').textContent = prices[1] + ' ₽';
+          document.getElementById('modal-prices-after').classList.remove('hidden');
+        } else {
+          document.getElementById('modal-prices-after').classList.add('hidden');
+        }
+        document.getElementById('modal-desc').textContent = this.dataset.desc;
+        document.getElementById('priceModal').classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+      });
+    });
+  });
+
+  // Закрытие модального окна «Подробнее»
+  function closePriceModal() {
+    document.getElementById('priceModal').classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+  }
+</script>
+{% endblock %}
